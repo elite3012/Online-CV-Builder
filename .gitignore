@@ -1,0 +1,28 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Backend
+backend/target/
+backend/*.db
+backend/*.sqlite
+backend/.idea/
+backend/*.iml
+
+# Documentation - Keep source files, ignore generated PDFs
+docs/**/*.pdf
+docs/**/~$*.docx
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDEs
+.vscode/
+.idea/
+*.iws
+*.log
