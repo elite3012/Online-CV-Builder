@@ -4,6 +4,7 @@ import com.cvbuilder.dto.RegisterRequest;
 import com.cvbuilder.dto.LoginRequest;
 import com.cvbuilder.dto.AuthResponse;
 import com.cvbuilder.service.AuthService;
+import com.cvbuilder.security.RateLimiterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.regex.Pattern;
 import java.util.Map;
-import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -20,6 +20,9 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private RateLimiterService rateLimiterService;
 
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@(.+)$";
 
@@ -50,10 +53,22 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        String key = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+
+        if (rateLimiterService.isBlocked(key)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of(
+                            "message", "Too many login attempts. Please try again later.",
+                            "retryAfterSeconds", rateLimiterService.retryAfterSeconds(key)
+                    ));
+        }
+
         try {
             AuthResponse response = authService.login(request);
+            rateLimiterService.recordSuccess(key);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
+            rateLimiterService.recordFailure(key);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", e.getMessage()));
         }
     }
