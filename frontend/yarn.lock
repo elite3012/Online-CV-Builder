@@ -477,6 +477,13 @@
   resolved "https://registry.yarnpkg.com/@mui/core-downloads-tracker/-/core-downloads-tracker-7.3.9.tgz#d944e385f8f7f5e680e5ba479b39ff8602bd4939"
   integrity sha512-MOkOCTfbMJwLshlBCKJ59V2F/uaLYfmKnN76kksj6jlGUVdI25A9Hzs08m+zjBRdLv+sK7Rqdsefe8X7h/6PCw==
 
+"@mui/icons-material@^7.3.9":
+  version "7.3.9"
+  resolved "https://registry.yarnpkg.com/@mui/icons-material/-/icons-material-7.3.9.tgz#4f6dc62bfe8954f3848b0eecb3650cff10f6a7ec"
+  integrity sha512-BT+zPJXss8Hg/oEMRmHl17Q97bPACG4ufFSfGEdhiE96jOyR5Dz1ty7ZWt1fVGR0y1p+sSgEwQT/MNZQmoWDCw==
+  dependencies:
+    "@babel/runtime" "^7.28.6"
+
 "@mui/material@^7.3.9":
   version "7.3.9"
   resolved "https://registry.yarnpkg.com/@mui/material/-/material-7.3.9.tgz#b3bf698b4b82ad630422df55f3d5f4e44a7bad11"
@@ -1320,6 +1327,11 @@ graphemer@^1.4.0:
   resolved "https://registry.yarnpkg.com/graphemer/-/graphemer-1.4.0.tgz#fb2f1d55e0e3a1849aeffc90c4fa0dd53a0e66c6"
   integrity sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==
 
+gsap@^3.14.2:
+  version "3.14.2"
+  resolved "https://registry.yarnpkg.com/gsap/-/gsap-3.14.2.tgz#6a9ea31e5046948e0be61eae006ae576ca5937d6"
+  integrity sha512-P8/mMxVLU7o4+55+1TCnQrPmgjPKnwkzkXOK1asnR9Jg2lna4tEY5qBJjMmAaOBDDZWtlRjBXjLa0w53G/uBLA==
+
 has-flag@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/has-flag/-/has-flag-4.0.0.tgz#944771fd9c81c81265c4d6941860da06bb59479b"
@@ -1552,6 +1564,11 @@ object-assign@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-4.1.1.tgz#2109adc7965887cfc05cbbd442cac8bfbb360863"
   integrity sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==
+
+ogl@^1.0.11:
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/ogl/-/ogl-1.0.11.tgz#369d6b8681035500fbb14d461f4d74f014527b88"
+  integrity sha512-kUpC154AFfxi16pmZUK4jk3J+8zxwTWGPo03EoYA8QPbzikHoaC82n6pNTbd+oEaJonaE8aPWBlX7ad9zrqLsA==
 
 once@^1.3.0:
   version "1.4.0"
