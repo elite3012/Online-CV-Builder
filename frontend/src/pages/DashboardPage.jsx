@@ -27,16 +27,18 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+//import DarkVeil from "../components/reactbits/DarkVeil";
+import BorderGlow from "../components/reactbits/BorderGlow";
 
-
-// --- PHẦN 1: MOCK DATA CHO CÁC MẪU CV (Lấy ý tưởng từ ảnh 2) ---
+// MOCK DATA CHO CÁC MẪU CV
 const templates = [
   {
     id: 1,
     name: "Modern",
     desc: "Clean design with a colored header, perfect for tech professionals.",
     type: "Tech",
-    image: "https://via.placeholder.com/200x280?text=Modern+CV",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
     tags: ["Modern", "Tech"],
   },
   {
@@ -44,7 +46,8 @@ const templates = [
     name: "Classic",
     desc: "Traditional two-column layout with a sidebar for key information.",
     type: "Business",
-    image: "https://via.placeholder.com/200x280?text=Classic+CV",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
     tags: ["Classic", "Corporate"],
   },
   {
@@ -52,7 +55,8 @@ const templates = [
     name: "Minimal",
     desc: "Simple and clean design focusing purely on content clarity.",
     type: "Creative",
-    image: "https://via.placeholder.com/200x280?text=Minimal+CV",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
     tags: ["Minimal", "Simple"],
   },
   {
@@ -60,7 +64,8 @@ const templates = [
     name: "Professional",
     desc: "Business-focused design with a highly balanced layout.",
     type: "Business",
-    image: "https://via.placeholder.com/200x280?text=Professional+CV",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
     tags: ["Professional", "Business"],
   },
   {
@@ -68,7 +73,8 @@ const templates = [
     name: "Creative",
     desc: "Bold accent colors and unique typography for creative roles.",
     type: "Creative",
-    image: "https://via.placeholder.com/200x280?text=Creative+CV",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
     tags: ["Creative", "Design"],
   },
   {
@@ -76,7 +82,8 @@ const templates = [
     name: "Elegant",
     desc: "Sophisticated centered design with highly refined typography.",
     type: "Creative",
-    image: "https://via.placeholder.com/200x280?text=Elegant+CV",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
     tags: ["Elegant", "Sophisticated"],
   },
 ];
@@ -84,33 +91,29 @@ const templates = [
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState(0);
 
-  // --- COMPONENT CON: CARD HIỂN THỊ TỪNG TEMPLATE ---
+  // CARD HIỂN THỊ TỪNG TEMPLATE
   const TemplateCard = ({ item }) => (
-    <Paper
-      elevation={0}
-      sx={{
-        height: "100%",
-        width: 280,
-        maxWidth: "100%",
-        mx: "auto",
-        p: 0,
-        borderRadius: 3,
-        overflow: "hidden",
-        border: "1px solid #e0e0e0",
-        transition: "0.3s",
-        display: "flex",
-        flexDirection: "column",
-        "&:hover": {
-          boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-          transform: "translateY(-3px)",
-        },
-      }}
+    <BorderGlow
+      edgeSensitivity={30}
+      backgroundColor="none"
+      glowColor="190 80 80"
+      borderRadius={12}
+      glowRadius={80}
+      glowIntensity={1.7}
+      coneSpread={26}
+      colors={["#1c7c54", "#52b0c3", "#def4c6"]}
     >
       <Box
         component="img"
         src={item.image}
         alt={item.name}
-        sx={{ width: "100%", height: 220, objectFit: "cover" }}
+        sx={{
+          width: "100%",
+          height: 220,
+          objectFit: "cover",
+          borderRadius: "12px 12px 0 0",
+          zIndex: -1,
+        }}
       />
 
       <Box sx={{ p: 2, flexGrow: 1, display: "flex", flexDirection: "column" }}>
@@ -169,16 +172,16 @@ export default function Dashboard() {
           Use Template
         </Button>
       </Box>
-    </Paper>
+    </BorderGlow>
   );
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8f9fb" }}>
-      {/* --- PHẦN 2: SIDEBAR MENU (Lấy ý tưởng từ ảnh 1) --- */}
+      {/*  SIDEBAR MENU */}
       <Box
         sx={{
           width: 225,
-          bgcolor: "#1c7c54", // Màu xanh lá đậm của ảnh 1
+          bgcolor: "#1c7c54",
           color: "white",
           p: 2,
           display: "flex",
@@ -265,7 +268,7 @@ export default function Dashboard() {
         </Button>
       </Box>
 
-      {/* --- PHẦN 3: CONTENT AREA (Vùng đất gộp data -> Templates Gallery) --- */}
+      {/* CONTENT AREA */}
       <Box
         sx={{
           flexGrow: 1,
@@ -274,18 +277,41 @@ export default function Dashboard() {
           ml: "225px",
           bgcolor: "#050505",
           minHeight: "100vh",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* Internal Top Navbar (Lấy ý tưởng từ ảnh 1) */}
+        {/*} 
+        <Box
+          sx={{
+            width: "100%",
+            height: "100vh",
+            position: "absolute",
+            zIndex: 0,
+            overflow: "hidden",
+          }}
+        >
+          <DarkVeil
+            hueShift={45}
+            noiseIntensity={0}
+            scanlineIntensity={0}
+            speed={1.5}
+            scanlineFrequency={4.5}
+            warpAmount={2.4}
+          />
+        </Box>
+        */}
+        {/* Internal Top Navbar  */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            borderRadius: "0 0 12px 12px",
+            borderRadius: "0 0",
             alignItems: "center",
             p: 3,
-            bgcolor: "white",
-            borderBottom: "1px solid #e0e0e0",
+            bgcolor: "#373f47ed", // Kính siêu mờ
+            backdropFilter: "blur(5px)", // Hiệu ứng Glassmorphism
+            border: "1px solid rgba(255, 255, 255, 0.2)",
             position: "fixed",
             zIndex: 1000,
             width: "calc(100% - 225px)",
@@ -293,9 +319,9 @@ export default function Dashboard() {
         >
           <Typography
             variant="h5"
-            fontWeight="bold"
-            color="#102a43"
-            sx={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            fontWeight="900"
+            color="white"
+            sx={{ fontFamily: "'Helvetica', sans-serif" }}
           >
             Templates Gallery
           </Typography>
@@ -309,7 +335,7 @@ export default function Dashboard() {
                 width: 300,
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 10,
-                  bgcolor: "#f0f4f8",
+                  bgcolor: "#def4c6e5",
                   "& fieldset": { border: "none" },
                 },
               }}
@@ -329,8 +355,17 @@ export default function Dashboard() {
           </Box>
         </Box>
 
-        {/* MAIN BODY: GALLERY SECTION (Lấy ý tưởng từ ảnh 2) */}
-        <Box sx={{ p: 4, flexGrow: 1, mt: "80px", minHeight: "100vh" }}>
+        {/* MAIN BODY: GALLERY SECTION */}
+        <Box
+          sx={{
+            p: 4,
+            flexGrow: 1,
+            mt: "80px",
+            minHeight: "100vh",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
           <Paper
             elevation={0}
             sx={{
@@ -345,7 +380,7 @@ export default function Dashboard() {
               <Typography
                 variant="h4"
                 fontWeight="bold"
-                color="#4e598c"
+                color="#52b0c3"
                 sx={{ fontFamily: "'Helvetica', sans-serif", mb: 1 }}
               >
                 Choose Your Template
