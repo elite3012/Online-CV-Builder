@@ -12,4 +12,5 @@ import java.util.List;
 @Repository
 public interface CVRepository extends JpaRepository<CV, Long> {
     List<CV> findByUserId(Long userId);
+    Optional<CV> findByIdAndUserId(Long id, Long userId);
 }
