@@ -153,6 +153,9 @@ export default function HomePage() {
                   color: "#eaf0f6",
                   mb: 2,
                   WebkitTextStroke: "1px #8fb2b9",
+                  fontWeight: "bold",
+                  fontStyle: "italic",
+                  fontFamily: "Helvetica, Arial, sans-serif",
                 }}
               >
                 Build a professional CV <br /> in minutes
@@ -256,11 +259,12 @@ export default function HomePage() {
                           fontSize: "0.65rem",
                           letterSpacing: "0.5px",
                           border: "1px solid rgba(82, 176, 195, 0.2)",
+                          backgroundColor: "#52b0c3",
                         }}
                       />
 
                       <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-                        <Avatar />
+                        <Avatar sx={{ backgroundColor: "#52b0c3" }} />
                         <Box sx={{ flex: 1, mt: 0.5 }}>
                           <Box
                             sx={{
@@ -325,6 +329,7 @@ export default function HomePage() {
                       <Box
                         sx={{
                           height: 8,
+                          bgcolor: "#e4e7eb",
                           borderRadius: 4,
                           mb: 1,
                           width: "90%",
@@ -333,6 +338,7 @@ export default function HomePage() {
                       <Box
                         sx={{
                           height: 8,
+                          bgcolor: "#e4e7eb",
                           borderRadius: 4,
                           mb: 1.5,
                           width: "60%",
@@ -377,6 +383,7 @@ export default function HomePage() {
                           letterSpacing: "0.5px",
                           border: "1px solid rgba(242, 139, 130, 0.2)",
                           boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+                          bgcolor: "#f28b82"
                         }}
                       />
 
@@ -549,6 +556,7 @@ export default function HomePage() {
                           letterSpacing: "0.5px",
                           border: "1px solid rgba(251, 188, 4, 0.2)",
                           boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+                          bgcolor: "#fbbc04",
                         }}
                       />
 
@@ -606,7 +614,7 @@ export default function HomePage() {
                           <Box
                             sx={{
                               height: 8,
-                              bgcolor: "#e4e7eb",
+                              bgcolor: "#fbbc04",
                               borderRadius: 4,
                               mb: 1,
                               width: "100%",
@@ -615,7 +623,7 @@ export default function HomePage() {
                           <Box
                             sx={{
                               height: 8,
-                              bgcolor: "#e4e7eb",
+                              bgcolor: "#fbbc04",
                               borderRadius: 4,
                               width: "85%",
                             }}
