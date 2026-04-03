@@ -2,17 +2,16 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
+import AuthPage from './pages/AuthPage';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Đường dẫn gốc "/" giờ sẽ hiển thị trang HomePage */}
         <Route path="/" element={<HomePage />} />
         
-        {/* Đường dẫn "/login" vẫn giữ nguyên cái form lúc nãy mình làm */}
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/register" element={<AuthPage />} />
       </Routes>
     </BrowserRouter>
   );

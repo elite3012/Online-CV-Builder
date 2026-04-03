@@ -179,6 +179,7 @@ export default function HomePage() {
               <Box sx={{ display: "flex", gap: 2 }}>
                 <Button
                   variant="outlined"
+                  onClick={() => navigate("/register")} // Sự kiện chuyển sang trang Register khi bấm
                   sx={{
                     color: "#eaf0f6",
                     borderColor: "#eaf0f6",
