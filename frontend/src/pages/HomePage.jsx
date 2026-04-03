@@ -1,4 +1,3 @@
-// Home Page
 import {
   Box,
   Typography,
@@ -6,7 +5,6 @@ import {
   Container,
   Grid,
   Link,
-  Paper,
   Avatar,
   Chip,
 } from "@mui/material";
@@ -29,7 +27,6 @@ export default function HomePage() {
         p: 0,
       }}
     >
-      {/* 1. HEADER */}
       <Box
         sx={{
           display: "flex",
@@ -68,10 +65,10 @@ export default function HomePage() {
             underline="none"
             color="text.secondary"
             sx={{
-              fontFamily: "Helvetica, Arial, sans-serif", // Ưu tiên Helvetica, nếu máy không có thì dùng Arial
+              fontFamily: "Helvetica, Arial, sans-serif",
               fontSize: "0.9rem",
               fontWeight: 500,
-              "&:hover": { color: "#102a43" }, // Thêm hiệu ứng đổi màu khi hover cho chuyên nghiệp
+              "&:hover": { color: "#102a43" },
             }}
           >
             Templates
@@ -105,7 +102,6 @@ export default function HomePage() {
         </Box>
       </Box>
 
-      {/* 2. MAIN CONTENT (Phần giữa màn hình) */}
       <Box
         sx={{
           flexGrow: 1,
@@ -113,12 +109,11 @@ export default function HomePage() {
           alignItems: "center",
           py: 4,
           px: 0,
-          position: "relative", // Thêm cái này
-          overflow: "hidden", // Để hiệu ứng không tràn ra ngoài
-          backgroundColor: "#151414", // Màu nền dự phòng
+          position: "relative",
+          overflow: "hidden",
+          backgroundColor: "#151414",
         }}
       >
-        {/* Lớp nền hiệu ứng */}
         <Box
           sx={{
             position: "absolute",
@@ -141,7 +136,6 @@ export default function HomePage() {
             layerOffset={0}
             colorSpeed={1}
             enableMouseInteraction={true}
-            mouseInfluence={0.5}
             zIndex={1}
           />
         </Box>
@@ -152,13 +146,9 @@ export default function HomePage() {
             alignItems="center"
             justifyContent="space-between"
           >
-            {/* Cột trái: Text và Nút bấm */}
             <Grid item xs={12} md={6}>
               <Typography
                 variant="h3"
-                fontWeight="1000"
-                fontFamily="Helvetica, Arial, sans-serif"
-                fontStyle={"italic"}
                 sx={{
                   color: "#eaf0f6",
                   mb: 2,
@@ -180,6 +170,7 @@ export default function HomePage() {
               <Box sx={{ display: "flex", gap: 2 }}>
                 <Button
                   variant="outlined"
+                  onClick={() => navigate("/register")}
                   sx={{
                     color: "#eaf0f6",
                     borderColor: "#eaf0f6",
@@ -192,7 +183,7 @@ export default function HomePage() {
                 </Button>
                 <Button
                   variant="outlined"
-                  onClick={() => navigate("/login")} // Sự kiện chuyển sang trang Login khi bấm
+                  onClick={() => navigate("/login")}
                   sx={{
                     color: "#eaf0f6",
                     borderColor: "#eaf0f6",
@@ -207,7 +198,6 @@ export default function HomePage() {
               </Box>
             </Grid>
 
-            {/* Cột phải:  Card Swap */}
             <Grid
               item
               xs={12}
@@ -229,25 +219,22 @@ export default function HomePage() {
                   delay={3000}
                   pauseOnHover={true}
                 >
-                  {/* THẺ 1: Professional */}
-                  <Card>
-                    <Paper
-                      elevation={0} 
+                  <Card customClass="glass-card">
+                    <Box
                       sx={{
                         width: "100%",
                         height: "100%",
                         p: 3,
                         borderRadius: 2,
+                        bgcolor: "rgba(255, 255, 255, 0.05)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        border: "1px solid rgba(255, 255, 255, 0.3)",
+                        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.1)",
                         position: "relative",
-
-                        bgcolor: "rgba(255, 255, 255, 0.02)", 
-                        backdropFilter: "blur(12px)", 
-                        WebkitBackdropFilter: "blur(12px)", // Dành riêng cho trình duyệt Safari của Apple
-                        border: "1px solid rgba(255, 255, 255, 0.4)", // Viền trắng mờ để mép kính nổi lên
-                        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0)", 
+                        zIndex: 1,
                       }}
                     >
-                      {/* Badge Nâng Cấp: PRO TEMPLATE */}
                       <Chip
                         icon={
                           <AutoAwesomeIcon
@@ -263,21 +250,17 @@ export default function HomePage() {
                           position: "absolute",
                           top: 24,
                           right: -12,
-                          bgcolor: "#52b0c3",
                           backdropFilter: "blur(4px)",
                           color: "#102a43",
                           fontWeight: 800,
                           fontSize: "0.65rem",
                           letterSpacing: "0.5px",
                           border: "1px solid rgba(82, 176, 195, 0.2)",
-                          boxShadow: "0 4px 15px rgba(0, 0, 0, 0)",
                         }}
                       />
 
                       <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-                        <Avatar
-                          sx={{ bgcolor: "#52b0c3", width: 48, height: 48 }}
-                        />
+                        <Avatar />
                         <Box sx={{ flex: 1, mt: 0.5 }}>
                           <Box
                             sx={{
@@ -291,7 +274,6 @@ export default function HomePage() {
                           <Box
                             sx={{
                               height: 8,
-                              bgcolor: "#f9fafa",
                               borderRadius: 4,
                               width: "40%",
                             }}
@@ -301,7 +283,6 @@ export default function HomePage() {
                       <Box
                         sx={{
                           height: 10,
-                          bgcolor: "#52b0c3",
                           borderRadius: 4,
                           mb: 2,
                           width: "30%",
@@ -310,7 +291,6 @@ export default function HomePage() {
                       <Box
                         sx={{
                           height: 8,
-                          bgcolor: "#52b0c3",
                           borderRadius: 4,
                           mb: 1,
                           width: "100%",
@@ -319,7 +299,6 @@ export default function HomePage() {
                       <Box
                         sx={{
                           height: 8,
-                          bgcolor: "#52b0c3",
                           borderRadius: 4,
                           mb: 2,
                           width: "85%",
@@ -346,7 +325,6 @@ export default function HomePage() {
                       <Box
                         sx={{
                           height: 8,
-                          bgcolor: "#52b0c3",
                           borderRadius: 4,
                           mb: 1,
                           width: "90%",
@@ -355,34 +333,29 @@ export default function HomePage() {
                       <Box
                         sx={{
                           height: 8,
-                          bgcolor: "#52b0c3",
                           borderRadius: 4,
                           mb: 1.5,
                           width: "60%",
                         }}
                       />
-                    </Paper>
+                    </Box>
                   </Card>
 
-                  {/* THẺ 2: Creative */}
-                  <Card>
-                    <Paper
-                      elevation={0} 
+                  <Card customClass="glass-card">
+                    <Box
                       sx={{
                         width: "100%",
                         height: "100%",
-                        p: 3,
                         borderRadius: 2,
+                        bgcolor: "rgba(255, 255, 255, 0.05)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        border: "1px solid rgba(255, 255, 255, 0.3)",
+                        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.1)",
                         position: "relative",
-
-                        bgcolor: "rgba(255, 255, 255, 0.02)", 
-                        backdropFilter: "blur(12px)", 
-                        WebkitBackdropFilter: "blur(12px)", // Dành riêng cho trình duyệt Safari của Apple
-                        border: "1px solid rgba(255, 255, 255, 0.4)", // Viền trắng mờ để mép kính nổi lên
-                        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0)", 
+                        zIndex: 1,
                       }}
                     >
-                      {/* Badge Nâng Cấp: FAST BUILDER */}
                       <Chip
                         icon={
                           <BoltIcon
@@ -397,7 +370,6 @@ export default function HomePage() {
                         sx={{
                           position: "absolute",
                           bottom: 24,
-                          bgcolor: "#f28b82",
                           backdropFilter: "blur(4px)",
                           color: "#102a43",
                           fontWeight: 800,
@@ -477,7 +449,6 @@ export default function HomePage() {
                         <Box
                           sx={{
                             height: 12,
-                            bgcolor: "#f28b82",
                             borderRadius: 4,
                             mb: 2,
                             width: "50%",
@@ -486,7 +457,6 @@ export default function HomePage() {
                         <Box
                           sx={{
                             height: 8,
-                            bgcolor: "#f28b82",
                             borderRadius: 4,
                             mb: 1,
                             width: "100%",
@@ -495,7 +465,6 @@ export default function HomePage() {
                         <Box
                           sx={{
                             height: 8,
-                            bgcolor: "#f28b82",
                             borderRadius: 4,
                             mb: 1.5,
                             width: "80%",
@@ -539,28 +508,25 @@ export default function HomePage() {
                           }}
                         />
                       </Box>
-                    </Paper>
+                    </Box>
                   </Card>
 
-                  {/* THẺ 3: ATS */}
-                  <Card>
-                    <Paper
-                      elevation={0} 
+                  <Card customClass="glass-card">
+                    <Box
                       sx={{
                         width: "100%",
                         height: "100%",
                         p: 3,
                         borderRadius: 2,
+                        bgcolor: "rgba(255, 255, 255, 0.05)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        border: "1px solid rgba(255, 255, 255, 0.3)",
+                        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.1)",
                         position: "relative",
-
-                        bgcolor: "rgba(255, 255, 255, 0.02)", 
-                        backdropFilter: "blur(12px)", 
-                        WebkitBackdropFilter: "blur(12px)", // Dành riêng cho trình duyệt Safari của Apple
-                        border: "1px solid rgba(255, 255, 255, 0.4)", // Viền trắng mờ để mép kính nổi lên
-                        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0)", 
+                        zIndex: 1,
                       }}
                     >
-                      {/* Badge Nâng Cấp: ATS OPTIMIZED */}
                       <Chip
                         icon={
                           <FactCheckIcon
@@ -576,7 +542,6 @@ export default function HomePage() {
                           position: "absolute",
                           top: 24,
                           left: -12,
-                          bgcolor: "#fbbc04",
                           backdropFilter: "blur(4px)",
                           color: "#102a43",
                           fontWeight: 800,
@@ -633,7 +598,6 @@ export default function HomePage() {
                           <Box
                             sx={{
                               height: 10,
-                              bgcolor: "#fbbc04",
                               borderRadius: 4,
                               mb: 1,
                               width: "40%",
@@ -672,7 +636,6 @@ export default function HomePage() {
                           <Box
                             sx={{
                               height: 10,
-                              bgcolor: "#fbbc04",
                               borderRadius: 4,
                               mb: 1,
                               width: "50%",
@@ -697,7 +660,7 @@ export default function HomePage() {
                           />
                         </Box>
                       </Box>
-                    </Paper>
+                    </Box>
                   </Card>
                 </CardSwap>
               </Box>
@@ -706,16 +669,15 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* 3. FOOTER */}
       <Box
         component="footer"
         sx={{
-          p: 2, // Padding vừa phải để tạo không gian
+          p: 2,
           display: "flex",
           justifyContent: "flex-end",
           textAlign: "center",
           borderTop: "0px solid #e0e0e0",
-          mt: "auto", // QUAN TRỌNG: Đẩy footer xuống đáy nếu nội dung bên trên ngắn
+          mt: "auto",
           background: "linear-gradient(to bottom, #151414, #174851)",
         }}
       >
