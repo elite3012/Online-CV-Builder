@@ -19,7 +19,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
 
-export default function Sidebar() {
+export default function Sidebar({ currentView, setCurrentView }) {
   return (
     <Box
       sx={{
@@ -72,7 +72,8 @@ export default function Sidebar() {
         ].map((item, index) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
-              selected={index === 0}
+              selected={currentView === item.text}
+              onClick={() => setCurrentView(item.text)}
               sx={{
                 "&.Mui-selected": {
                   bgcolor: "rgba(255,255,255,0.15)",
