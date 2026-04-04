@@ -54,4 +54,53 @@
       "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
     tags: ["Elegant", "Sophisticated"],
   },
+   {
+    id: 2,
+    name: "Classic",
+    desc: "Traditional two-column layout with a sidebar for key information.",
+    type: "Business",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
+    tags: ["Classic", "Corporate"],
+  }, {
+    id: 2,
+    name: "Classic",
+    desc: "Traditional two-column layout with a sidebar for key information.",
+    type: "Business",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
+    tags: ["Classic", "Corporate"],
+  }, {
+    id: 2,
+    name: "Classic",
+    desc: "Traditional two-column layout with a sidebar for key information.",
+    type: "Business",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
+    tags: ["Classic", "Corporate"],
+  }, {
+    id: 2,
+    name: "Classic",
+    desc: "Traditional two-column layout with a sidebar for key information.",
+    type: "Business",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
+    tags: ["Classic", "Corporate"],
+  }, {
+    id: 2,
+    name: "Classic",
+    desc: "Traditional two-column layout with a sidebar for key information.",
+    type: "Business",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
+    tags: ["Classic", "Corporate"],
+  }, {
+    id: 2,
+    name: "Classic",
+    desc: "Traditional two-column layout with a sidebar for key information.",
+    type: "Business",
+    image:
+      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
+    tags: ["Classic", "Corporate"],
+  },
 ];
