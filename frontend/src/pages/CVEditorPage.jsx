@@ -83,7 +83,6 @@ export default function CVEditorPage() {
       <div style={styles.shell}>
         <div style={styles.header}>
           <h1 style={styles.title}>Edit Your CV</h1>
-       
         </div>
 
         <section style={styles.card}>
@@ -167,17 +166,6 @@ const styles = {
     color: 'white',
     textAlign: 'center',
   },
-  badge: {
-    display: 'inline-block',
-    margin: '0 0 10px 0',
-    padding: '6px 12px',
-    borderRadius: '999px',
-    background: 'rgba(255,255,255,0.16)',
-    border: '1px solid rgba(255,255,255,0.25)',
-    fontSize: '14px',
-    fontWeight: 600,
-    letterSpacing: '0.3px',
-  },
   title: {
     margin: 0,
     fontSize: 'clamp(2.4rem, 5vw, 4.2rem)',
@@ -193,12 +181,6 @@ const styles = {
     padding: '32px',
     boxShadow: '0 20px 60px rgba(15,23,42,0.25)',
     border: '1px solid rgba(255,255,255,0.55)',
-  },
-  sectionTitle: {
-    margin: '0 0 18px 0',
-    fontSize: '1.3rem',
-    fontWeight: 700,
-    color: '#0f172a',
   },
   field: {
     marginBottom: '18px',
