@@ -1,106 +1,76 @@
-// MOCK DATA CHO CÁC MẪU CV
- export const templates = [
+// src/data/templates.js
+
+export const templates = [
   {
     id: 1,
     name: "Modern",
-    desc: "Clean design with a colored header, perfect for tech professionals.",
+    desc: "A contemporary layout featuring dark accents and visual skill bars, ideal for digital specialists.",
     type: "Tech",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
-    tags: ["Modern", "Tech"],
+    image: "https://res.cloudinary.com/dxos3trye/image/upload/v1775319598/2533e341-0cab-48ee-8947-e6bced8c98b7_btzypw.jpg",
+    tags: ["Modern"],
   },
   {
     id: 2,
-    name: "Classic",
-    desc: "Traditional two-column layout with a sidebar for key information.",
+    name: "Minimal",
+    desc: "An ultra-clean, text-focused design that prioritizes content clarity for corporate professionals.",
     type: "Business",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
-    tags: ["Classic", "Corporate"],
+    image: "https://res.cloudinary.com/dxos3trye/image/upload/v1775319598/a740eb56-4f01-4fb0-aeb8-470e80e49150_wxcpyr.jpg",
+    tags: ["Minimal"],
   },
   {
     id: 3,
-    name: "Minimal",
-    desc: "Simple and clean design focusing purely on content clarity.",
-    type: "Creative",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
-    tags: ["Minimal", "Simple"],
+    name: "Classic",
+    desc: "A traditional and reliable layout with warm tones, perfect for finance and administrative roles.",
+    type: "Finance",
+    image: "https://res.cloudinary.com/dxos3trye/image/upload/v1775321881/24712131-2cf1-487b-82c7-b3983508b491_almalh.jpg",
+    tags: ["Classic"],
   },
   {
     id: 4,
-    name: "Professional",
-    desc: "Business-focused design with a highly balanced layout.",
-    type: "Business",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
-    tags: ["Professional", "Business"],
+    name: "Creative",
+    desc: "A vibrant and unique multi-column layout designed to make a strong visual impact in creative fields.",
+    type: "Design",
+    image: "https://res.cloudinary.com/dxos3trye/image/upload/v1775319597/a7e4c171-f7cb-4580-abdd-82590cdbcc4d_d5pvhx.jpg",
+    tags: ["Creative"],
   },
   {
     id: 5,
-    name: "Creative",
-    desc: "Bold accent colors and unique typography for creative roles.",
-    type: "Creative",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
-    tags: ["Creative", "Design"],
+    name: "Professional",
+    desc: "A standard international format optimized for readability and ATS compatibility in global firms.",
+    type: "Corporate",
+    image: "https://res.cloudinary.com/dxos3trye/image/upload/v1775319597/735d72e2-279b-4472-a50c-13914f3a9166_m04vxr.jpg",
+    tags: ["Professional"],
   },
   {
     id: 6,
     name: "Elegant",
-    desc: "Sophisticated centered design with highly refined typography.",
-    type: "Creative",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768247/peppa_ywb0wg.png",
-    tags: ["Elegant", "Sophisticated"],
+    desc: "Sophisticated design with polished typography and professional spacing for executive positions.",
+    type: "Executive",
+    image: "https://res.cloudinary.com/dxos3trye/image/upload/v1775322798/ce12dcac-9c14-4386-bb47-94a31f30836d_u1cmoy.jpg",
+    tags: ["Elegant"],
   },
-   {
-    id: 2,
-    name: "Classic",
-    desc: "Traditional two-column layout with a sidebar for key information.",
-    type: "Business",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
-    tags: ["Classic", "Corporate"],
-  }, {
-    id: 2,
-    name: "Classic",
-    desc: "Traditional two-column layout with a sidebar for key information.",
-    type: "Business",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
-    tags: ["Classic", "Corporate"],
-  }, {
-    id: 2,
-    name: "Classic",
-    desc: "Traditional two-column layout with a sidebar for key information.",
-    type: "Business",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
-    tags: ["Classic", "Corporate"],
-  }, {
-    id: 2,
-    name: "Classic",
-    desc: "Traditional two-column layout with a sidebar for key information.",
-    type: "Business",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
-    tags: ["Classic", "Corporate"],
-  }, {
-    id: 2,
-    name: "Classic",
-    desc: "Traditional two-column layout with a sidebar for key information.",
-    type: "Business",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
-    tags: ["Classic", "Corporate"],
-  }, {
-    id: 2,
-    name: "Classic",
-    desc: "Traditional two-column layout with a sidebar for key information.",
-    type: "Business",
-    image:
-      "https://res.cloudinary.com/drmcnkjkn/image/upload/v1764768259/shaunsheep_ncnfcc.png",
-    tags: ["Classic", "Corporate"],
+  {
+    id: 7,
+    name: "Classic 2",
+    desc: "A balanced, expert-level format with clear sections for leadership and core academic competencies.",
+    type: "Academic",
+    image: "https://res.cloudinary.com/dxos3trye/image/upload/v1775323943/2c9d5300-6bc2-4865-a5d1-894ec440f130_nuuwlt.jpg",
+    tags: ["Classic"], 
+  },
+  {
+    id: 8,
+    name: "Professional 2",
+    desc: "A sophisticated and polished layout that combines style with a professional corporate feel.",
+    type: "Corporate",
+    image: "https://res.cloudinary.com/dxos3trye/image/upload/v1775323943/5c963bea-b350-4100-8c3c-183353cc010a_sewlwb.jpg",
+    tags: ["Professional"], 
+  },
+  {
+    id: 9,
+    name: "Modern 2",
+    desc: "A highly visual and contemporary layout featuring dynamic sections, ideal for tech startups.",
+    type: "Tech",
+    image: "https://res.cloudinary.com/dxos3trye/image/upload/v1775319598/2533e341-0cab-48ee-8947-e6bced8c98b7_btzypw.jpg",
+    tags: ["Modern"], 
   },
 ];
