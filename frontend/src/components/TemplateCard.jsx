@@ -6,14 +6,14 @@ import BorderGlow from "./reactbits/BorderGlow";
 import { AnimatePresence, motion } from "motion/react";
 
 // Import Giao diện và Data
-import CVRenderer from "./template/CVRenderer"; // Chú ý đường dẫn ./template
+import CVRenderer from "./template/CVRenderer"; 
 import { mockResumesData } from "../data/mockResumes";
 
-export const TemplateCard = ({ item }) => {
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+export const TemplateCard = ({ item, onPreview, onUse }) => { 
 
   // Lấy data tương ứng với id của template
   const resumeData = mockResumesData[item.id];
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   return (
     <>
@@ -34,7 +34,7 @@ export const TemplateCard = ({ item }) => {
       >
         <Box
           sx={{
-            width: 250, // Cố định chiều rộng thẻ
+            width: 250,
             display: "flex",
             flexDirection: "column",
             flexGrow: 1,
@@ -42,14 +42,12 @@ export const TemplateCard = ({ item }) => {
             borderRadius: "12px",
           }}
         >
-          {/* ============================================== */}
-          {/* KHU VỰC LIVE THUMBNAIL (THAY THẾ THẺ <img> CŨ) */}
-          {/* ============================================== */}
+          {/* KHU VỰC LIVE THUMBNAIL  */}
           <Box
             sx={{
               width: "100%",
-              height: 220, // Chiều cao khu vực hiển thị thu nhỏ
-              overflow: "hidden", // Cắt bỏ phần CV bị dài quá
+              height: 220, 
+              overflow: "hidden", 
               position: "relative",
               borderRadius: "12px 12px 0 0",
               zIndex: 0,
@@ -57,11 +55,10 @@ export const TemplateCard = ({ item }) => {
               borderBottom: "1px solid #e0e0e0"
             }}
           >
-            {/* Box bọc bên trong dùng để chứa CV A4 và thu nhỏ nó lại */}
             <Box
               sx={{
-                width: 794, // Chiều rộng chuẩn A4 của CV
-                height: 1122, // Chiều cao chuẩn A4
+                width: 794, 
+                height: 1122, 
                 transform: "scale(0.315)", // 250px / 794px ≈ 0.315 (Thu nhỏ vừa y thẻ)
                 transformOrigin: "top left", // Bắt đầu thu nhỏ từ góc trái trên cùng
                 pointerEvents: "none", // Ngăn chặn việc hover/click vào CV lúc nó đang thu nhỏ
@@ -99,6 +96,7 @@ export const TemplateCard = ({ item }) => {
               <Button
                 variant="contained"
                 size="small"
+                onClick={onUse}
                 sx={{ flex: 1, textTransform: "none", bgcolor: "#52b0c3", color: "white", boxShadow: "none", "&:hover": { bgcolor: "#3d94a7", boxShadow: "none" } }}
               >
                 Use
@@ -108,9 +106,7 @@ export const TemplateCard = ({ item }) => {
         </Box>
       </BorderGlow>
 
-      {/* ============================================== */}
       {/* PHẦN POPUP PREVIEW (HIỆN TOÀN BỘ CV KHI BẤM)   */}
-      {/* ============================================== */}
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>
@@ -133,7 +129,6 @@ export const TemplateCard = ({ item }) => {
                     borderRadius: "12px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", cursor: "default", backgroundColor: "white",
                   }}
                 >
-                  {/* TRONG NÀY GỌI LẠI CVRENDERER NHƯNG KHÔNG CẦN THU NHỎ */}
                   <CVRenderer templateName={item.name} data={resumeData} />
                 </motion.div>
               </motion.div>

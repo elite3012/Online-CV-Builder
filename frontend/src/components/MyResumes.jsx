@@ -5,10 +5,9 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 
-import { myResumes } from "../data/myResumes"; // Import data giả
+import { myResumes } from "../data/myResumes"; 
 
 export default function MyResumes() {
-  // Biến kiểm tra xem user đã có CV nào chưa (đúng/sai)
   const hasResumes = myResumes.length > 0;
 
   return (
@@ -114,7 +113,6 @@ export default function MyResumes() {
         /* ========================================= */
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
-            {/* Đây chính là đoạn code của bạn được Cú bé dán vào và bọc thêm maxWidth để nó không bị kéo giãn bẹp dí */}
             <Paper 
               sx={{ 
                 p: 5, 
@@ -123,7 +121,7 @@ export default function MyResumes() {
                 border: "1px dashed rgba(255, 255, 255, 0.2)", 
                 borderRadius: 3,
                 width: "100%",
-                maxWidth: 500 // Canh chiều rộng cho đẹp
+                maxWidth: 500 
               }}
             >
               <Typography color="white" variant="h6" sx={{ mb: 1 }}>
