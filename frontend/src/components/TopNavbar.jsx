@@ -1,6 +1,4 @@
-{
-  /* Internal Top Navbar  */
-}
+// src/components/TopNavbar.jsx
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
@@ -10,20 +8,25 @@ import {
   Avatar,
 } from "@mui/material";
 
-export default function TopNavbar() {
+export default function TopNavbar({ title }) {
+  
+  const searchPlaceholder = title === "Overview" 
+    ? "Search templates..." 
+    : `Search in ${title}...`;
+
   return (
     <Box
       sx={{
         display: "flex",
         justifyContent: "space-between",
-        borderRadius: "0 0",
         alignItems: "center",
         p: 3,
-        bgcolor: "#183c54e7", // Kính siêu mờ
-        backdropFilter: "blur(5px)", // Hiệu ứng Glassmorphism
-        border: "1px solid rgba(255, 255, 255, 0.2)",
+        bgcolor: "#183c54e7", 
+        backdropFilter: "blur(100px)", 
+        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
         position: "fixed",
         zIndex: 1000,
+        // Chiều rộng trừ đi Sidebar (225px)
         width: "calc(100% - 225px)",
       }}
     >
@@ -31,15 +34,19 @@ export default function TopNavbar() {
         variant="h5"
         fontWeight="900"
         color="white"
-        sx={{ fontFamily: "'Helvetica', sans-serif" }}
+        sx={{ 
+          fontFamily: "'Helvetica', sans-serif",
+          textTransform: "capitalize" 
+        }}
       >
-        Templates Gallery
+        {/* HIỂN THỊ TITLE ĐỘNG */}
+        {title === "Overview" ? "Templates Gallery" : title}
       </Typography>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
         <TextField
           size="small"
-          placeholder="Search templates..."
+          placeholder={searchPlaceholder}
           variant="outlined"
           sx={{
             width: 300,
@@ -57,8 +64,16 @@ export default function TopNavbar() {
             ),
           }}
         />
-        <Avatar sx={{ bgcolor: "#52b0c3", width: 40, height: 40 }}>
-          quý10z
+        <Avatar 
+          sx={{ 
+            bgcolor: "#52b0c3", 
+            width: 40, 
+            height: 40,
+            fontSize: "0.9rem",
+            fontWeight: "bold"
+          }}
+        >
+          QUY
         </Avatar>
       </Box>
     </Box>
