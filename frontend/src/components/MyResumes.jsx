@@ -48,7 +48,7 @@ export default function MyResumes({ setCurrentView }) {
       {/* HEADER */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Box>
-          <Typography variant="h4" fontWeight="bold" color="white" sx={{ fontFamily: "'Helvetica', sans-serif", mb: 0.5 }}>My Resumes</Typography>
+          <Typography variant="h4" fontWeight="bold" color="white" sx={{ fontFamily: "'Helvetica', sans-serif", mb: 0.5 }}>Your Collection</Typography>
           <Typography variant="body1" color="rgba(255,255,255,0.7)">Manage and edit your created resumes here.</Typography>
         </Box>
         {hasResumes && (
