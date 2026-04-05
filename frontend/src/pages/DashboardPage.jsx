@@ -11,6 +11,7 @@ import TemplateGallery from "../components/TemplateGallery";
 import MyResumes from "../components/MyResumes";
 import Editor from "../components/Editor";
 import ATSChecker from "../components/ATSChecker";
+import Settings from "../components/Settings";
 
 export default function Dashboard() {
   const location = useLocation(); // Khởi tạo location để bắt tín hiệu
@@ -34,7 +35,6 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8f9fb", display: "flex" }}>
-      
       {/* Chỉ hiện Sidebar nếu không phải là Editor */}
       {currentView !== "Editor" && (
         <Sidebar currentView={currentView} setCurrentView={setCurrentView} />
@@ -57,12 +57,15 @@ export default function Dashboard() {
         }}
       >
         {currentView !== "Editor" && <TopNavbar title={currentView} />}
-        
+
         <AnimatePresence mode="wait">
           {currentView === "Overview" && (
             <motion.div
               key="overview-view"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
             >
               <TemplateGallery onUseTemplate={handleUseTemplate} />
@@ -72,7 +75,10 @@ export default function Dashboard() {
           {currentView === "My Resumes" && (
             <motion.div
               key="my-resumes-view"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
             >
               <MyResumes setCurrentView={setCurrentView} />
@@ -82,8 +88,16 @@ export default function Dashboard() {
           {currentView === "Editor" && (
             <motion.div
               key="editor-view"
-              initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
-              style={{ flexGrow: 1, display: "flex", flexDirection: "column", height: "100vh" }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{
+                flexGrow: 1,
+                display: "flex",
+                flexDirection: "column",
+                height: "100vh",
+              }}
             >
               <Editor
                 template={selectedTemplate}
@@ -94,13 +108,26 @@ export default function Dashboard() {
           {currentView === "ATS Checker" && (
             <motion.div
               key="ats-checker-view"
-              initial={{ opacity: 0, x: 20 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              exit={{ opacity: 0, x: -20 }} 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
             >
               <ATSChecker />
+            </motion.div>
+          )}
+
+          {currentView === "Settings" && (
+            <motion.div
+              key="settings-view"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
+            >
+              <Settings />
             </motion.div>
           )}
         </AnimatePresence>
