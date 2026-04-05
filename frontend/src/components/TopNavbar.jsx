@@ -19,7 +19,7 @@ export default function TopNavbar() {
         borderRadius: "0 0",
         alignItems: "center",
         p: 3,
-        bgcolor: "#373f47ed", // Kính siêu mờ
+        bgcolor: "#183c54e7", // Kính siêu mờ
         backdropFilter: "blur(5px)", // Hiệu ứng Glassmorphism
         border: "1px solid rgba(255, 255, 255, 0.2)",
         position: "fixed",
