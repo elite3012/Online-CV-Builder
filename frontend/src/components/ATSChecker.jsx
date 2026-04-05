@@ -59,7 +59,7 @@ export default function ATSChecker() {
   return (
     <Box sx={{ p: 4, mt: "80px", color: "white", minHeight: "100vh" }}>
       <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
-        ATS Resume Checker
+        AI Resume Checker
       </Typography>
       <Typography
         variant="body1"
