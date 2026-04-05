@@ -1,6 +1,17 @@
 package com.cvbuilder.controller;
 
-import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.cvbuilder.model.Template;
+import com.cvbuilder.service.TemplateService;
 
 /**
  * Template Controller - Handles CV template operations (UC5A, US7)
@@ -11,6 +22,16 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "*")
 public class TemplateController {
 
-    // GET /api/template - Get all available templates
-    // GET /api/template/{id} - Get specific template details
+    @Autowired
+    private TemplateService templateService;
+
+    @GetMapping()
+    public List<Template> getAllTemplates() {
+        return templateService.getAllTemplates();
+    }
+
+    @GetMapping("/{id}")
+    public Optional<Template> getTemplateById(@PathVariable Long id) {
+        return templateService.getTemplateById(id);
+    }
 }
