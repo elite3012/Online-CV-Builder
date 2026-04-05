@@ -1,5 +1,6 @@
 // src/components/Editor.jsx
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom"; // Import hook lấy data và chuyển trang
 import { createPortal } from "react-dom";
 import {
   Box, Typography, Button, Paper, TextField, Divider, IconButton,
@@ -19,14 +20,24 @@ const sections = [
   "Personal Info", "Summary", "Education", "Experience", "Skills", "Projects", "Certificates",
 ];
 
-export default function Editor({ template, onBack }) {
+export default function Editor({ template: propTemplate, onBack: propOnBack }) {
+  // 1. ĐÓN DỮ LIỆU TỪ TRANG "MY RESUMES" TRUYỀN SANG
+  const location = useLocation();
+  const navigate = useNavigate();
+  const passedResume = location.state?.resumeToEdit; // Lấy cục data cv đã gửi
+
   const [activeSection, setActiveSection] = useState("Personal Info");
-  const [cvTitle, setCvTitle] = useState("ExampleCV1");
+  
+  // 2. KHÔI PHỤC TÊN CV VÀ TEMPLATE
+  const [cvTitle, setCvTitle] = useState(passedResume?.title || "Untitled CV");
+  const currentTemplate = passedResume ? { name: passedResume.templateName } : propTemplate;
+
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  const [formData, setFormData] = useState({
+  // 3. KHÔI PHỤC TOÀN BỘ FORM DATA
+  const defaultFormData = {
     personalInfo: { fullName: "", jobTitle: "", email: "", phone: "", location: "", linkedin: "", website: "" },
     summary: "",
     education: [{ school: "", degree: "", startDate: "", endDate: "", description: "" }],
@@ -34,7 +45,15 @@ export default function Editor({ template, onBack }) {
     skills: "",
     projects: [{ name: "", role: "", link: "", description: "" }],
     certificates: [{ name: "", organization: "", date: "" }],
-  });
+  };
+  
+  const [formData, setFormData] = useState(passedResume?.formData || defaultFormData);
+
+  // Xử lý nút quay lại
+  const handleBack = () => {
+    if (propOnBack) propOnBack();
+    else navigate(-1); // Quay lại trang trước đó (My Resumes)
+  };
 
   useEffect(() => {
     if (saveStatus === "Unsaved") {
@@ -88,7 +107,6 @@ export default function Editor({ template, onBack }) {
   const previewData = {
     name: formData.personalInfo.fullName || "Your Name",
     title: formData.personalInfo.jobTitle || "Your Title",
-    avatar: "https://i.pravatar.cc/150?img=11", 
     contact: {
       email: formData.personalInfo.email || "email@example.com",
       phone: formData.personalInfo.phone || "",
@@ -107,7 +125,6 @@ export default function Editor({ template, onBack }) {
     
     skills: formData.skills ? formData.skills.split(",").map((s) => s.trim()) : [],
 
-    //  EDUCATION
     education: formData.education.filter((e) => e.school).map((edu) => ({
       school: edu.school,
       degree: edu.degree,
@@ -115,7 +132,6 @@ export default function Editor({ template, onBack }) {
       desc: edu.description,
     })),
 
-    //  PROJECTS
     projects: formData.projects.filter((p) => p.name).map((proj) => ({
       name: proj.name,
       role: proj.role,
@@ -123,7 +139,6 @@ export default function Editor({ template, onBack }) {
       desc: proj.description,
     })),
 
-    //  CERTIFICATES
     certificates: formData.certificates.filter((c) => c.name).map((cert) => ({
       name: cert.name,
       organization: cert.organization,
@@ -140,7 +155,7 @@ export default function Editor({ template, onBack }) {
       {/* 1. TOP TOOLBAR */}
       <Paper elevation={1} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 3, py: 1.5, zIndex: 10, borderRadius: 0 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton onClick={onBack} size="small" sx={{ border: "1px solid #e0e0e0", borderRadius: 1 }}><ArrowBackIosNewIcon fontSize="small" /></IconButton>
+          <IconButton onClick={handleBack} size="small" sx={{ border: "1px solid #e0e0e0", borderRadius: 1 }}><ArrowBackIosNewIcon fontSize="small" /></IconButton>
           {isEditingTitle ? (
             <TextField
               size="small" value={cvTitle} autoFocus
@@ -156,7 +171,7 @@ export default function Editor({ template, onBack }) {
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography variant="body2" color="text.secondary">Template: <b>{template?.name || "Error"}</b></Typography>
+          <Typography variant="body2" color="text.secondary">Template: <b>{currentTemplate?.name || "Unknown"}</b></Typography>
           <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
           <Typography variant="body2" color={saveStatus === "Saved" ? "success.main" : "warning.main"} sx={{ display: "flex", alignItems: "center", gap: 0.5, width: 95, whiteSpace: "nowrap" }}>
             {saveStatus === "Saved" ? <CheckCircleIcon fontSize="small" /> : <ErrorIcon fontSize="small" />} {saveStatus}
@@ -224,11 +239,9 @@ export default function Editor({ template, onBack }) {
                     <FormHeader title={`Education ${index + 1}`} />
                     <IconButton onClick={() => removeArrayItem("education", index)} sx={{ color: "#f44336", bgcolor: "rgba(244, 67, 54, 0.1)" }}><DeleteOutlineIcon /></IconButton>
                   </Box>
-                  {/* CSS GRID: 3 Cột */}
                   <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 3 }}>
                     <TextField size="small" label="School *" value={edu.school} onChange={(e) => handleArrayChange("education", index, "school", e.target.value)} />
                     <TextField size="small" label="Degree *" value={edu.degree} onChange={(e) => handleArrayChange("education", index, "degree", e.target.value)} />
-
                     <TextField multiline rows={4} size="small" label="Description" value={edu.description} onChange={(e) => handleArrayChange("education", index, "description", e.target.value)} sx={{ gridRow: { sm: "span 2" } }} />
                     <TextField size="small" label="Start Date" value={edu.startDate} onChange={(e) => handleArrayChange("education", index, "startDate", e.target.value)} />
                     <TextField size="small" label="End Date" value={edu.endDate} onChange={(e) => handleArrayChange("education", index, "endDate", e.target.value)} />
@@ -251,7 +264,6 @@ export default function Editor({ template, onBack }) {
                   <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 3 }}>
                     <TextField size="small" label="Company *" value={exp.company} onChange={(e) => handleArrayChange("experience", index, "company", e.target.value)} />
                     <TextField size="small" label="Job Title *" value={exp.role} onChange={(e) => handleArrayChange("experience", index, "role", e.target.value)} />
-
                     <TextField multiline rows={4} size="small" label="Description" value={exp.description} onChange={(e) => handleArrayChange("experience", index, "description", e.target.value)} sx={{ gridRow: { sm: "span 2" } }} />
                     <TextField size="small" label="Start Date" value={exp.startDate} onChange={(e) => handleArrayChange("experience", index, "startDate", e.target.value)} />
                     <TextField size="small" label="End Date" value={exp.endDate} onChange={(e) => handleArrayChange("experience", index, "endDate", e.target.value)} />
@@ -279,7 +291,6 @@ export default function Editor({ template, onBack }) {
                     <FormHeader title={`Project ${index + 1}`} />
                     <IconButton onClick={() => removeArrayItem("projects", index)} sx={{ color: "#f44336", bgcolor: "rgba(244, 67, 54, 0.1)" }}><DeleteOutlineIcon /></IconButton>
                   </Box>
-                  {/* CSS GRID: 3 Cột */}
                   <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 3 }}>
                     <TextField size="small" label="Project Name *" value={proj.name} onChange={(e) => handleArrayChange("projects", index, "name", e.target.value)} />
                     <TextField size="small" label="Your Role" value={proj.role} onChange={(e) => handleArrayChange("projects", index, "role", e.target.value)} />
@@ -332,7 +343,8 @@ export default function Editor({ template, onBack }) {
                 initial={{ scale: 0.8, y: 50 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, y: 50 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 onClick={(e) => e.stopPropagation()} style={{ cursor: "default", marginBottom: "40px", backgroundColor: "white", borderRadius: "8px" }}
               >
-                <CVRenderer templateName={template?.name} data={previewData} />
+                {/* TRUYỀN TEMPLATE MỚI NHẤT VÀO ĐÂY NÈ */}
+                <CVRenderer templateName={currentTemplate?.name || "Modern"} data={previewData} />
               </motion.div>
             </motion.div>
           )}

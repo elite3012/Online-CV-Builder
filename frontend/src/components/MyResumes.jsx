@@ -1,15 +1,80 @@
 // src/components/MyResumes.jsx
-import { Box, Typography, Button, Grid, Paper, IconButton } from "@mui/material";
-import { motion } from "motion/react";
-import EditIcon from "@mui/icons-material/Edit";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
+import { Box, Typography, Button, Grid, Paper, IconButton, Chip } from "@mui/material";
+import { AnimatePresence, motion } from "motion/react";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 
+import BorderGlow from "./reactbits/BorderGlow";
+import CVRenderer from "./template/CVRenderer"; 
 import { myResumes } from "../data/myResumes"; 
 
-export default function MyResumes() {
-  const hasResumes = myResumes.length > 0;
+// Helper function để chuyển đổi formData sang định dạng cho CVRenderer
+const getPreviewData = (formData) => ({
+  name: formData.personalInfo?.fullName,
+  title: formData.personalInfo?.jobTitle,
+  contact: { 
+    email: formData.personalInfo?.email, 
+    phone: formData.personalInfo?.phone, 
+    address: formData.personalInfo?.location, 
+    linkedin: formData.personalInfo?.linkedin, 
+    website: formData.personalInfo?.website 
+  },
+  summary: formData.summary,
+  experience: formData.experience?.filter(e => e.company).map(exp => ({ 
+    company: exp.company, 
+    role: exp.role, 
+    duration: `${exp.startDate}${exp.startDate && exp.endDate ? ' - ' : ''}${exp.endDate}`, 
+    desc: exp.description 
+  })),
+  skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : [],
+  education: formData.education?.filter(e => e.school).map(edu => ({ 
+    school: edu.school, 
+    degree: edu.degree, 
+    duration: `${edu.startDate}${edu.startDate && edu.endDate ? ' - ' : ''}${edu.endDate}`, 
+    desc: edu.description 
+  })),
+  projects: formData.projects?.filter(p => p.name).map(proj => ({ 
+    name: proj.name, 
+    role: proj.role, 
+    link: proj.link, 
+    desc: proj.description 
+  })),
+  certificates: formData.certificates?.filter(c => c.name).map(cert => ({ 
+    name: cert.name, 
+    organization: cert.organization, 
+    date: cert.date 
+  })),
+});
 
+export default function MyResumes({ setCurrentView }) {
+  const [resumeList, setResumeList] = useState(myResumes);
+  const [previewOpenId, setPreviewOpenId] = useState(null);
+  const navigate = useNavigate();
+  
+  const hasResumes = resumeList.length > 0;
+
+  const handleDelete = (idToDelete) => {
+    if (window.confirm("Are you sure you want to delete this resume?")) {
+      setResumeList(resumeList.filter((cv) => cv.id !== idToDelete));
+    }
+  };
+
+  const handleEdit = (cv) => {
+    navigate('/editor', { state: { resumeToEdit: cv } });
+  };
+
+  const handleCreateNew = () => {
+    if (setCurrentView) {
+      setCurrentView('Overview'); 
+    } else {
+      navigate('/dashboard'); // just in case
+    }
+  };
+
+ 
   return (
     <Box sx={{ p: 4, flexGrow: 1, mt: "80px", minHeight: "100vh", position: "relative", zIndex: 1 }}>
       {/* HEADER */}
@@ -23,9 +88,13 @@ export default function MyResumes() {
           </Typography>
         </Box>
         
-        {/* Nút Tạo mới ở góc phải trên cùng (Chỉ hiện khi ĐÃ CÓ CV) */}
         {hasResumes && (
-          <Button variant="contained" startIcon={<AddIcon />} sx={{ bgcolor: "#52b0c3", textTransform: "none", "&:hover": { bgcolor: "#3d94a7" } }}>
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />} 
+            onClick={handleCreateNew}
+            sx={{ bgcolor: "#52b0c3", textTransform: "none", "&:hover": { bgcolor: "#3d94a7" } }}
+          >
             Create New
           </Button>
         )}
@@ -33,110 +102,123 @@ export default function MyResumes() {
 
       {/* RẼ NHÁNH HIỂN THỊ */}
       {hasResumes ? (
-        /* ========================================= */
-        /* TRƯỜNG HỢP 1: CÓ CV (Hiện dạng Grid)       */
-        /* ========================================= */
         <Grid container spacing={4}>
-          {myResumes.map((cv, index) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={cv.id}>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}>
-                <Paper
-                  sx={{
-                    position: "relative", borderRadius: 3, overflow: "hidden", bgcolor: "white", transition: "0.3s",
-                    "&:hover": { transform: "translateY(-5px)", boxShadow: "0 10px 30px rgba(82, 176, 195, 0.2)", "& .overlay": { opacity: 1 } },
-                  }}
-                >
-                  {/* Ảnh cover của CV */}
-                  <Box component="img" src={cv.image} alt={cv.title} sx={{ width: "100%", height: 200, objectFit: "cover" }} />
+          {resumeList.map((cv, index) => {
+            // Kiểm tra an toàn xem cv.formData có tồn tại không trước khi render
+            const previewData = cv.formData ? getPreviewData(cv.formData) : {};
 
-                  {/* Thông tin CV */}
-                  <Box sx={{ p: 2 }}>
-                    <Typography variant="subtitle1" fontWeight="bold" color="#102a43" noWrap>
-                      {cv.title}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Template: {cv.templateName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
-                      Last edited: {cv.lastEdited}
-                    </Typography>
-                  </Box>
-
-                  {/* Overlay hiện ra khi Hover */}
-                  <Box
-                    className="overlay"
-                    sx={{
-                      position: "absolute", top: 0, left: 0, width: "100%", height: 200,
-                      bgcolor: "rgba(16, 42, 67, 0.6)", backdropFilter: "blur(2px)",
-                      display: "flex", justifyContent: "center", alignItems: "center", gap: 2,
-                      opacity: 0, transition: "opacity 0.3s ease",
-                    }}
+            return (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={cv.id} sx={{ display: "flex", justifyContent: "center" }}>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }}>
+                  
+                  <BorderGlow
+                    edgeSensitivity={30}
+                    backgroundColor="none"
+                    glowColor="190 80 80"
+                    borderRadius={12}
+                    glowRadius={80}
+                    glowIntensity={1.0}
+                    coneSpread={10}
+                    colors={["#1c7c54", "#52b0c3", "#def4c6"]}
+                    style={{ width: 250, display: "flex" }} 
                   >
-                    <IconButton sx={{ bgcolor: "white", color: "#52b0c3", "&:hover": { bgcolor: "#f0f4f8" } }} onClick={() => alert("Chuyển sang trang Editor!")}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton sx={{ bgcolor: "white", color: "#e53935", "&:hover": { bgcolor: "#ffebee" } }} onClick={() => alert("Xóa CV này!")}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                </Paper>
-              </motion.div>
-            </Grid>
-          ))}
+                    <Box sx={{ width: 250, display: "flex", flexDirection: "column", flexGrow: 1, bgcolor: "white", borderRadius: "12px", position: "relative" }}>
+                      
+                      {/* NÚT XÓA (Góc phải trên) */}
+                      <IconButton 
+                        onClick={() => handleDelete(cv.id)} 
+                        sx={{ position: "absolute", top: 8, right: 8, zIndex: 10, bgcolor: "rgba(255,255,255,0.8)", "&:hover": { bgcolor: "#ffebee" } }}
+                        size="small"
+                      >
+                        <DeleteIcon color="error" fontSize="small" />
+                      </IconButton>
 
-          {/* THẺ TẠO MỚI (Dashed Card) */}
-          <Grid item xs={12} sm={6} md={4} lg={3}>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: myResumes.length * 0.1 }} style={{ height: "100%" }}>
-              <Paper
-                sx={{
-                  height: "100%", minHeight: 280, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
-                  bgcolor: "rgba(255, 255, 255, 0.05)", border: "2px dashed rgba(255, 255, 255, 0.2)", borderRadius: 3, cursor: "pointer", transition: "0.3s",
-                  "&:hover": { bgcolor: "rgba(255, 255, 255, 0.1)", borderColor: "#52b0c3" },
-                }}
-                onClick={() => alert("Chuyển về tab Overview để chọn Template!")}
-              >
-                <IconButton sx={{ bgcolor: "rgba(82, 176, 195, 0.2)", color: "#52b0c3", mb: 2 }}>
-                  <AddIcon fontSize="large" />
-                </IconButton>
-                <Typography variant="subtitle1" fontWeight="bold" color="white">
-                  Create New Resume
-                </Typography>
-              </Paper>
-            </motion.div>
-          </Grid>
+                      {/* KHU VỰC LIVE THUMBNAIL */}
+                      <Box sx={{ width: "100%", height: 220, overflow: "hidden", position: "relative", borderRadius: "12px 12px 0 0", zIndex: 0, bgcolor: "#f0f4f8", borderBottom: "1px solid #e0e0e0" }}>
+                        <Box sx={{ width: 794, height: 1122, transform: "scale(0.315)", transformOrigin: "top left", pointerEvents: "none" }}>
+                          <CVRenderer templateName={cv.templateName} data={previewData} />
+                        </Box>
+                      </Box>
+
+                      {/* KHU VỰC THÔNG TIN */}
+                      <Box sx={{ p: 2, flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                        <Typography variant="subtitle1" fontWeight="bold" color="#102a43" sx={{ fontFamily: "'Helvetica', sans-serif" }} noWrap>
+                          {cv.title}
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, mb: 1.5, flexGrow: 1, fontSize: "0.7rem", fontStyle: "italic" }}>
+                          Last edited: {cv.lastEdited}
+                        </Typography>
+
+                        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 2 }}>
+                          <Chip label={cv.templateName} size="small" sx={{ fontSize: "0.65rem", height: 20, bgcolor: "#f0f4f8", color: "#102a43" }} />
+                        </Box>
+
+                        {/* KHU VỰC ACTION BUTTONS */}
+                        <Box sx={{ display: "flex", gap: 1, mt: "auto" }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => setPreviewOpenId(cv.id)}
+                            sx={{ flex: 1, textTransform: "none", color: "#607d8b", borderColor: "#e0e0e0", "&:hover": { bgcolor: "#f5f5f5", borderColor: "#cfd8dc" } }}
+                          >
+                            Preview
+                          </Button>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => handleEdit(cv)}
+                            sx={{ flex: 1, textTransform: "none", bgcolor: "#52b0c3", color: "white", boxShadow: "none", "&:hover": { bgcolor: "#3d94a7", boxShadow: "none" } }}
+                          >
+                            Edit
+                          </Button>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </BorderGlow>
+
+                  {/* POPUP PREVIEW RIÊNG CHO TỪNG CV */}
+                  {typeof document !== "undefined" && createPortal(
+                    <AnimatePresence>
+                      {previewOpenId === cv.id && (
+                        <motion.div
+                          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+                          onClick={() => setPreviewOpenId(null)}
+                          style={{
+                            position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+                            backgroundColor: "rgba(30, 30, 30, 0.85)", backdropFilter: "blur(5px)", zIndex: 99999,
+                            display: "flex", justifyContent: "center", alignItems: "center", padding: "20px", cursor: "zoom-out",
+                          }}
+                        >
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              maxHeight: "90vh", maxWidth: "95vw", overflow: "auto",
+                              borderRadius: "12px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", cursor: "default", backgroundColor: "white",
+                            }}
+                          >
+                            <CVRenderer templateName={cv.templateName} data={previewData} />
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>,
+                    document.body
+                  )}
+
+                </motion.div>
+              </Grid>
+            );
+          })}
         </Grid>
-
       ) : (
-
-        /* ========================================= */
-        /* TRƯỜNG HỢP 2: CHƯA CÓ CV (Empty State)     */
-        /* ========================================= */
+        /* TRƯỜNG HỢP 2: CHƯA CÓ CV (Empty State) */
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
-            <Paper 
-              sx={{ 
-                p: 5, 
-                textAlign: "center", 
-                bgcolor: "rgba(255, 255, 255, 0.05)", 
-                border: "1px dashed rgba(255, 255, 255, 0.2)", 
-                borderRadius: 3,
-                width: "100%",
-                maxWidth: 500 
-              }}
-            >
-              <Typography color="white" variant="h6" sx={{ mb: 1 }}>
-                You haven't created any resumes yet.
-              </Typography>
-              <Typography color="rgba(255,255,255,0.5)" variant="body2" sx={{ mb: 3 }}>
-                Start building your professional profile today.
-              </Typography>
-              <Button 
-                variant="contained" 
-                sx={{ bgcolor: "#52b0c3", "&:hover": { bgcolor: "#3d94a7" } }}
-                onClick={() => alert("Chuyển về tab Overview để chọn Template!")}
-              >
-                Create New Resume
-              </Button>
+            <Paper sx={{ p: 5, textAlign: "center", bgcolor: "rgba(255, 255, 255, 0.05)", border: "1px dashed rgba(255, 255, 255, 0.2)", borderRadius: 3, width: "100%", maxWidth: 500 }}>
+              <Typography color="white" variant="h6" sx={{ mb: 1 }}>You haven't created any resumes yet.</Typography>
+              <Typography color="rgba(255,255,255,0.5)" variant="body2" sx={{ mb: 3 }}>Start building your professional profile today.</Typography>
+              <Button variant="contained" onClick={handleCreateNew} sx={{ bgcolor: "#52b0c3", "&:hover": { bgcolor: "#3d94a7" } }}>Create New Resume</Button>
             </Paper>
           </Box>
         </motion.div>
