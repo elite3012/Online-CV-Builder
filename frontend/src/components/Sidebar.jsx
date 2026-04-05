@@ -18,6 +18,7 @@ import ArticleIcon from "@mui/icons-material/Article";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
 
 export default function Sidebar({ currentView, setCurrentView }) {
   return (
@@ -67,7 +68,7 @@ export default function Sidebar({ currentView, setCurrentView }) {
         {[
           { text: "Overview", icon: <DashboardIcon /> },
           { text: "My Resumes", icon: <ArticleIcon /> },
-          { text: "My Profile", icon: <PersonIcon /> },
+          { text: "ATS Checker", icon: <FactCheckIcon /> },
           { text: "Settings", icon: <SettingsIcon /> },
         ].map((item, index) => (
           <ListItem key={item.text} disablePadding>

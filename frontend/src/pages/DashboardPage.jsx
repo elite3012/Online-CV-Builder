@@ -10,6 +10,7 @@ import TopNavbar from "../components/TopNavbar";
 import TemplateGallery from "../components/TemplateGallery";
 import MyResumes from "../components/MyResumes";
 import Editor from "../components/Editor";
+import ATSChecker from "../components/ATSChecker";
 
 export default function Dashboard() {
   const location = useLocation(); // Khởi tạo location để bắt tín hiệu
@@ -88,6 +89,18 @@ export default function Dashboard() {
                 template={selectedTemplate}
                 onBack={() => setCurrentView("Overview")}
               />
+            </motion.div>
+          )}
+          {currentView === "ATS Checker" && (
+            <motion.div
+              key="ats-checker-view"
+              initial={{ opacity: 0, x: 20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: -20 }} 
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
+            >
+              <ATSChecker />
             </motion.div>
           )}
         </AnimatePresence>
