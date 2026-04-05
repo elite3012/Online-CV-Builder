@@ -4,8 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
-import CVEditorPage from './pages/CVEditorPage';
-
+import Editor from './components/Editor';
 export default function App() {
   return (
     <BrowserRouter>
@@ -14,6 +13,7 @@ export default function App() {
         
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
+        <Route path="/editor" element={<Editor />} />
 
         <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>

@@ -1,5 +1,6 @@
 // src/pages/Dashboard.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom"; // Import thêm hook này
 import { Box } from "@mui/material";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -11,8 +12,19 @@ import MyResumes from "../components/MyResumes";
 import Editor from "../components/Editor";
 
 export default function Dashboard() {
-  const [currentView, setCurrentView] = useState("Overview");
+  const location = useLocation(); // Khởi tạo location để bắt tín hiệu
+
+  // Khởi tạo tab mặc định dựa trên tín hiệu truyền tới (nếu có), không thì về Overview
+  const defaultView = location.state?.activeTab || "Overview";
+  const [currentView, setCurrentView] = useState(defaultView);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+
+  // Lắng nghe tín hiệu: Khi bấm "Create New" ở My Resumes, nó sẽ cập nhật lại view
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setCurrentView(location.state.activeTab);
+    }
+  }, [location.state]);
 
   const handleUseTemplate = (template) => {
     setSelectedTemplate(template);
@@ -62,7 +74,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, ease: "easeOut" }}
               style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
             >
-              <MyResumes />
+              <MyResumes setCurrentView={setCurrentView} />
             </motion.div>
           )}
 
