@@ -168,7 +168,7 @@ export default function HomePage() {
                   WebkitTextStroke: "1px #b0e6da",
                 }}
               >
-                Choose a template, edit sections, export PDF and DOCX
+                Choose a template, edit sections, export PDF
               </Typography>
               <Box sx={{ display: "flex", gap: 2 }}>
                 <Button
