@@ -82,7 +82,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   };
 
   // --- COMPONENT RENDER MẢNG DÙNG CHUNG TẠI CHỖ ---
-  const RenderArraySection = ({ title, sectionKey, itemLabel, defaultObj, renderFields }) => (
+ const renderArraySection = (title, sectionKey, itemLabel, defaultObj, renderFields) => (
     <Box sx={{ width: "100%", maxWidth: "800px" }}>
       {formData[sectionKey].map((item, index) => (
         <Paper key={index} elevation={0} sx={{ p: 5, borderRadius: 3, border: "1px solid #e0e0e0", mb: 3 }}>
@@ -146,23 +146,29 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
               <TextField fullWidth multiline rows={3} placeholder="React.js, Node.js, Project Management..." value={formData.skills} onChange={(e) => handleStringChange("skills", e.target.value)} />
             </Paper>
           )}
+          {activeSection === "Education" && renderArraySection(
+            "Education", "education", "Education", { school: "", degree: "", startDate: "", endDate: "", description: "" }, 
+            (edu, idx) => (
+              <><TextField size="small" label="School *" value={edu.school} onChange={(e) => handleArrayChange("education", idx, "school", e.target.value)} /><TextField size="small" label="Degree *" value={edu.degree} onChange={(e) => handleArrayChange("education", idx, "degree", e.target.value)} /><TextField multiline rows={4} size="small" label="Description" value={edu.description} onChange={(e) => handleArrayChange("education", idx, "description", e.target.value)} sx={{ gridRow: { sm: "span 2" } }} /><TextField size="small" label="Start Date" value={edu.startDate} onChange={(e) => handleArrayChange("education", idx, "startDate", e.target.value)} /><TextField size="small" label="End Date" value={edu.endDate} onChange={(e) => handleArrayChange("education", idx, "endDate", e.target.value)} /></>
+          ))}
 
-          {activeSection === "Education" && <RenderArraySection title="Education" sectionKey="education" itemLabel="Education" defaultObj={{ school: "", degree: "", startDate: "", endDate: "", description: "" }} renderFields={(edu, idx) => (
-            <><TextField size="small" label="School *" value={edu.school} onChange={(e) => handleArrayChange("education", idx, "school", e.target.value)} /><TextField size="small" label="Degree *" value={edu.degree} onChange={(e) => handleArrayChange("education", idx, "degree", e.target.value)} /><TextField multiline rows={4} size="small" label="Description" value={edu.description} onChange={(e) => handleArrayChange("education", idx, "description", e.target.value)} sx={{ gridRow: { sm: "span 2" } }} /><TextField size="small" label="Start Date" value={edu.startDate} onChange={(e) => handleArrayChange("education", idx, "startDate", e.target.value)} /><TextField size="small" label="End Date" value={edu.endDate} onChange={(e) => handleArrayChange("education", idx, "endDate", e.target.value)} /></>
-          )}/>}
+          {activeSection === "Experience" && renderArraySection(
+            "Work Experience", "experience", "Job", { company: "", role: "", startDate: "", endDate: "", description: "" }, 
+            (exp, idx) => (
+              <><TextField size="small" label="Company *" value={exp.company} onChange={(e) => handleArrayChange("experience", idx, "company", e.target.value)} /><TextField size="small" label="Job Title *" value={exp.role} onChange={(e) => handleArrayChange("experience", idx, "role", e.target.value)} /><TextField multiline rows={4} size="small" label="Description" value={exp.description} onChange={(e) => handleArrayChange("experience", idx, "description", e.target.value)} sx={{ gridRow: { sm: "span 2" } }} /><TextField size="small" label="Start Date" value={exp.startDate} onChange={(e) => handleArrayChange("experience", idx, "startDate", e.target.value)} /><TextField size="small" label="End Date" value={exp.endDate} onChange={(e) => handleArrayChange("experience", idx, "endDate", e.target.value)} /></>
+          ))}
 
-          {activeSection === "Experience" && <RenderArraySection title="Work Experience" sectionKey="experience" itemLabel="Job" defaultObj={{ company: "", role: "", startDate: "", endDate: "", description: "" }} renderFields={(exp, idx) => (
-            <><TextField size="small" label="Company *" value={exp.company} onChange={(e) => handleArrayChange("experience", idx, "company", e.target.value)} /><TextField size="small" label="Job Title *" value={exp.role} onChange={(e) => handleArrayChange("experience", idx, "role", e.target.value)} /><TextField multiline rows={4} size="small" label="Description" value={exp.description} onChange={(e) => handleArrayChange("experience", idx, "description", e.target.value)} sx={{ gridRow: { sm: "span 2" } }} /><TextField size="small" label="Start Date" value={exp.startDate} onChange={(e) => handleArrayChange("experience", idx, "startDate", e.target.value)} /><TextField size="small" label="End Date" value={exp.endDate} onChange={(e) => handleArrayChange("experience", idx, "endDate", e.target.value)} /></>
-          )}/>}
+          {activeSection === "Projects" && renderArraySection(
+            "Project", "projects", "Project", { name: "", role: "", link: "", description: "" }, 
+            (proj, idx) => (
+              <><TextField size="small" label="Project Name *" value={proj.name} onChange={(e) => handleArrayChange("projects", idx, "name", e.target.value)} /><TextField size="small" label="Your Role" value={proj.role} onChange={(e) => handleArrayChange("projects", idx, "role", e.target.value)} /><TextField multiline rows={4} size="small" label="Description" value={proj.description} onChange={(e) => handleArrayChange("projects", idx, "description", e.target.value)} sx={{ gridRow: { sm: "span 2" } }} /><TextField size="small" label="Link" value={proj.link} onChange={(e) => handleArrayChange("projects", idx, "link", e.target.value)} sx={{ gridColumn: { sm: "span 2" } }} /></>
+          ))}
 
-          {activeSection === "Projects" && <RenderArraySection title="Project" sectionKey="projects" itemLabel="Project" defaultObj={{ name: "", role: "", link: "", description: "" }} renderFields={(proj, idx) => (
-            <><TextField size="small" label="Project Name *" value={proj.name} onChange={(e) => handleArrayChange("projects", idx, "name", e.target.value)} /><TextField size="small" label="Your Role" value={proj.role} onChange={(e) => handleArrayChange("projects", idx, "role", e.target.value)} /><TextField multiline rows={4} size="small" label="Description" value={proj.description} onChange={(e) => handleArrayChange("projects", idx, "description", e.target.value)} sx={{ gridRow: { sm: "span 2" } }} /><TextField size="small" label="Link" value={proj.link} onChange={(e) => handleArrayChange("projects", idx, "link", e.target.value)} sx={{ gridColumn: { sm: "span 2" } }} /></>
-          )}/>}
-
-          {activeSection === "Certificates" && <RenderArraySection title="Certificate" sectionKey="certificates" itemLabel="Certificate" defaultObj={{ name: "", organization: "", date: "" }} renderFields={(cert, idx) => (
-            <><TextField size="small" label="Certificate Name *" value={cert.name} onChange={(e) => handleArrayChange("certificates", idx, "name", e.target.value)} /><TextField size="small" label="Organization" value={cert.organization} onChange={(e) => handleArrayChange("certificates", idx, "organization", e.target.value)} /><TextField size="small" label="Date" value={cert.date} onChange={(e) => handleArrayChange("certificates", idx, "date", e.target.value)} /></>
-          )}/>}
-          
+          {activeSection === "Certificates" && renderArraySection(
+            "Certificate", "certificates", "Certificate", { name: "", organization: "", date: "" }, 
+            (cert, idx) => (
+              <><TextField size="small" label="Certificate Name *" value={cert.name} onChange={(e) => handleArrayChange("certificates", idx, "name", e.target.value)} /><TextField size="small" label="Organization" value={cert.organization} onChange={(e) => handleArrayChange("certificates", idx, "organization", e.target.value)} /><TextField size="small" label="Date" value={cert.date} onChange={(e) => handleArrayChange("certificates", idx, "date", e.target.value)} /></>
+          ))}
           <Box sx={{ height: 100 }} />
         </Box>
       </Box>
