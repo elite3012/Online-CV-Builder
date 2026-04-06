@@ -60,7 +60,7 @@ export default function HomeHero() {
           </Grid>
 
           <Grid item xs={12} md={6} sx={{ display: "flex", justifyContent: "center" }}>
-            <Box sx={{ height: "450px", width: "300px", position: "relative", mt: 4, mb: 12 }}>
+            <Box sx={{ height: "500px", width: "400px", position: "relative", mt: 4, mb: 12 }}>
               <CardSwap cardDistance={40} verticalDistance={50} delay={3000} pauseOnHover={true}>
                 
                 {/* PRO TEMPLATE CARD */}

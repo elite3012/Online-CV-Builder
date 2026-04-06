@@ -4,11 +4,11 @@ import LockIcon from "@mui/icons-material/Lock";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 
 import HomeHeader from "../../components/home/HomeHeader";
+import Galaxy from "../../components/reactbits/Galaxy";
 
 export default function TemplatesPage() {
   const navigate = useNavigate();
 
-  // Component vẽ các khối hình học đại diện cho CV
   const TemplatePlaceholder = () => (
     <Box sx={{ width: "100%", height: "350px", bgcolor: "#121212", borderRadius: 3, p: 3, position: "relative", border: "1px solid rgba(255,255,255,0.05)" }}>
       <Stack spacing={2}>
@@ -24,7 +24,6 @@ export default function TemplatesPage() {
           ))}
         </Grid>
       </Stack>
-      {/* Overlay khóa */}
       <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(5,5,5,0.2)", borderRadius: 3, backdropFilter: "blur(2px)" }}>
         <LockIcon sx={{ color: "rgba(82, 176, 195, 0.5)", fontSize: 40 }} />
       </Box>
@@ -36,8 +35,26 @@ export default function TemplatesPage() {
       
       <HomeHeader />
 
-      <Box sx={{ flexGrow: 1, py: 12, bgcolor: "#050505", color: "white" }}>
-        <Container maxWidth="lg">
+      <Box sx={{ flexGrow: 1, py: 12, bgcolor: "#050505", color: "white", position: "relative", overflow: "hidden" }}>
+        
+        <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1 }}>
+          <Galaxy 
+            mouseRepulsion
+            mouseInteraction={false}
+            density={1}
+            glowIntensity={0.3}
+            saturation={0}
+            hueShift={140}
+            twinkleIntensity={0.3}
+            rotationSpeed={0.1}
+            repulsionStrength={2}
+            autoCenterRepulsion={0}
+            starSpeed={0.5}
+            speed={1}
+          />
+        </Box>
+
+        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 2 }}>
           <Box sx={{ textAlign: "center", mb: 10 }}>
             <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ mb: 2 }}>
               <AutoAwesomeIcon sx={{ color: "#52b0c3", fontSize: 20 }} />
