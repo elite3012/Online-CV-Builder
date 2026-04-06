@@ -12,6 +12,7 @@ import Terms from './pages/legal/Terms';
 import HelpCenter from './pages/support/HelpCenter';
 import TemplatesPage from './pages/marketing/TemplatePage';
 import FeaturesPage from './pages/marketing/FeaturesPage';
+import ForgotPassword from './components/auth/ForgotPassword';
 
 export default function App() {
   return (
@@ -23,7 +24,9 @@ export default function App() {
         <Route path="/help" element={<HelpCenter />} />
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/features" element={<FeaturesPage />} />
-
+       
+       
+        <Route path="/forgot-password" element={<AuthPage />} />
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
         
