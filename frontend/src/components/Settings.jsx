@@ -55,9 +55,6 @@ export default function Settings() {
 
   return (
     <Box sx={{ p: 4, mt: "80px", maxWidth: "1000px", mx: "auto" }}>
-      <Typography variant="h4" fontWeight="900" color="white" sx={{ mb: 4, fontFamily: "'Helvetica', sans-serif" }}>
-        Settings
-      </Typography>
 
       {status.msg && <Alert severity={status.type} sx={{ mb: 3 }}>{status.msg}</Alert>}
 

@@ -1,5 +1,5 @@
 // src/components/MyResumes.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Typography, Button, Grid, Paper } from "@mui/material";
 import { motion } from "motion/react";
@@ -7,31 +7,52 @@ import AddIcon from "@mui/icons-material/Add";
 
 import ResumeCard from "./ResumeCard";
 import PreviewModal from "./PreviewModal"; 
-import { myResumes } from "../data/myResumes"; 
+import { apiService } from "../services/apiService"; 
 
 // Helper function để chuyển đổi formData sang định dạng cho CVRenderer
 const getPreviewData = (formData) => ({
-  name: formData.personalInfo?.fullName,
-  title: formData.personalInfo?.jobTitle,
-  contact: { email: formData.personalInfo?.email, phone: formData.personalInfo?.phone, address: formData.personalInfo?.location, linkedin: formData.personalInfo?.linkedin, website: formData.personalInfo?.website },
-  summary: formData.summary,
-  experience: formData.experience?.filter(e => e.company).map(exp => ({ company: exp.company, role: exp.role, duration: `${exp.startDate}${exp.startDate && exp.endDate ? ' - ' : ''}${exp.endDate}`, desc: exp.description })),
-  skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : [],
-  education: formData.education?.filter(e => e.school).map(edu => ({ school: edu.school, degree: edu.degree, duration: `${edu.startDate}${edu.startDate && edu.endDate ? ' - ' : ''}${edu.endDate}`, desc: edu.description })),
-  projects: formData.projects?.filter(p => p.name).map(proj => ({ name: proj.name, role: proj.role, link: proj.link, desc: proj.description })),
-  certificates: formData.certificates?.filter(c => c.name).map(cert => ({ name: cert.name, organization: cert.organization, date: cert.date })),
+  name: formData?.personalInfo?.fullName,
+  title: formData?.personalInfo?.jobTitle,
+  contact: { email: formData?.personalInfo?.email, phone: formData?.personalInfo?.phone, address: formData?.personalInfo?.location, linkedin: formData?.personalInfo?.linkedin, website: formData?.personalInfo?.website },
+  summary: formData?.summary,
+  experience: formData?.experience?.filter(e => e.company).map(exp => ({ company: exp.company, role: exp.role, duration: `${exp.startDate}${exp.startDate && exp.endDate ? ' - ' : ''}${exp.endDate}`, desc: exp.description })) || [],
+  skills: formData?.skills ? formData.skills.split(",").map(s => s.trim()) : [],
+  education: formData?.education?.filter(e => e.school).map(edu => ({ school: edu.school, degree: edu.degree, duration: `${edu.startDate}${edu.startDate && edu.endDate ? ' - ' : ''}${edu.endDate}`, desc: edu.description })) || [],
+  projects: formData?.projects?.filter(p => p.name).map(proj => ({ name: proj.name, role: proj.role, link: proj.link, desc: proj.description })) || [],
+  certificates: formData?.certificates?.filter(c => c.name).map(cert => ({ name: cert.name, organization: cert.organization, date: cert.date })) || [],
 });
 
 export default function MyResumes({ setCurrentView }) {
-  const [resumeList, setResumeList] = useState(myResumes);
+  const [resumeList, setResumeList] = useState([]);
   const [previewOpenId, setPreviewOpenId] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    apiService.getCVList().then((data) => {
+        const mapped = data.map(cv => {
+            let parsedData = {};
+            try {
+                parsedData = cv.content ? JSON.parse(cv.content) : {};
+            } catch(e) {}
+            return {
+                id: cv.id,
+                name: cv.title || 'Untitled',
+                templateName: cv.template?.name || 'Modern',
+                updatedAt: cv.updatedAt,
+                formData: parsedData
+            };
+        });
+        setResumeList(mapped);
+    }).catch(err => console.error(err));
+  }, []);
   
   const hasResumes = resumeList.length > 0;
 
   const handleDelete = (idToDelete) => {
     if (window.confirm("Are you sure you want to delete this resume?")) {
-      setResumeList(resumeList.filter((cv) => cv.id !== idToDelete));
+      apiService.deleteCV(idToDelete).then(() => {
+         setResumeList(resumeList.filter((cv) => cv.id !== idToDelete));
+      }).catch(err => alert("Failed to delete"));
     }
   };
 

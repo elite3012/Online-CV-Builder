@@ -1,12 +1,18 @@
 // CV Editor Page (UC4)
 import { useEffect, useMemo, useState } from 'react';
 import { apiService } from '../services/apiService';
+import SafePreviewText from '../utils/SafePreviewText';
 
 export default function CVEditorPage() {
   const [cvId] = useState(1); // temporary until routing/selection is connected
   const [cvData, setCvData] = useState({
     id: 1,
     title: '',
+    summary: '',
+    experience: '',
+    goal: '',
+    projectLinkText: '',
+    skills: ''
   });
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
@@ -87,17 +93,33 @@ export default function CVEditorPage() {
 
         <section style={styles.card}>
           <div style={styles.field}>
-            <label htmlFor="title" style={styles.label}>
-              CV Title
-            </label>
-            <input
-              id="title"
-              name="title"
-              value={cvData.title}
-              onChange={handleChange}
-              placeholder="Enter CV title"
-              style={styles.input}
-            />
+            <label htmlFor="title" style={styles.label}>CV Title</label>
+            <input id="title" name="title" value={cvData.title} onChange={handleChange} placeholder="Enter CV title" style={styles.input} />
+          </div>
+
+          <div style={styles.field}>
+            <label htmlFor="summary" style={styles.label}>Summary</label>
+            <textarea id="summary" name="summary" value={cvData.summary} onChange={handleChange} placeholder="Enter CV summary" style={{ ...styles.input, resize: 'vertical', minHeight: '60px' }} />
+          </div>
+
+          <div style={styles.field}>
+            <label htmlFor="experience" style={styles.label}>Experience Description</label>
+            <textarea id="experience" name="experience" value={cvData.experience} onChange={handleChange} placeholder="Describe your experience" style={{ ...styles.input, resize: 'vertical', minHeight: '60px' }} />
+          </div>
+
+          <div style={styles.field}>
+            <label htmlFor="goal" style={styles.label}>Goal</label>
+            <input id="goal" name="goal" value={cvData.goal} onChange={handleChange} placeholder="Career goal" style={styles.input} />
+          </div>
+
+          <div style={styles.field}>
+            <label htmlFor="projectLinkText" style={styles.label}>Project Link Text</label>
+            <input id="projectLinkText" name="projectLinkText" value={cvData.projectLinkText} onChange={handleChange} placeholder="Link text (no JS executable)" style={styles.input} />
+          </div>
+
+          <div style={styles.field}>
+            <label htmlFor="skills" style={styles.label}>Skills</label>
+            <input id="skills" name="skills" value={cvData.skills} onChange={handleChange} placeholder="Add skills safely" style={styles.input} />
           </div>
 
           <div style={styles.buttonRow}>
@@ -113,6 +135,30 @@ export default function CVEditorPage() {
           <div style={{ ...styles.statusBox, ...statusStyle }}>
             {status || 'Ready'}
           </div>
+
+          {/* Safe Preview Display (No raw HTML injection allowed - UC5B, UC6, US12) */}
+          <div style={styles.previewBox}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#0f172a' }}>Safe Preview Output:</h3>
+            
+            <div style={styles.previewItem}>
+              <strong>Title:</strong> <SafePreviewText text={cvData.title} />
+            </div>
+            <div style={styles.previewItem}>
+              <strong>Summary:</strong> <SafePreviewText text={cvData.summary} multiline />
+            </div>
+            <div style={styles.previewItem}>
+              <strong>Experience:</strong> <SafePreviewText text={cvData.experience} multiline />
+            </div>
+            <div style={styles.previewItem}>
+              <strong>Goal:</strong> <SafePreviewText text={cvData.goal} multiline />
+            </div>
+            <div style={styles.previewItem}>
+              <strong>Project:</strong> <SafePreviewText text={cvData.projectLinkText} />
+            </div>
+            <div style={styles.previewItem}>
+              <strong>Skills:</strong> <SafePreviewText text={cvData.skills} />
+            </div>
+          </div>
         </section>
       </div>
     </div>
@@ -120,6 +166,20 @@ export default function CVEditorPage() {
 }
 
 const styles = {
+  previewBox: {
+    marginTop: '24px',
+    padding: '16px',
+    borderRadius: '12px',
+    background: '#f1f5f9',
+    border: '1px solid #cbd5e1',
+    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)',
+  },
+  previewItem: {
+    padding: '8px 0',
+    borderBottom: '1px dashed #cbd5e1',
+    color: '#334155',
+    lineHeight: '1.5'
+  },
   page: {
     minHeight: '100vh',
     position: 'relative',
