@@ -4,11 +4,24 @@ import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Login from "../components/auth/Login";
 import Register from "../components/auth/Register";
+import ForgotPassword from "../components/auth/ForgotPassword"; // 1. IMPORT VÀO ĐÂY
 import Grainient from "../components/reactbits/Grainient";
 
 export default function AuthPage() {
   const location = useLocation();
-  const isLogin = location.pathname === "/login";
+  
+  // 2. HÀM CHỌN COMPONENT ĐỂ HIỂN THỊ
+  const renderAuthComponent = () => {
+    switch (location.pathname) {
+      case "/login":
+        return <Login />;
+      case "/forgot-password":
+        return <ForgotPassword />;
+      case "/register":
+      default:
+        return <Register />;
+    }
+  };
 
   return (
     <Box
@@ -19,7 +32,7 @@ export default function AuthPage() {
         justifyContent: "center",
         paddingTop: "10vh",
         paddingBottom: "5vh",
-        overflow: "hidden", // Ngăn thanh cuộn (scrollbar) xuất hiện chớp nhoáng khi animation chạy
+        overflow: "hidden", 
       }}
     >
       <Box
@@ -29,7 +42,7 @@ export default function AuthPage() {
           left: 0,
           width: "100%",
           height: "100%",
-          zIndex: -1, // Đẩy layer này xuống dưới đáy
+          zIndex: -1, 
         }}
       >
         <Grainient
@@ -58,18 +71,16 @@ export default function AuthPage() {
         />
       </Box>
 
-      {/* AnimatePresence để bắt được sự kiện khi component bị xóa đi */}
       <AnimatePresence mode="wait">
-        {/* Thay thế Box/div bằng motion.div để gắp animation vào */}
         <motion.div
-          key={location.pathname} // Framer biết khi nào URL đổi để chạy hiệu ứng
-          initial={{ opacity: 0, y: 30, scale: 0.95 }} // Trạng thái bắt đầu
-          animate={{ opacity: 1, y: 0, scale: 1 }} // Trạng thái xuất hiện
-          exit={{ opacity: 0, y: -30, scale: 0.95 }} // Trạng thái biến mất
-          transition={{ duration: 0.3, ease: "easeOut" }} // Thời gian 0.3s, hiệu ứng nhanh dần rồi chậm lại (mượt)
+          key={location.pathname} 
+          initial={{ opacity: 0, y: 30, scale: 0.95 }} 
+          animate={{ opacity: 1, y: 0, scale: 1 }} 
+          exit={{ opacity: 0, y: -30, scale: 0.95 }} 
+          transition={{ duration: 0.3, ease: "easeOut" }} 
           style={{ width: "100%", display: "flex", justifyContent: "center" }}
         >
-          {isLogin ? <Login /> : <Register />}
+          {renderAuthComponent()}
         </motion.div>
       </AnimatePresence>
     </Box>
