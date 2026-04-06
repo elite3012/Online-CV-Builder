@@ -40,6 +40,9 @@ public class CV {
     @Column(nullable = false)
     private String title;
 
+    @Column(columnDefinition = "TEXT")
+    private String content;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -87,6 +90,14 @@ public class CV {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
     }
 
     public LocalDateTime getCreatedAt() {
