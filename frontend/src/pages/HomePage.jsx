@@ -40,11 +40,14 @@ export default function HomePage() {
         <Typography
           variant="h6"
           fontWeight="bold"
+          onClick={() => navigate("/")}
+          
           sx={{
             color: "#102a43",
             display: "flex",
             alignItems: "center",
             gap: 1,
+            cursor: "pointer",
           }}
         >
           <span
@@ -61,7 +64,7 @@ export default function HomePage() {
         </Typography>
         <Box sx={{ display: "flex", gap: 3 }}>
           <Link
-            href="#"
+            onClick={() => navigate("/templates")}
             underline="none"
             color="text.secondary"
             sx={{
@@ -69,12 +72,13 @@ export default function HomePage() {
               fontSize: "0.9rem",
               fontWeight: 500,
               "&:hover": { color: "#102a43" },
+              cursor: "pointer",
             }}
           >
             Templates
           </Link>
           <Link
-            href="#"
+            onClick={() => navigate("/features")}
             underline="none"
             color="text.secondary"
             sx={{
@@ -82,12 +86,14 @@ export default function HomePage() {
               fontSize: "0.9rem",
               fontWeight: 500,
               "&:hover": { color: "#102a43" },
+              cursor: "pointer",
+
             }}
           >
             Features
           </Link>
           <Link
-            href="#"
+            onClick={() => navigate("/help")}
             underline="none"
             color="text.secondary"
             sx={{
@@ -95,6 +101,7 @@ export default function HomePage() {
               fontSize: "0.9rem",
               fontWeight: 500,
               "&:hover": { color: "#102a43" },
+              cursor: "pointer",
             }}
           >
             Help
@@ -383,7 +390,7 @@ export default function HomePage() {
                           letterSpacing: "0.5px",
                           border: "1px solid rgba(242, 139, 130, 0.2)",
                           boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-                          bgcolor: "#f28b82"
+                          bgcolor: "#f28b82",
                         }}
                       />
 
@@ -690,13 +697,13 @@ export default function HomePage() {
         }}
       >
         <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
-          <Link href="#" underline="none" color="#f7fbff" fontSize="0.8rem">
+          <Link onClick={() => navigate("/terms")} underline="none" color="#f7fbff" fontSize="0.8rem" style={{ cursor: "pointer" }}>
             Terms
           </Link>
-          <Link href="#" underline="none" color="#f7fbff" fontSize="0.8rem">
+          <Link onClick={() => navigate("/terms")} underline="none" color="#f7fbff" fontSize="0.8rem" style={{ cursor: "pointer" }}>
             Privacy
           </Link>
-          <Link href="#" underline="none" color="#f7fbff" fontSize="0.8rem">
+          <Link onClick={() => navigate("/contact")} underline="none" color="#f7fbff" fontSize="0.8rem" style={{ cursor: "pointer" }}>
             Contact
           </Link>
         </Box>
