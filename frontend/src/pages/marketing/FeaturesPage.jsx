@@ -7,6 +7,8 @@ import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import SecurityIcon from "@mui/icons-material/Security";
 import DevicesIcon from "@mui/icons-material/Devices";
 
+import HomeHeader from "../../components/home/HomeHeader";
+
 const FEATURES = [
   {
     icon: <AutoAwesomeIcon sx={{ fontSize: 40, color: "#52b0c3" }} />,
@@ -44,73 +46,77 @@ export default function FeaturesPage() {
   const navigate = useNavigate();
 
   return (
-    <Box sx={{ py: 12, bgcolor: "#050505", minHeight: "100vh", color: "white" }}>
-      <Container maxWidth="lg">
-        {/* HEADER SECTION */}
-        <Box sx={{ textAlign: "center", mb: 10 }}>
-          <Typography variant="overline" sx={{ letterSpacing: 4, color: "#52b0c3", fontWeight: "bold" }}>
-            POWERFUL TOOLS
-          </Typography>
-          <Typography variant="h2" fontWeight="900" sx={{ mt: 2, mb: 3, fontSize: { xs: "2.8rem", md: "3.5rem" } }}>
-            Everything you need <br /> to land your dream job
-          </Typography>
-          <Box sx={{ width: 60, height: 4, bgcolor: "#52b0c3", mx: "auto", borderRadius: 2 }} />
-        </Box>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "white" }}>
+      
+      <HomeHeader /> 
+        <Box sx={{ flexGrow: 1, py: 12, bgcolor: "#050505", color: "white" }}>
+        <Container maxWidth="lg">
+          {/* HEADER SECTION */}
+          <Box sx={{ textAlign: "center", mb: 10 }}>
+            <Typography variant="overline" sx={{ letterSpacing: 4, color: "#52b0c3", fontWeight: "bold" }}>
+              POWERFUL TOOLS
+            </Typography>
+            <Typography variant="h2" fontWeight="900" sx={{ mt: 2, mb: 3, fontSize: { xs: "2.8rem", md: "3.5rem" } }}>
+              Everything you need <br /> to land your dream job
+            </Typography>
+            <Box sx={{ width: 60, height: 4, bgcolor: "#52b0c3", mx: "auto", borderRadius: 2 }} />
+          </Box>
 
-        {/* FEATURES GRID */}
-        <Grid container spacing={4}>
-          {FEATURES.map((feature, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Paper 
-                elevation={0}
+          {/* FEATURES GRID */}
+          <Grid container spacing={4}>
+            {FEATURES.map((feature, index) => (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    p: 5, 
+                    height: "100%",
+                    borderRadius: 5, 
+                    bgcolor: "rgba(255,255,255,0.02)", 
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    transition: "all 0.3s ease",
+                    "&:hover": { 
+                      bgcolor: "rgba(255,255,255,0.04)", 
+                      borderColor: "#52b0c3",
+                      transform: "translateY(-8px)",
+                      boxShadow: "0 10px 30px rgba(82, 176, 195, 0.1)"
+                    }
+                  }}
+                >
+                  <Box sx={{ mb: 3 }}>{feature.icon}</Box>
+                  <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
+                    {feature.title}
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>
+                    {feature.desc}
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+
+          {/* CTA SECTION */}
+          <Box sx={{ mt: 15, textAlign: "center" }}>
+            <Stack spacing={4} alignItems="center">
+              <Typography variant="h4" fontWeight="bold">
+                Ready to stand out from the crowd?
+              </Typography>
+              <Button 
+                variant="contained" 
+                size="large"
+                onClick={() => navigate("/login")}
                 sx={{ 
-                  p: 5, 
-                  height: "100%",
-                  borderRadius: 5, 
-                  bgcolor: "rgba(255,255,255,0.02)", 
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  transition: "all 0.3s ease",
-                  "&:hover": { 
-                    bgcolor: "rgba(255,255,255,0.04)", 
-                    borderColor: "#52b0c3",
-                    transform: "translateY(-8px)",
-                    boxShadow: "0 10px 30px rgba(82, 176, 195, 0.1)"
-                  }
+                  bgcolor: "#52b0c3", px: 6, py: 1.8, borderRadius: 2, fontWeight: "bold", 
+                  textTransform: "none", fontSize: "1.1rem",
+                  "&:hover": { bgcolor: "#3d94a7" } 
                 }}
               >
-                <Box sx={{ mb: 3 }}>{feature.icon}</Box>
-                <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
-                  {feature.title}
-                </Typography>
-                <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>
-                  {feature.desc}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* CTA SECTION */}
-        <Box sx={{ mt: 15, textAlign: "center" }}>
-          <Stack spacing={4} alignItems="center">
-            <Typography variant="h4" fontWeight="bold">
-              Ready to stand out from the crowd?
-            </Typography>
-            <Button 
-              variant="contained" 
-              size="large"
-              onClick={() => navigate("/register")}
-              sx={{ 
-                bgcolor: "#52b0c3", px: 6, py: 1.8, borderRadius: 2, fontWeight: "bold", 
-                textTransform: "none", fontSize: "1.1rem",
-                "&:hover": { bgcolor: "#3d94a7" } 
-              }}
-            >
-              Start Building Your Resume Now
-            </Button>
-          </Stack>
-        </Box>
-      </Container>
+                Start Building Your Resume Now
+              </Button>
+            </Stack>
+          </Box>
+        </Container>
+      </Box>
     </Box>
   );
 }
