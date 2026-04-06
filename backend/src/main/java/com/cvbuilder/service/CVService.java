@@ -61,9 +61,14 @@ public class CVService {
     }
 
     @Transactional
-    public CV updateCVTitle(Long cvId, String newTitle, String userEmail) {
+    public CV updateCV(Long cvId, String newTitle, String newContent, String userEmail) {
         CV cv = getCVByIdAndOwner(cvId, userEmail);
-        cv.setTitle(newTitle);
+        if (newTitle != null) {
+            cv.setTitle(newTitle);
+        }
+        if (newContent != null) {
+            cv.setContent(newContent);
+        }
         cv.setUpdatedAt(LocalDateTime.now());
 
         return cvRepository.save(cv);

@@ -2,6 +2,7 @@ package com.cvbuilder.controller;
 
 import com.cvbuilder.model.CV;
 import com.cvbuilder.service.CVService;
+import com.cvbuilder.service.ValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,9 @@ public class CVController {
 
     @Autowired
     private CVService cvService;
+    
+    @Autowired
+    private ValidationService validationService;
 
     public static class CreateCVRequest {
         public String title;
@@ -25,6 +29,7 @@ public class CVController {
 
     public static class UpdateCVRequest {
         public String title;
+        public String content;
     }
 
     @GetMapping
@@ -50,12 +55,15 @@ public class CVController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CV> updateCV(@PathVariable Long id, @RequestBody UpdateCVRequest request, Principal principal) {
+    public ResponseEntity<?> updateCV(@PathVariable Long id, @RequestBody UpdateCVRequest request, Principal principal) {
         if (request.title == null || request.title.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body("Title cannot be empty");
+        }
+        if (validationService.containsXssPayload(request.content)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("XSS payload detected in content. Request rejected.");
         }
         
-        CV updatedCV = cvService.updateCVTitle(id, request.title, principal.getName());
+        CV updatedCV = cvService.updateCV(id, request.title, request.content, principal.getName());
         return ResponseEntity.ok(updatedCV);
     }
 
