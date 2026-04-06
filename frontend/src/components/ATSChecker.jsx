@@ -107,28 +107,37 @@ export default function ATSChecker() {
             </Box>
           </label>
 
-          {file && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Button
-                variant="contained"
-                onClick={handleStartScan}
-                disabled={isScanning}
-                sx={{
-                  mt: 2,
-                  bgcolor: "#52b0c3",
-                  px: 4,
-                  borderRadius: 10,
-                  "&:hover": { bgcolor: "#3d94a7" },
-                }}
+          <AnimatePresence>
+            {file && (
+              <motion.div
+                key="check-button"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
               >
-                {isScanning ? (
-                  <CircularProgress size={24} sx={{ color: "white" }} />
-                ) : (
-                  "Check with AI"
-                )}
-              </Button>
-            </motion.div>
-          )}
+                <Button
+                  variant="contained"
+                  onClick={handleStartScan}
+                  disabled={isScanning}
+                  sx={{
+                    mt: 2,
+                    bgcolor: "#52b0c3",
+                    px: 4,
+                    borderRadius: 10,
+                    textTransform: "none", 
+                    "&:hover": { bgcolor: "#3d94a7" },
+                  }}
+                >
+                  {isScanning ? (
+                    <CircularProgress size={24} sx={{ color: "white" }} />
+                  ) : (
+                    "Check with AI"
+                  )}
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Paper>
 
         {/* BÊN PHẢI: CHECKLIST SECTION */}
