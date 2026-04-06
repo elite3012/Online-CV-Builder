@@ -5,15 +5,13 @@ import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import Editor from './components/Editor';
-<<<<<<< HEAD
 import ProtectedRoute from './components/ProtectedRoute';
-=======
+
 import Contact from './pages/support/Contact';
 import Terms from './pages/legal/Terms';
 import HelpCenter from './pages/support/HelpCenter';
 import TemplatesPage from './pages/marketing/TemplatePage';
 import FeaturesPage from './pages/marketing/FeaturesPage';
->>>>>>> d261062b1e58c518bfca98b4ab45b0ebeb7b2835
 
 export default function App() {
   return (
