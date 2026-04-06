@@ -107,11 +107,11 @@ export default function Dashboard() {
           )}
           {currentView === "ATS Checker" && (
             <motion.div
-              key="ats-checker-view"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+              key="settings-view"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
               style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
             >
               <ATSChecker />
