@@ -40,7 +40,7 @@ public class CV {
     @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "text")
     private String content;
 
     @Column(nullable = false)
