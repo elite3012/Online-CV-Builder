@@ -4,7 +4,6 @@ import LockIcon from "@mui/icons-material/Lock";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 
 import HomeHeader from "../../components/home/HomeHeader";
-import Galaxy from "../../components/reactbits/Galaxy";
 
 export default function TemplatesPage() {
   const navigate = useNavigate();
@@ -37,24 +36,8 @@ export default function TemplatesPage() {
 
       <Box sx={{ flexGrow: 1, py: 12, bgcolor: "#050505", color: "white", position: "relative", overflow: "hidden" }}>
         
-        <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1 }}>
-          <Galaxy 
-            mouseRepulsion
-            mouseInteraction={false}
-            density={1}
-            glowIntensity={0.3}
-            saturation={0}
-            hueShift={140}
-            twinkleIntensity={0.3}
-            rotationSpeed={0.1}
-            repulsionStrength={2}
-            autoCenterRepulsion={0}
-            starSpeed={0.5}
-            speed={1}
-          />
-        </Box>
 
-        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 2 }}>
+        <Container maxWidth="lg" sx={{ position: "relative" }}>
           <Box sx={{ textAlign: "center", mb: 10 }}>
             <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ mb: 2 }}>
               <AutoAwesomeIcon sx={{ color: "#52b0c3", fontSize: 20 }} />

@@ -14,7 +14,6 @@ import SpeedIcon from "@mui/icons-material/Speed";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import SecurityIcon from "@mui/icons-material/Security";
 import DevicesIcon from "@mui/icons-material/Devices";
-import Galaxy from "../../components/reactbits/Galaxy";
 
 import HomeHeader from "../../components/home/HomeHeader";
 
@@ -74,32 +73,8 @@ export default function FeaturesPage() {
           overflow: "hidden",
         }}
       >
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: 1,
-          }}
-        >
-          <Galaxy
-            mouseRepulsion
-            mouseInteraction={false}
-            density={1.3}
-            glowIntensity={0.2}
-            saturation={0}
-            hueShift={140}
-            twinkleIntensity={0.3}
-            rotationSpeed={0.1}
-            repulsionStrength={2}
-            autoCenterRepulsion={0}
-            starSpeed={0.5}
-            speed={1}
-          />
-        </Box>
-        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 2 }}>
+       
+        <Container maxWidth="lg" sx={{ position: "relative" }}>
           {/* HEADER SECTION */}
           <Box sx={{ textAlign: "center", mb: 10 }}>
             <Typography
