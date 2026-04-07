@@ -1,4 +1,4 @@
-// API Service - handles HTTP requests to backend
+  // API Service - handles HTTP requests to backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 async function request(path, options = {}) {
@@ -79,6 +79,13 @@ export const apiService = {
   getTemplates: () =>
     request('/templates', {
       method: 'GET',
+    }),
+
+  // AI endpoints (Sprint 4 preparation)
+  analyzeJD: (cvId, jdText) =>
+    request(`/ai/analyze-jd`, {
+      method: 'POST',
+      body: JSON.stringify({ cvId, jdText }),
     }),
 
   // Export endpoints

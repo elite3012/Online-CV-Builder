@@ -1,4 +1,4 @@
-// src/components/ATSChecker.jsx
+﻿// src/components/ATSChecker.jsx
 import { useState } from "react";
 import {
   Box,
@@ -13,6 +13,7 @@ import {
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { motion, AnimatePresence } from "motion/react";
+import JDInput from "./JDInput";
 
 const INITIAL_CHECKLIST = [
   { id: 1, label: "Use standard section headings", checked: false },
@@ -42,11 +43,11 @@ export default function ATSChecker() {
 
     setIsScanning(true);
 
-    // GIẢ LẬP AI QUÉT (Sẽ thay bằng gọi API sau này)
+    // GIáº¢ Láº¬P AI QUÃ‰T (Sáº½ thay báº±ng gá»i API sau nÃ y)
     setTimeout(() => {
       setIsScanning(false);
       setScanResult(true);
-      // Giả lập AI tìm thấy 4/6 tiêu chí đạt chuẩn
+      // Giáº£ láº­p AI tÃ¬m tháº¥y 4/6 tiÃªu chÃ­ Ä‘áº¡t chuáº©n
       const results = [true, true, false, true, false, true];
       setChecklist((prev) =>
         prev.map((item, idx) => ({ ...item, checked: results[idx] })),
@@ -76,7 +77,7 @@ export default function ATSChecker() {
           alignItems: "flex-start",
         }}
       >
-        {/* BÊN TRÁI: UPLOAD SECTION */}
+        {/* BÃŠN TRÃI: UPLOAD SECTION */}
         <Paper
           sx={{
             p: 4,
@@ -140,7 +141,7 @@ export default function ATSChecker() {
           </AnimatePresence>
         </Paper>
 
-        {/* BÊN PHẢI: CHECKLIST SECTION */}
+        {/* BÃŠN PHáº¢I: CHECKLIST SECTION */}
         <Paper
           sx={{
             p: 4,
@@ -179,7 +180,7 @@ export default function ATSChecker() {
               >
                 <Checkbox
                   checked={item.checked}
-                  readOnly // Người dùng không được tự tick
+                  readOnly // NgÆ°á»i dÃ¹ng khÃ´ng Ä‘Æ°á»£c tá»± tick
                   icon={
                     <Box
                       sx={{
@@ -228,6 +229,11 @@ export default function ATSChecker() {
           </Box>
         </Paper>
       </Box>
-    </Box>
-  );
-}
+
+        {/* JD INPUT COMPONENT FOR SPRINT 4 FUTURE AI MATCHING */}
+        <JDInput />
+      </Box>
+    );
+  }
+
+
