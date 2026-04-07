@@ -7,7 +7,6 @@ import {
   TextField,
   CircularProgress,
   Chip,
-  Divider,
 } from "@mui/material";
 import { motion, AnimatePresence } from "motion/react";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -22,16 +21,6 @@ export default function JDInput({ onAnalyze }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
-
-  /* Suggested result structure for future AI API integration:
-    {
-      score: 85,
-      matchedSkills: ["React", "JavaScript", "Spring Boot"],
-      missingSkills: ["Docker", "Kubernetes"],
-      atsWarnings: ["Avoid tables", "Use standard headings"],
-      suggestions: ["Add more metrics to your experience section"]
-    }
-  */
 
   // --- HANDLERS ---
   const handleClearJD = () => {
@@ -48,7 +37,7 @@ export default function JDInput({ onAnalyze }) {
     setError("");
     setLoading(true);
 
-    // MOCK API CALL - Replace with real API call (e.g., apiService.analyzeJD) later
+    // MOCK API CALL
     setTimeout(() => {
       setLoading(false);
       setResult({
@@ -67,23 +56,29 @@ export default function JDInput({ onAnalyze }) {
 
   // --- RENDER ---
   return (
-    <Box sx={{ mt: 4, width: "100%" }}>
+    <Box sx={{ width: "100%" }}>
+      {/* ĐÃ FIX: Đổi nền tối, viền dashed, hiệu ứng hover giống hệt Upload section
+      */}
       <Paper
+        elevation={0}
         sx={{
           p: 4,
           borderRadius: 4,
-          bgcolor: "white",
-          color: "#102a43",
-          border: "1px solid #e2e8f0",
+          bgcolor: "rgba(255,255,255,0.05)",
+          color: "white", // Đổi text mặc định thành màu trắng
+          border: "2px dashed rgba(255,255,255,0.2)",
+          transition: "0.2s",
+          "&:hover": { borderColor: "#52b0c3", bgcolor: "rgba(82, 176, 195, 0.05)" }
         }}
       >
         <Typography variant="h5" fontWeight="bold" sx={{ color: "#52b0c3", mb: 1 }}>
           Job Description Analysis
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)", mb: 3 }}>
           Paste the Job Description to check how well your CV matches the ATS requirements.
         </Typography>
 
+        {/* Cập nhật style cho TextField để nổi bật trên nền tối */}
         <TextField
           fullWidth
           multiline
@@ -100,6 +95,21 @@ export default function JDInput({ onAnalyze }) {
             mb: 2,
             "& .MuiOutlinedInput-root": {
               borderRadius: 3,
+              color: "white", // Text màu trắng
+              bgcolor: "rgba(0,0,0,0.2)", // Làm nền ô nhập liệu tối hơn xíu để có chiều sâu
+              "& fieldset": {
+                borderColor: "rgba(255,255,255,0.2)", // Viền mặc định
+              },
+              "&:hover fieldset": {
+                borderColor: "rgba(255,255,255,0.5)", // Viền khi hover
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "#52b0c3", // Viền khi click vào nhập liệu
+              },
+            },
+            "& .MuiInputBase-input::placeholder": {
+              color: "rgba(255,255,255,0.5)",
+              opacity: 1,
             }
           }}
         />
@@ -134,11 +144,11 @@ export default function JDInput({ onAnalyze }) {
               startIcon={<ClearIcon />}
               disabled={loading}
               sx={{
-                color: "#64748b",
-                borderColor: "#cbd5e1",
+                color: "rgba(255,255,255,0.7)",
+                borderColor: "rgba(255,255,255,0.3)",
                 borderRadius: 2,
                 textTransform: "none",
-                "&:hover": { borderColor: "#94a3b8", bgcolor: "transparent" },
+                "&:hover": { borderColor: "white", color: "white", bgcolor: "rgba(255,255,255,0.05)" },
               }}
             >
               Clear
@@ -155,7 +165,7 @@ export default function JDInput({ onAnalyze }) {
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <Box sx={{ mt: 4, pt: 3, borderTop: "1px dashed #cbd5e1" }}>
+              <Box sx={{ mt: 4, pt: 3, borderTop: "1px dashed rgba(255,255,255,0.2)" }}>
                 <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
                   <Typography variant="h6" fontWeight="bold">
                     ATS Match Score:
@@ -163,7 +173,7 @@ export default function JDInput({ onAnalyze }) {
                   <Typography 
                     variant="h5" 
                     fontWeight="bold" 
-                    sx={{ ml: 2, color: result.score >= 80 ? "#22c55e" : "#f59e0b" }}
+                    sx={{ ml: 2, color: result.score >= 80 ? "#4ade80" : "#fbbf24" }}
                   >
                     {result.score}%
                   </Typography>
@@ -172,24 +182,24 @@ export default function JDInput({ onAnalyze }) {
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {/* Matched Skills */}
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
                       <CheckCircleOutlineIcon color="success" fontSize="small" /> Matched Skills
                     </Typography>
                     <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                       {result.matchedSkills.map((skill, idx) => (
-                        <Chip key={idx} label={skill} size="small" color="success" variant="outlined" />
+                        <Chip key={idx} label={skill} size="small" color="success" variant="outlined" sx={{ color: "#4ade80", borderColor: "#4ade80" }} />
                       ))}
                     </Box>
                   </Box>
 
                   {/* Missing Skills */}
                   <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
                       <ErrorOutlineIcon color="error" fontSize="small" /> Missing Skills
                     </Typography>
                     <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                       {result.missingSkills.map((skill, idx) => (
-                        <Chip key={idx} label={skill} size="small" color="error" variant="outlined" />
+                        <Chip key={idx} label={skill} size="small" color="error" variant="outlined" sx={{ color: "#f87171", borderColor: "#f87171" }} />
                       ))}
                     </Box>
                   </Box>
@@ -197,11 +207,11 @@ export default function JDInput({ onAnalyze }) {
                   {/* ATS Warnings */}
                   {result.atsWarnings.length > 0 && (
                     <Box>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
                         <WarningAmberIcon color="warning" fontSize="small" /> ATS Warnings
                       </Typography>
                       {result.atsWarnings.map((warn, idx) => (
-                        <Typography key={idx} variant="body2" sx={{ ml: 4, color: "#f59e0b" }}>
+                        <Typography key={idx} variant="body2" sx={{ ml: 4, color: "#fbbf24" }}>
                           - {warn}
                         </Typography>
                       ))}
@@ -211,11 +221,11 @@ export default function JDInput({ onAnalyze }) {
                   {/* Suggestions */}
                   {result.suggestions.length > 0 && (
                     <Box>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}>
                         💡 Suggestions to Improve
                       </Typography>
                       {result.suggestions.map((sug, idx) => (
-                        <Typography key={idx} variant="body2" sx={{ ml: 4, color: "#102a43" }}>
+                        <Typography key={idx} variant="body2" sx={{ ml: 4, color: "rgba(255,255,255,0.9)" }}>
                           ✓ {sug}
                         </Typography>
                       ))}

@@ -52,15 +52,15 @@ export default function App() {
           
           {/* Protected Routes */}
           <Route path="/editor" element={
-            <ProtectedRoute>
+            //<ProtectedRoute>
               <Editor />
-            </ProtectedRoute>
+            //</ProtectedRoute>
           } />
 
           <Route path="/dashboard" element={
-            <ProtectedRoute>
+            //<ProtectedRoute>
               <DashboardPage />
-            </ProtectedRoute>
+            //</ProtectedRoute>
           } />
         </Routes>
       </BrowserRouter>

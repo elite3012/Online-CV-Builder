@@ -1,10 +1,9 @@
 // src/template/Modern2Template.jsx
-import { Box, Typography, Grid } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 
 export default function Modern2Template({ data }) {
   if (!data) return null;
 
-  // Gom các thông tin liên lạc có dữ liệu để map ra tự động
   const contacts = [
     { label: "EMAIL", value: data.contact?.email },
     { label: "PHONE", value: data.contact?.phone },
@@ -13,7 +12,6 @@ export default function Modern2Template({ data }) {
     { label: "WEBSITE", value: data.contact?.website },
   ].filter((c) => c.value);
 
-  // Component tiêu đề mục (có ô vuông màu xanh lá làm điểm nhấn)
   const SectionTitle = ({ text }) => (
     <Typography variant="h6" fontWeight="bold" sx={{ color: "#0f172a", mb: 3, display: "flex", alignItems: "center", gap: 1, textTransform: "uppercase" }}>
       <Box component="span" sx={{ width: 12, height: 12, bgcolor: "#10b981", display: "inline-block" }} /> {text}
@@ -21,25 +19,26 @@ export default function Modern2Template({ data }) {
   );
 
   return (
-    <Box sx={{ minHeight: "1122px", width: "794px", bgcolor: "white", boxShadow: 3, mx: "auto", overflow: "hidden" }}>
+    // Ép cứng kích thước A4 (794x1123) để đảm bảo HTML2Canvas chụp không bị hụt
+    <Box sx={{ minHeight: "1123px", width: "794px", bgcolor: "white", boxShadow: 3, mx: "auto", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       
       {/* ========================================================= */}
-      {/* HEADER KHỐI MÀU (Dùng minHeight thay vì height cố định)   */}
+      {/* HEADER: ĐỔI SANG FLEXBOX ĐỂ ÔM KHÍT 100% CẠNH             */}
       {/* ========================================================= */}
-      <Grid container sx={{ minHeight: "180px" }}>
+      <Box sx={{ display: "flex", minHeight: "180px", width: "100%" }}>
         
-        {/* KHỐI TÊN & CHỨC DANH */}
-        <Grid item xs={8} sx={{ bgcolor: "#0f172a", p: 5, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        {/* KHỐI TÊN & CHỨC DANH (Tương đương xs=8 tức 66.66%) */}
+        <Box sx={{ width: "66.66%", bgcolor: "#0f172a", p: 5, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <Typography variant="h3" fontWeight="bold" color="white" sx={{ mb: 0.5, wordBreak: "break-word" }}>
             {data.name?.toUpperCase()}
           </Typography>
           <Typography variant="h6" color="#10b981" sx={{ wordBreak: "break-word" }}>
             {data.title}
           </Typography>
-        </Grid>
+        </Box>
 
-        {/* KHỐI CONTACT */}
-        <Grid item xs={4} sx={{ bgcolor: "#10b981", p: 4, display: "flex", flexDirection: "column", justifyContent: "center", gap: 0.5 }}>
+        {/* KHỐI CONTACT (Tương đương xs=4 tức 33.33%) */}
+        <Box sx={{ width: "33.33%", bgcolor: "#10b981", p: 4, display: "flex", flexDirection: "column", justifyContent: "center", gap: 0.5 }}>
           {contacts.map((item, idx) => (
             <Box key={idx} sx={{ mb: 1 }}>
               <Typography variant="caption" fontWeight="bold" color="#0f172a" sx={{ display: "block" }}>
@@ -50,14 +49,14 @@ export default function Modern2Template({ data }) {
               </Typography>
             </Box>
           ))}
-        </Grid>
+        </Box>
 
-      </Grid>
+      </Box>
 
       {/* ========================================================= */}
       {/* BODY CHÍNH                                                */}
       {/* ========================================================= */}
-      <Box sx={{ p: 5 }}>
+      <Box sx={{ p: 5, flexGrow: 1 }}>
         
         {/* SUMMARY */}
         {data.summary && (
@@ -66,11 +65,13 @@ export default function Modern2Template({ data }) {
           </Typography>
         )}
 
-        <Grid container spacing={6}>
-          {/* ----------------------------------------------------- */}
-          {/* CỘT TRÁI (Kinh nghiệm, Học vấn, Dự án)                */}
-          {/* ----------------------------------------------------- */}
-          <Grid item xs={8}>
+        {/* ----------------------------------------------------- */}
+        {/* BODY COLUMNS: ĐỔI SANG FLEXBOX CHỐNG TRÀN MARGIN ÂM   */}
+        {/* ----------------------------------------------------- */}
+        <Box sx={{ display: "flex", gap: 6 }}>
+          
+          {/* CỘT TRÁI (Kinh nghiệm, Học vấn, Dự án) */}
+          <Box sx={{ flex: 2, minWidth: 0 }}> {/* flex: 2 ~ xs: 8, minWidth: 0 để text không phá vỡ khung */}
             
             {/* EXPERIENCE */}
             {data.experience && data.experience.length > 0 && (
@@ -79,10 +80,10 @@ export default function Modern2Template({ data }) {
                 {data.experience.map((exp, idx) => (
                   <Box key={idx} sx={{ mb: 4 }}>
                     <Typography variant="subtitle1" fontWeight="bold" color="#0f172a" sx={{ wordBreak: "break-word" }}>{exp.role}</Typography>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1, alignItems: "center" }}>
-                      <Typography variant="subtitle2" color="#64748b" sx={{ wordBreak: "break-word", pr: 2 }}>{exp.company}</Typography>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1, alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+                      <Typography variant="subtitle2" color="#64748b" sx={{ wordBreak: "break-word" }}>{exp.company}</Typography>
                       {exp.duration && (
-                        <Typography variant="caption" fontWeight="bold" sx={{ color: "#10b981", bgcolor: "#ecfdf5", px: 1, py: 0.5, borderRadius: 1, flexShrink: 0 }}>
+                        <Typography variant="caption" fontWeight="bold" sx={{ color: "#10b981", bgcolor: "#ecfdf5", px: 1, py: 0.5, borderRadius: 1 }}>
                           {exp.duration}
                         </Typography>
                       )}
@@ -100,10 +101,10 @@ export default function Modern2Template({ data }) {
                 {data.education.map((edu, idx) => (
                   <Box key={idx} sx={{ mb: 4 }}>
                     <Typography variant="subtitle1" fontWeight="bold" color="#0f172a" sx={{ wordBreak: "break-word" }}>{edu.degree}</Typography>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1, alignItems: "center" }}>
-                      <Typography variant="subtitle2" color="#64748b" sx={{ wordBreak: "break-word", pr: 2 }}>{edu.school}</Typography>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1, alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+                      <Typography variant="subtitle2" color="#64748b" sx={{ wordBreak: "break-word" }}>{edu.school}</Typography>
                       {edu.duration && (
-                        <Typography variant="caption" fontWeight="bold" sx={{ color: "#10b981", bgcolor: "#ecfdf5", px: 1, py: 0.5, borderRadius: 1, flexShrink: 0 }}>
+                        <Typography variant="caption" fontWeight="bold" sx={{ color: "#10b981", bgcolor: "#ecfdf5", px: 1, py: 0.5, borderRadius: 1 }}>
                           {edu.duration}
                         </Typography>
                       )}
@@ -120,9 +121,9 @@ export default function Modern2Template({ data }) {
                 <SectionTitle text="Projects" />
                 {data.projects.map((proj, idx) => (
                   <Box key={idx} sx={{ mb: 3 }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 1 }}>
                       <Typography variant="subtitle1" fontWeight="bold" color="#0f172a" sx={{ wordBreak: "break-word" }}>{proj.name}</Typography>
-                      {proj.link && <Typography variant="caption" sx={{ color: "#10b981", textDecoration: "underline", wordBreak: "break-word", ml: 2, textAlign: 'right' }}>{proj.link}</Typography>}
+                      {proj.link && <Typography variant="caption" sx={{ color: "#10b981", textDecoration: "underline", wordBreak: "break-word" }}>{proj.link}</Typography>}
                     </Box>
                     {proj.role && <Typography variant="subtitle2" color="#64748b" sx={{ mb: 0.5, wordBreak: "break-word" }}>Role: {proj.role}</Typography>}
                     {proj.desc && <Typography variant="body2" color="#475569" sx={{ lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>{proj.desc}</Typography>}
@@ -131,12 +132,10 @@ export default function Modern2Template({ data }) {
               </Box>
             )}
 
-          </Grid>
+          </Box>
 
-          {/* ----------------------------------------------------- */}
-          {/* CỘT PHẢI (Kỹ năng, Chứng chỉ)                         */}
-          {/* ----------------------------------------------------- */}
-          <Grid item xs={4}>
+          {/* CỘT PHẢI (Kỹ năng, Chứng chỉ) */}
+          <Box sx={{ flex: 1, minWidth: 0 }}> {/* flex: 1 ~ xs: 4 */}
             
             {/* SKILLS */}
             {data.skills && data.skills.length > 0 && (
@@ -167,8 +166,8 @@ export default function Modern2Template({ data }) {
               </Box>
             )}
 
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
       </Box>
     </Box>
