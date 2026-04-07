@@ -20,12 +20,6 @@ export default function ClassicTemplate({ data }) {
       {/* CỘT TRÁI (Nhỏ hơn - Màu tối)                              */}
       {/* ========================================================= */}
       <Box sx={{ width: "30%", bgcolor: "#2c3e50", color: "#ecf0f1", p: 4 }}>
-        
-        <Box sx={{ width: 120, height: 120, bgcolor: "#bdc3c7", borderRadius: "50%", mx: "auto", mb: 3, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Typography variant="h4" color="#2c3e50">
-            {data.name ? data.name.charAt(0).toUpperCase() : "A"}
-          </Typography>
-        </Box>
 
         {/* CONTACT */}
         <Typography variant="subtitle1" fontWeight="bold" sx={{ borderBottom: "1px solid #ecf0f1", pb: 0.5, mb: 2 }}>
