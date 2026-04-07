@@ -1,7 +1,7 @@
 // src/components/Editor.jsx
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Box, Typography, Button, Paper, TextField, IconButton } from "@mui/material";
+import { Box, Typography, Button, Paper, TextField, IconButton, Dialog, DialogTitle, DialogContent, Grid, Card, CardActionArea, CardContent } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AddIcon from "@mui/icons-material/Add";
 
@@ -12,6 +12,9 @@ import EditorToolbar from "./EditorToolbar";
 import EditorSidebar from "./EditorSidebar";
 import PreviewModal from "./PreviewModal";
 import CVRenderer from "./template/CVRenderer";
+
+import { templates } from "../data/templates";
+import { TemplateCard } from "./TemplateCard";
 
 const sections = ["Personal Info", "Summary", "Education", "Experience", "Skills", "Projects", "Certificates"];
 
@@ -34,8 +37,11 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  const currentTemplate = passedResume ? { name: passedResume.templateName } : propTemplate;
-
+const [currentTemplate, setCurrentTemplate] = useState({ 
+    name: passedResume?.templateName || propTemplate?.name
+  });
+  
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [formData, setFormData] = useState(passedResume?.formData || {
     personalInfo: { fullName: "", jobTitle: "", email: "", phone: "", location: "", linkedin: "", website: "" },
     summary: "",
@@ -171,6 +177,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         templateName={currentTemplate?.name} saveStatus={saveStatus} 
         onPreview={() => setIsPreviewOpen(true)} 
         onExport={handleDownloadPDF} 
+        onChangeTemplate={() => setIsTemplateModalOpen(true)}
       />
 
       <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
@@ -227,11 +234,49 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       {/* 3. VÙNG CHỨA CV ẨN (Để render dữ liệu thực cho PDF) */}
       <Box sx={{ display: "none" }}>
         <Box ref={componentRef}>
-          <CVRenderer templateName={currentTemplate?.name || "Modern"} data={previewData} />
+          <CVRenderer templateName={currentTemplate?.name || "Unknown"} data={previewData} />
         </Box>
       </Box>
 
-      <PreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} templateName={currentTemplate?.name || "Modern"} previewData={previewData} />
+      <PreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} templateName={currentTemplate?.name || "Unknown"} previewData={previewData} />
+        <Dialog 
+        open={isTemplateModalOpen} 
+        onClose={() => setIsTemplateModalOpen(false)} 
+        maxWidth="lg" // Chỉnh to ra một chút để chứa được các thẻ
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold", textAlign: "center", mt: 2, fontSize: "1.5rem" }}>
+          Choose a new Template
+        </DialogTitle>
+        <DialogContent sx={{ p: 4, bgcolor: "#f8f9fb" }}>
+          
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, 250px)", // Tự động căn chỉnh bằng kích thước TemplateCard
+              gap: 4,
+              justifyContent: "center",
+              mx: "auto",
+              py: 2
+            }}
+          >
+            {templates.map((item) => (
+              <Box key={item.id} sx={{ height: "450px" }}> {/* Fix chiều cao để BorderGlow không bị cắt */}
+                <TemplateCard
+                  item={item}
+                  onPreview={() => {}} // Preview đã được xử lý ngầm bên trong TemplateCard rồi
+                  onUse={() => {
+                    setCurrentTemplate({ name: item.name }); // Cập nhật template mới
+                    setSaveStatus("Unsaved");                // Kích hoạt trạng thái chưa lưu
+                    setIsTemplateModalOpen(false);           // Đóng Modal
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
+
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

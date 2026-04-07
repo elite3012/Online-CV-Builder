@@ -16,6 +16,7 @@ import FeaturesPage from './pages/marketing/FeaturesPage';
 import Editor from './components/Editor';
 import ProtectedRoute from './components/ProtectedRoute';
 
+
 export default function App() {
   return (
     <>
