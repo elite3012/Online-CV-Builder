@@ -2,7 +2,6 @@ import { Box, Typography, Container, Accordion, AccordionSummary, AccordionDetai
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import HomeHeader from "../../components/home/HomeHeader";
-import Galaxy from "../../components/reactbits/Galaxy";
 
 const FAQS = [
   { q: "How do I export my CV to PDF?", a: "Simply click the 'Export' button in the Editor toolbar. Your CV will be processed and downloaded automatically as a high-quality A4 PDF." },
@@ -18,24 +17,7 @@ export default function HelpCenter() {
 
       <Box sx={{ flexGrow: 1, py: 12, bgcolor: "#050505", color: "white", position: "relative", overflow: "hidden" }}>
         
-        <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1 }}>
-          <Galaxy 
-            mouseRepulsion
-            mouseInteraction={false}
-            density={1}
-            glowIntensity={0.3}
-            saturation={0}
-            hueShift={140}
-            twinkleIntensity={0.3}
-            rotationSpeed={0.1}
-            repulsionStrength={2}
-            autoCenterRepulsion={0}
-            starSpeed={0.5}
-            speed={1}
-          />
-        </Box>
-
-        <Container maxWidth="md" sx={{ position: "relative", zIndex: 2 }}>
+        <Container maxWidth="md" sx={{ position: "relative" }}>
           <Typography variant="h3" fontWeight="900" textAlign="center" sx={{ mb: 6 }}>Help Center</Typography>
           {FAQS.map((faq, i) => (
             <Accordion key={i} sx={{ bgcolor: "rgba(255,255,255,0.03)", color: "white", mb: 2, border: "1px solid rgba(255,255,255,0.1)" }}>
