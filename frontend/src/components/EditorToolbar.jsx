@@ -11,6 +11,8 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+
 
 export default function EditorToolbar({
   onBack,
@@ -22,6 +24,7 @@ export default function EditorToolbar({
   saveStatus,
   onPreview,
   onExport,
+  onChangeTemplate,
 }) {
   return (
     <Paper
@@ -75,6 +78,9 @@ export default function EditorToolbar({
         <Typography variant="body2" color="text.secondary">
           Template: <b>{templateName || "Unknown"}</b>
         </Typography>
+        <IconButton size="small" onClick={onChangeTemplate} sx={{ color: "#52b0c3", ml: 0.5 }}>
+            <SwapHorizIcon fontSize="small" />
+          </IconButton>
         <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
         <Typography
           variant="body2"

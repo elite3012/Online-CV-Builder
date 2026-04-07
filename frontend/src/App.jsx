@@ -16,6 +16,7 @@ import FeaturesPage from './pages/marketing/FeaturesPage';
 import Editor from './components/Editor';
 import ProtectedRoute from './components/ProtectedRoute';
 
+
 export default function App() {
   return (
     <>
@@ -51,15 +52,15 @@ export default function App() {
           
           {/* Protected Routes */}
           <Route path="/editor" element={
-            <ProtectedRoute>
+            //<ProtectedRoute>
               <Editor />
-            </ProtectedRoute>
+            //</ProtectedRoute>
           } />
 
           <Route path="/dashboard" element={
-            <ProtectedRoute>
+            //<ProtectedRoute>
               <DashboardPage />
-            </ProtectedRoute>
+            // </ProtectedRoute>
           } />
         </Routes>
       </BrowserRouter>
