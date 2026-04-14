@@ -32,13 +32,19 @@ public class CVController {
     private ValidationService validationService;
 
     public static class CreateCVRequest {
-        public String title;
         public Long templateId;
+        public String title;
     }
 
     public static class UpdateCVRequest {
         public String title;
-        public String content;
+        public String summary;
+        public com.cvbuilder.model.PersonalInformation personalInformation;
+        public List<com.cvbuilder.model.Education> educations;
+        public List<com.cvbuilder.model.Experience> experiences;
+        public List<com.cvbuilder.model.Project> projects;
+        public List<com.cvbuilder.model.Certificate> certificates;
+        public List<com.cvbuilder.model.Skill> skills;
     }
 
     @GetMapping
@@ -55,24 +61,21 @@ public class CVController {
 
     @PostMapping
     public ResponseEntity<CV> createCV(@RequestBody CreateCVRequest request, Principal principal) {
-        if (request.title == null || request.title.trim().isEmpty() || request.templateId == null) {
+        if (request.templateId == null) {
             return ResponseEntity.badRequest().build(); 
         }
         
-        CV createdCV = cvService.createCV(request.title, request.templateId, principal.getName());
+        CV createdCV = cvService.createCV(request.templateId, request.title, principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdCV);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCV(@PathVariable Long id, @RequestBody UpdateCVRequest request, Principal principal) {
-        if (request.title == null || request.title.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Title cannot be empty");
-        }
-        if (validationService.containsXssPayload(request.content)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("XSS payload detected in content. Request rejected.");
+        if (request.summary != null && validationService.containsXssPayload(request.summary)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("XSS payload detected in summary. Request rejected.");
         }
         
-        CV updatedCV = cvService.updateCV(id, request.title, request.content, principal.getName());
+        CV updatedCV = cvService.updateCV(id, request, principal.getName());
         return ResponseEntity.ok(updatedCV);
     }
 

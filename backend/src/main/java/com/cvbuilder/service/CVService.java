@@ -27,7 +27,7 @@ public class CVService {
     private TemplateRepository templateRepository;
 
     @Transactional
-    public CV createCV(String title, Long templateId, String userEmail) {
+    public CV createCV(Long templateId, String summary, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -37,11 +37,9 @@ public class CVService {
         CV cv = new CV();
         cv.setUser(user);
         cv.setTemplate(template);
-        cv.setTitle(title);
+        cv.setSummary(summary);
         cv.setCreatedAt(LocalDateTime.now());
         cv.setUpdatedAt(LocalDateTime.now());
-
-        // System initializes default sections here if applicable
 
         return cvRepository.save(cv);
     }
@@ -61,16 +59,62 @@ public class CVService {
     }
 
     @Transactional
-    public CV updateCV(Long cvId, String newTitle, String newContent, String userEmail) {
+    public CV updateCV(Long cvId, com.cvbuilder.controller.CVController.UpdateCVRequest request, String userEmail) {
         CV cv = getCVByIdAndOwner(cvId, userEmail);
-        if (newTitle != null) {
-            cv.setTitle(newTitle);
+        
+        if (request.title != null && request.summary == null) {
+            cv.setSummary(request.title); // Fallback for frontend compatibility
         }
-        if (newContent != null) {
-            cv.setContent(newContent);
+        if (request.summary != null) {
+            cv.setSummary(request.summary);
         }
+        
+        if (request.personalInformation != null) {
+            request.personalInformation.setCv(cv);
+            cv.setPersonalInformation(request.personalInformation);
+        }
+        
+        if (request.educations != null) {
+            cv.getEducations().clear();
+            request.educations.forEach(edu -> {
+                edu.setCv(cv);
+                cv.getEducations().add(edu);
+            });
+        }
+        
+        if (request.experiences != null) {
+            cv.getExperiences().clear();
+            request.experiences.forEach(exp -> {
+                exp.setCv(cv);
+                cv.getExperiences().add(exp);
+            });
+        }
+        
+        if (request.projects != null) {
+            cv.getProjects().clear();
+            request.projects.forEach(proj -> {
+                proj.setCv(cv);
+                cv.getProjects().add(proj);
+            });
+        }
+        
+        if (request.certificates != null) {
+            cv.getCertificates().clear();
+            request.certificates.forEach(cert -> {
+                cert.setCv(cv);
+                cv.getCertificates().add(cert);
+            });
+        }
+        
+        if (request.skills != null) {
+            cv.getSkills().clear();
+            request.skills.forEach(skill -> {
+                skill.setCv(cv);
+                cv.getSkills().add(skill);
+            });
+        }
+        
         cv.setUpdatedAt(LocalDateTime.now());
-
         return cvRepository.save(cv);
     }
 

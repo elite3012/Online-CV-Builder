@@ -26,3 +26,6 @@ Thumbs.db
 .idea/
 *.iws
 *.log
+frontend/package-lock.json
+*.json
+*.lock
