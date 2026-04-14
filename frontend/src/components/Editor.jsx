@@ -13,6 +13,8 @@ import EditorSidebar from "./EditorSidebar";
 import PreviewModal from "./PreviewModal";
 import CVRenderer from "./template/CVRenderer";
 
+import { apiService } from "../services/apiService";
+
 import { templates } from "../data/templates";
 import { TemplateCard } from "./TemplateCard";
 
@@ -115,13 +117,62 @@ const [currentTemplate, setCurrentTemplate] = useState({
   // --- LOGIC HANDLERS ---
   useEffect(() => {
     if (saveStatus === "Unsaved") {
-      const timer = setTimeout(() => setSaveStatus("Saved"), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [formData, saveStatus]);
-
-  const handleBack = () => propOnBack ? propOnBack() : navigate(-1);
-  const handleDataChange = (section, field, value) => { setFormData((prev) => ({ ...prev, [section]: { ...prev[section], [field]: value } })); setSaveStatus("Unsaved"); };
+        const timer = setTimeout(async () => {
+          setSaveStatus("Saving...");
+          // Ensure we map formData correctly to the backend expected UpdateCVRequest
+          if (passedResume?.id) {
+            try {
+              const updatePayload = {
+                title: cvTitle,
+                summary: formData.summary,
+                personalInformation: {
+                  fullName: formData.personalInfo.fullName,
+                  email: formData.personalInfo.email,
+                  phone: formData.personalInfo.phone,
+                  address: formData.personalInfo.address,
+                  jobTitle: formData.personalInfo.jobTitle
+                },
+                educations: formData.education.map(e => ({
+                  school: e.school,
+                  degree: e.degree,
+                  major: e.major,
+                  startDate: e.startDate,
+                  endDate: e.endDate
+                })),
+                experiences: formData.experience.map(e => ({
+                  company: e.company,
+                  jobTitle: e.jobTitle,
+                  experienceStartDate: e.startDate,
+                  experienceEndDate: e.endDate,
+                  description: e.description
+                })),
+                projects: formData.project.map(p => ({
+                  projectName: p.projectName,
+                  role: p.role,
+                  description: p.description
+                })),
+                skills: formData.skills.map(s => ({
+                  skillName: s.name
+                })),
+                certificates: formData.certifications.map(c => ({
+                  certificateName: c.name,
+                  issueDate: c.date
+                }))
+              };
+              await apiService.updateCV(passedResume.id, updatePayload);
+              setSaveStatus("Saved");
+            } catch (error) {
+              console.error("Save error:", error);
+              setSaveStatus("Error");
+            }
+          } else {
+            // Not connected or new without backend ID initialized
+            setSaveStatus("Saved");
+          }
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }, [formData, saveStatus, cvTitle, passedResume?.id]);
   const handleStringChange = (section, value) => { setFormData((prev) => ({ ...prev, [section]: value })); setSaveStatus("Unsaved"); };
   const handleArrayChange = (section, index, field, value) => { setFormData((prev) => { const newArray = [...prev[section]]; newArray[index][field] = value; return { ...prev, [section]: newArray }; }); setSaveStatus("Unsaved"); };
   const addArrayItem = (section, defaultObj) => { setFormData((prev) => ({ ...prev, [section]: [...prev[section], defaultObj] })); setSaveStatus("Unsaved"); };
