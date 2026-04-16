@@ -57,21 +57,23 @@ export default function CVEditorPage() {
   };
 
   const handleSave = async () => {
-    try {
-      setStatus('Saving...');
-      await apiService.updateCV(cvId, {
-        title: cvData.title,
-        summary: cvData.summary,
-        experiences: [{ jobDescription: cvData.experience }],
-        projects: [{ projectName: cvData.projectLinkText }],
-        skills: cvData.skills.split(',').map(s => ({ skillName: s.trim() }))
-      });
-      setStatus('Saved successfully');
-    } catch (error) {
-      console.error('Failed to save CV:', error);
-      setStatus('Error saving');
-    }
-  };
+  try {
+    setStatus('Saving...');
+    await apiService.updateCV(cvId, {
+      title: cvData.title,
+      summary: cvData.summary,
+      experiences: [{ jobDescription: cvData.experience }],
+      projects: [{ projectName: cvData.projectLinkText }],
+      skills: cvData.skills.split(',').map(s => ({ skillName: s.trim() }))
+    });
+    // Sau khi save xong, reload lại từ backend để đảm bảo sync
+    await loadCV();
+    setStatus('Saved successfully');
+  } catch (error) {
+    console.error('Failed to save CV:', error);
+    setStatus('Error saving');
+  }
+};
 
   const statusStyle = useMemo(() => {
     if (status.includes('Saved')) return styles.statusSuccess;
