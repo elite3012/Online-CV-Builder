@@ -83,40 +83,40 @@ Follow these steps to run the application on your local machine.
 1. Ensure **PostgreSQL** is installed and running on port 5432.
 2. Create an empty database named CVBuilder.
 3. The backend uses default credentials. Update "backend/src/main/resources/application.properties" if yours are different:
-   `properties
+   ```properties
    spring.datasource.username=postgres
    spring.datasource.password=your_db_password
-   `
+   ```
 
 ### 2. Backend Setup
 1. Open a terminal and navigate to the backend folder:
-   `ash
+   ```bash
    cd backend
-   `
+   ```
 2. Install dependencies and build the project:
-   `ash
+   ```bash
    mvn clean install
-   `
+   ```
 3. Run the Spring Boot application (Server will start on port 8081):
-   `ash
+   ```bash
    mvn spring-boot:run
-   `
+   ```
 
 ### 3. Frontend Setup
 1. Open a new terminal and navigate to the frontend folder:
-   `ash
+   ```bash
    cd frontend
-   `
+   ```
 2. Install Node packages (using npm, yarn, or bun):
-   `ash
+   ```bash
    yarn install
    # or npm install
-   `
+   ```
 3. Start the Vite development server:
-   `ash
+   ```bash
    yarn dev
    # or npm run dev
-   `
+   ```
 4. Access the web app at http://localhost:5173.
 
 ---
@@ -158,7 +158,7 @@ A quick look at the main REST endpoints bridging the application:
 
 ## Project Structure
 
-`	ext
+```text
 Online-CV-Builder/
 |-- backend/
 |   |-- src/main/java/com/cvbuilder/
@@ -177,7 +177,7 @@ Online-CV-Builder/
     |   |-- services/     # apiService.js for Fetch calls
     |   |-- utils/        # Helper logic
     |-- package.json
-`
+```
 
 ---
 
