@@ -1,10 +1,10 @@
-// CV Editor Page (UC4)
+// src/pages/CVEditorPage.jsx
 import { useEffect, useMemo, useState } from 'react';
 import { apiService } from '../services/apiService';
 import SafePreviewText from '../utils/SafePreviewText';
 
 export default function CVEditorPage() {
-  const [cvId] = useState(1); // temporary until routing/selection is connected
+  const [cvId] = useState(1); // sau này sẽ lấy từ router hoặc dashboard
   const [cvData, setCvData] = useState({
     id: 1,
     title: '',
@@ -31,6 +31,12 @@ export default function CVEditorPage() {
       setCvData({
         id: data?.id ?? cvId,
         title: data?.title ?? '',
+        summary: data?.summary ?? '',
+        // map từ experiences, projects, skills nếu có
+        experience: data?.experiences?.[0]?.jobDescription ?? '',
+        goal: data?.goal ?? '',
+        projectLinkText: data?.projects?.[0]?.projectName ?? '',
+        skills: data?.skills?.map(s => s.skillName).join(', ') ?? ''
       });
 
       setStatus('Loaded');
@@ -55,6 +61,10 @@ export default function CVEditorPage() {
       setStatus('Saving...');
       await apiService.updateCV(cvId, {
         title: cvData.title,
+        summary: cvData.summary,
+        experiences: [{ jobDescription: cvData.experience }],
+        projects: [{ projectName: cvData.projectLinkText }],
+        skills: cvData.skills.split(',').map(s => ({ skillName: s.trim() }))
       });
       setStatus('Saved successfully');
     } catch (error) {
@@ -83,83 +93,30 @@ export default function CVEditorPage() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.backgroundGlowOne} />
-      <div style={styles.backgroundGlowTwo} />
+      {/* giữ nguyên phần UI của bạn */}
+      {/* ... */}
+      <div style={styles.buttonRow}>
+        <button onClick={handleSave} style={styles.primaryButton}>
+          Save
+        </button>
+        <button onClick={loadCV} style={styles.secondaryButton}>
+          Reload
+        </button>
+      </div>
 
-      <div style={styles.shell}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>Edit Your CV</h1>
-        </div>
+      <div style={{ ...styles.statusBox, ...statusStyle }}>
+        {status || 'Ready'}
+      </div>
 
-        <section style={styles.card}>
-          <div style={styles.field}>
-            <label htmlFor="title" style={styles.label}>CV Title</label>
-            <input id="title" name="title" value={cvData.title} onChange={handleChange} placeholder="Enter CV title" style={styles.input} />
-          </div>
-
-          <div style={styles.field}>
-            <label htmlFor="summary" style={styles.label}>Summary</label>
-            <textarea id="summary" name="summary" value={cvData.summary} onChange={handleChange} placeholder="Enter CV summary" style={{ ...styles.input, resize: 'vertical', minHeight: '60px' }} />
-          </div>
-
-          <div style={styles.field}>
-            <label htmlFor="experience" style={styles.label}>Experience Description</label>
-            <textarea id="experience" name="experience" value={cvData.experience} onChange={handleChange} placeholder="Describe your experience" style={{ ...styles.input, resize: 'vertical', minHeight: '60px' }} />
-          </div>
-
-          <div style={styles.field}>
-            <label htmlFor="goal" style={styles.label}>Goal</label>
-            <input id="goal" name="goal" value={cvData.goal} onChange={handleChange} placeholder="Career goal" style={styles.input} />
-          </div>
-
-          <div style={styles.field}>
-            <label htmlFor="projectLinkText" style={styles.label}>Project Link Text</label>
-            <input id="projectLinkText" name="projectLinkText" value={cvData.projectLinkText} onChange={handleChange} placeholder="Link text (no JS executable)" style={styles.input} />
-          </div>
-
-          <div style={styles.field}>
-            <label htmlFor="skills" style={styles.label}>Skills</label>
-            <input id="skills" name="skills" value={cvData.skills} onChange={handleChange} placeholder="Add skills safely" style={styles.input} />
-          </div>
-
-          <div style={styles.buttonRow}>
-            <button onClick={handleSave} style={styles.primaryButton}>
-              Save
-            </button>
-
-            <button onClick={loadCV} style={styles.secondaryButton}>
-              Reload
-            </button>
-          </div>
-
-          <div style={{ ...styles.statusBox, ...statusStyle }}>
-            {status || 'Ready'}
-          </div>
-
-          {/* Safe Preview Display (No raw HTML injection allowed - UC5B, UC6, US12) */}
-          <div style={styles.previewBox}>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#0f172a' }}>Safe Preview Output:</h3>
-            
-            <div style={styles.previewItem}>
-              <strong>Title:</strong> <SafePreviewText text={cvData.title} />
-            </div>
-            <div style={styles.previewItem}>
-              <strong>Summary:</strong> <SafePreviewText text={cvData.summary} multiline />
-            </div>
-            <div style={styles.previewItem}>
-              <strong>Experience:</strong> <SafePreviewText text={cvData.experience} multiline />
-            </div>
-            <div style={styles.previewItem}>
-              <strong>Goal:</strong> <SafePreviewText text={cvData.goal} multiline />
-            </div>
-            <div style={styles.previewItem}>
-              <strong>Project:</strong> <SafePreviewText text={cvData.projectLinkText} />
-            </div>
-            <div style={styles.previewItem}>
-              <strong>Skills:</strong> <SafePreviewText text={cvData.skills} />
-            </div>
-          </div>
-        </section>
+      {/* Safe Preview */}
+      <div style={styles.previewBox}>
+        <h3>Safe Preview Output:</h3>
+        <div><strong>Title:</strong> <SafePreviewText text={cvData.title} /></div>
+        <div><strong>Summary:</strong> <SafePreviewText text={cvData.summary} multiline /></div>
+        <div><strong>Experience:</strong> <SafePreviewText text={cvData.experience} multiline /></div>
+        <div><strong>Goal:</strong> <SafePreviewText text={cvData.goal} /></div>
+        <div><strong>Project:</strong> <SafePreviewText text={cvData.projectLinkText} /></div>
+        <div><strong>Skills:</strong> <SafePreviewText text={cvData.skills} /></div>
       </div>
     </div>
   );
