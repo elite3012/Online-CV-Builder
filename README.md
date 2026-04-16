@@ -4,7 +4,7 @@
 
 ---
 
-## ?? Features
+## Features
 
 ### Authentication & Account Management
 - **Secure Registration & Login:** JWT-based authentication.
@@ -21,19 +21,19 @@
 - **Strict Data Ownership:** Users can only fetch, edit, or delete their own CV records natively enforced at the Service layer.
 - **Input Sanitization:** Built-in logic to block XSS payloads from reaching the database.
 
-### ?? Future Implementations (Next Sprints)
+### Future Implementations (Next Sprints)
 - **AI CV-to-JD Matching:** NLP algorithms parsing your CV tokens against Job Descriptions to provide Match Scores.
 - **ATS Checker:** Smart suggestions based on missing skill keywords and formatting checks.
 
 ---
 
-## ??? System Architecture
+## System Architecture
 
 The application implements a classic client-server architecture mapped as follows:
 
-**Client (React)** $\rightarrow$ **REST APIs** $\rightarrow$ **Controller Layer** $\rightarrow$ **Service Layer** $\rightarrow$ **Repository Layer** $\rightarrow$ **PostgreSQL**
+**Client (React)** -> **REST APIs** -> **Controller Layer** -> **Service Layer** -> **Repository Layer** -> **PostgreSQL**
 
-1. **Frontend:** Dispatches structural payloads (DTOs) via the piService.
+1. **Frontend:** Dispatches structural payloads (DTOs) via the apiService.
 2. **Backend Controllers:** Route and validate HTTP requests (e.g., CVController, AuthController).
 3. **Backend Services:** Execute business rules, merge nested collections, and handle Auth/Rate logic.
 4. **Repositories:** Spring Data JPA interfaces interacting directly with the relational database.
@@ -42,22 +42,22 @@ The application implements a classic client-server architecture mapped as follow
 
 ---
 
-## ??? Database Design
+## Database Design
 
 The system relies on a fully normalized (1st to 3rd normal form) PostgreSQL Entity-Relationship structure rather than massive JSON columns to ensure data integrity.
 
 **Main Entities:**
-- **\User\**: Credentials and account status.
-- **\Template\**: System-provided templates.
-- **\CV\**: The root entity linking the User and Template. It cascades updates to all nested subsections.
-- **\PersonalInformation\**: One-to-One mapping from \CV\.
-- **\Education\, \Experience\, \Project\, \Certificate\, \Skill\**: One-to-Many child relationships owned by the \CV\.
+- **User**: Credentials and account status.
+- **Template**: System-provided templates.
+- **CV**: The root entity linking the User and Template. It cascades updates to all nested subsections.
+- **PersonalInformation**: One-to-One mapping from CV.
+- **Education, Experience, Project, Certificate, Skill**: One-to-Many child relationships owned by the CV.
 
 > [Insert diagram: ERD image]
 
 ---
 
-## ?? Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework:** React.js (built with Vite)
@@ -75,25 +75,25 @@ The system relies on a fully normalized (1st to 3rd normal form) PostgreSQL Enti
 
 ---
 
-## ?? Installation Guide
+## Installation Guide
 
 Follow these steps to run the application on your local machine.
 
 ### 1. Database Setup
 1. Ensure **PostgreSQL** is installed and running on port 5432.
 2. Create an empty database named CVBuilder.
-3. The backend uses default credentials. Update ackend/src/main/resources/application.properties if yours are different:
+3. The backend uses default credentials. Update "backend/src/main/resources/application.properties" if yours are different:
    `properties
    spring.datasource.username=postgres
    spring.datasource.password=your_db_password
    `
 
 ### 2. Backend Setup
-1. Open a terminal and navigate to the ackend folder:
+1. Open a terminal and navigate to the backend folder:
    `ash
    cd backend
    `
-2. Install dependencies & build the project:
+2. Install dependencies and build the project:
    `ash
    mvn clean install
    `
@@ -103,7 +103,7 @@ Follow these steps to run the application on your local machine.
    `
 
 ### 3. Frontend Setup
-1. Open a new terminal and navigate to the rontend folder:
+1. Open a new terminal and navigate to the frontend folder:
    `ash
    cd frontend
    `
@@ -121,7 +121,7 @@ Follow these steps to run the application on your local machine.
 
 ---
 
-## ?? How to Use (User Guide)
+## How to Use (User Guide)
 
 1. **Register an Account:** Head to the auth page and create a new account safely.
    > [Insert screenshot: Registration page]
@@ -136,72 +136,72 @@ Follow these steps to run the application on your local machine.
 
 ---
 
-## ?? API Overview
+## API Overview
 
 A quick look at the main REST endpoints bridging the application:
 
 *   **Auth Endpoints**
-    *   \POST /api/auth/register\ - Register user
-    *   \POST /api/auth/login\ - Login & receive JWT
+    *   POST /api/auth/register : Register user
+    *   POST /api/auth/login : Login and receive JWT
 *   **CV Endpoints**
-    *   \GET  /api/cv\ - Fetch all CVs for the authenticated user
-    *   \GET  /api/cv/{id}\ - Read a specific CV 
-    *   \POST /api/cv\ - Initialize a new CV with a template ID
-    *   \PUT  /api/cv/{id}\ - Update nested sections of the CV via structured DTOs
-    *   \DELETE /api/cv/{id}\ - Delete a CV record
+    *   GET  /api/cv : Fetch all CVs for the authenticated user
+    *   GET  /api/cv/{id} : Read a specific CV 
+    *   POST /api/cv : Initialize a new CV with a template ID
+    *   PUT  /api/cv/{id} : Update nested sections of the CV via structured DTOs
+    *   DELETE /api/cv/{id} : Delete a CV record
 *   **Template Endpoints**
-    *   \GET /api/templates\ - Retrieve active templates
+    *   GET /api/templates : Retrieve active templates
 *   **AI/Matching Endpoints (In-progress)**
-    *   \POST /api/ai/analyze-jd\ - Evaluate CV against a Job Description string
+    *   POST /api/ai/analyze-jd : Evaluate CV against a Job Description string
 
 ---
 
-## ?? Project Structure
+## Project Structure
 
 `	ext
 Online-CV-Builder/
-+-- backend/
-¦   +-- src/main/java/com/cvbuilder/
-¦   ¦   +-- controller/   # REST API Entry points
-¦   ¦   +-- dto/          # Data Transfer Objects
-¦   ¦   +-- model/        # JPA Entities (CV, User, Education, etc.)
-¦   ¦   +-- repository/   # DB Interfaces
-¦   ¦   +-- security/     # JWT Filters & Config
-¦   ¦   +-- service/      # Business Logic & DB Transactions
-¦   +-- src/main/resources/
-¦       +-- application.properties # Server & DB Config
-+-- frontend/
-    +-- src/
-    ¦   +-- components/   # Modular React Components (Editor, Navbar, Templates)
-    ¦   +-- pages/        # High-level Views (Dashboard, EditorPage, Auth)
-    ¦   +-- services/     # apiService.js for Fetch calls
-    ¦   +-- utils/        # Helper logic
-    +-- package.json
+|-- backend/
+|   |-- src/main/java/com/cvbuilder/
+|   |   |-- controller/   # REST API Entry points
+|   |   |-- dto/          # Data Transfer Objects
+|   |   |-- model/        # JPA Entities (CV, User, etc.)
+|   |   |-- repository/   # DB Interfaces
+|   |   |-- security/     # JWT Filters & Config
+|   |   |-- service/      # Business Logic & DB Transactions
+|   |-- src/main/resources/
+|       |-- application.properties # Server & DB Config
+|-- frontend/
+    |-- src/
+    |   |-- components/   # Modular React Components (Editor, Navbar)
+    |   |-- pages/        # High-level Views (Dashboard, EditorPage, Auth)
+    |   |-- services/     # apiService.js for Fetch calls
+    |   |-- utils/        # Helper logic
+    |-- package.json
 `
 
 ---
 
-## ??? Security Highlights
+## Security Highlights
 
 - **Password Hashing:** Passwords are cryptographically hashed via Bcrypt before DB insertion.
 - **Stateless Sessions (JWT):** No server-side sessions. All secure requests require an actively valid Authorization: Bearer <token> header.
-- **Ownership Validation:** All CRUD operations inside CVService explicitly verify that cv.getUserId() == currentUser.getId() preventing ID-Insecure Direct Object Reference (IDOR).
+- **Ownership Validation:** All CRUD operations inside CVService explicitly verify that the user ID connected to the CV matches the current user ID, preventing IDOR.
 - **Rate-Limiting:** Multiple failed login attempts trigger an IP/User-based cooldown block, neutralizing brute-force dictionary attacks.
-- **XSS Protection:** The backend alidationService actively scans PUT payloads to reject malicious HTML/JS tags, combined with SafePreviewText.jsx rendering logic on the React side.
+- **XSS Protection:** The backend validationService actively scans PUT payloads to reject malicious HTML/JS tags, combined with SafePreviewText.jsx rendering logic on the React side.
 
 ---
 
-## ?? Contribution
+## Contribution
 
 Contributions are welcome!
 1. Fork the repo.
 2. Create a new branch (git checkout -b feature/AmazingFeature).
-3. Commit your changes (git commit -m 'Add some AmazingFeature').
+3. Commit your changes (git commit -m "Add some AmazingFeature").
 4. Push to the branch (git push origin feature/AmazingFeature).
 5. Open a Pull Request.
 
 ---
 
-## ?? License
+## License
 
 This project is open-source and available under the [MIT License](LICENSE).
