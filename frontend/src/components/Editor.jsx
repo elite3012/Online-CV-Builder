@@ -27,6 +27,8 @@ import EditorSidebar from "./EditorSidebar";
 import PreviewModal from "./PreviewModal";
 import CVRenderer from "./template/CVRenderer";
 
+import { apiService } from "../services/apiService";
+
 import { templates } from "../data/templates";
 import { TemplateCard } from "./TemplateCard";
 

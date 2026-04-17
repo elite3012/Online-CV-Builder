@@ -30,16 +30,18 @@ export default function MyResumes({ setCurrentView }) {
   useEffect(() => {
     apiService.getCVList().then((data) => {
         const mapped = data.map(cv => {
-            let parsedData = {};
-            try {
-                parsedData = cv.content ? JSON.parse(cv.content) : {};
-            } catch(e) {}
+            let parsedData = {
+                summary: cv.summary || "",
+                personalInfo: cv.personalInformation || {},
+                education: cv.educations || [],
+                experience: cv.experiences || [],
+                project: cv.projects || [],
+                certifications: cv.certificates || [],
+                skills: cv.skills || []
+            };
             return {
                 id: cv.id,
-                name: cv.title || 'Untitled',
-                templateName: cv.template?.name || 'Modern',
-                updatedAt: cv.updatedAt,
-                formData: parsedData
+                name: cv.title || cv.summary || 'Untitled',
             };
         });
         setResumeList(mapped);

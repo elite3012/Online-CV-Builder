@@ -1,225 +1,207 @@
-# Online CV Builder - AI Assisted CV Builder Website
+# Online CV Builder
 
-A web application that helps job seekers create professional CVs quickly by editing sections, choosing templates, previewing, exporting, and receiving basic AI assistance with zero monetary cost.
+**Online CV Builder** is a modern, full-stack web application designed to help users create, manage, and export professional resumes effortlessly. By bridging a sleek React frontend with a robust Spring Boot backend, the platform solves the hassle of manual CV formatting, offering dynamic templates and real-time safe previews securely backed by a normalized PostgreSQL database.
 
-## Project Overview
-
-- **Timeline:** 2 months
-- **Team:** 6 members
-- **Constraints:** Free tools and open-source libraries only
-- **Tech Stack:** React (Frontend) + Java Spring Boot (Backend) + SQLite (Database)
+---
 
 ## Features
 
-### P0 (Must Have - MVP)
-- ✅ User Registration, Login, and Logout
-- ✅ Create and manage multiple CVs
-- ✅ Edit CV sections: Personal Info, Education, Experience, Skills
-- ✅ Choose from multiple professional templates
-- ✅ Preview CV with selected template
-- ✅ Export CV to PDF and DOCX
-- ✅ Input validation with clear error messages
-- ✅ Data persistence and reload
+### Authentication & Account Management
+- **Secure Registration & Login:** JWT-based authentication.
+- **Account Protection:** Brute-force protection with rate limiting and temporary blocks.
+- **Data Privacy:** Passwords are fully hashed and salted before storage.
 
-### P2 (Nice to Have)
-- 🔄 Rule-based ATS checklist
-- 🔄 Keyword matching vs job description
+### Core CV Management
+- **Interactive Editor:** Real-time form updates with an "Unsaved/Saving/Saved" auto-sync indicator.
+- **Dynamic Relational Sections:** Add, edit, or remove entries for Education, Experience, Projects, Skills, and Certificates.
+- **Template Gallery:** Browse and instantly swap between multiple professional templates (Modern, Classic, Creative, etc.).
+- **Live Preview & Export:** Safely preview resumes and export them instantly to high-quality PDF formats. 
 
-## Project Structure
+### Security Enhancements
+- **Strict Data Ownership:** Users can only fetch, edit, or delete their own CV records natively enforced at the Service layer.
+- **Input Sanitization:** Built-in logic to block XSS payloads from reaching the database.
 
-```
-Online-CV-Builder/
-├── frontend/              # React + Vite frontend
-│   ├── src/
-│   │   ├── components/   # Reusable UI components
-│   │   ├── pages/        # Page components
-│   │   ├── services/     # API and auth services
-│   │   └── utils/        # Utility functions
-│   └── public/           # Static assets
-├── backend/              # Java Spring Boot backend
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/cvbuilder/
-│   │   │   │   ├── controller/    # REST controllers
-│   │   │   │   ├── service/       # Business logic
-│   │   │   │   ├── repository/    # Data access
-│   │   │   │   ├── model/         # JPA entities
-│   │   │   │   ├── dto/           # Data transfer objects
-│   │   │   │   └── security/      # JWT and security config
-│   │   │   └── resources/
-│   │   └── test/         # Unit and integration tests
-│   └── pom.xml           # Maven dependencies
-├── docs/                 # Documentation and Lab 2 artefacts
-│   ├── requirements/     # User stories, use cases, FR, NFR
-│   ├── diagrams/         # Architecture, ERD, class, sequence diagrams
-│   ├── sprint/           # Sprint backlog and planning
-│   └── prototypes/       # UI/UX prototypes
-├── LICENSE
-└── README.md
-```
+### Future Implementations (Next Sprints)
+- **AI CV-to-JD Matching:** NLP algorithms parsing your CV tokens against Job Descriptions to provide Match Scores.
+- **ATS Checker:** Smart suggestions based on missing skill keywords and formatting checks.
+
+---
+
+## System Architecture
+
+The application implements a classic client-server architecture mapped as follows:
+
+**Client (React)** -> **REST APIs** -> **Controller Layer** -> **Service Layer** -> **Repository Layer** -> **PostgreSQL**
+
+1. **Frontend:** Dispatches structural payloads (DTOs) via the apiService.
+2. **Backend Controllers:** Route and validate HTTP requests (e.g., CVController, AuthController).
+3. **Backend Services:** Execute business rules, merge nested collections, and handle Auth/Rate logic.
+4. **Repositories:** Spring Data JPA interfaces interacting directly with the relational database.
+
+> [Insert diagram: System architecture]
+
+---
+
+## Database Design
+
+The system relies on a fully normalized (1st to 3rd normal form) PostgreSQL Entity-Relationship structure rather than massive JSON columns to ensure data integrity.
+
+**Main Entities:**
+- **User**: Credentials and account status.
+- **Template**: System-provided templates.
+- **CV**: The root entity linking the User and Template. It cascades updates to all nested subsections.
+- **PersonalInformation**: One-to-One mapping from CV.
+- **Education, Experience, Project, Certificate, Skill**: One-to-Many child relationships owned by the CV.
+
+> [Insert diagram: ERD image]
+
+---
 
 ## Tech Stack
 
 ### Frontend
-- **Framework:** React 18
-- **Build Tool:** Vite 5
-- **Routing:** React Router 6
-- **HTTP Client:** Axios
-- **Styling:** CSS (TBD: Tailwind/Material-UI)
+- **Framework:** React.js (built with Vite)
+- **UI Library:** Material UI (MUI) & Framer Motion (Animations)
+- **Export Engine:** jsPDF & html2canvas
 
 ### Backend
-- **Framework:** Spring Boot 3.2
-- **Language:** Java 17
-- **Security:** Spring Security + JWT
-- **Database:** SQLite (development), JPA/Hibernate
-- **Export Libraries:** 
-  - Apache PDFBox (PDF export)
-  - Apache POI (DOCX export)
+- **Framework:** Java Spring Boot
+- **Persistence:** Spring Data JPA / Hibernate
+- **Security:** Spring Security & JWT 
+- **Package Manager:** Maven
 
-### Development Tools
-- **Version Control:** Git
-- **IDEs:** VS Code, IntelliJ IDEA
-- **API Testing:** Postman / Thunder Client
-- **Diagram Tools:** Draw.io, PlantUML
-
-## Getting Started
-
-### Prerequisites
-- **Node.js** 18+ and npm
-- **Java JDK** 17+
-- **Maven** 3.8+
-- Git
-
-### Installation
-
-#### 1. Clone the repository
-```bash
-git clone https://github.com/your-team/Online-CV-Builder.git
-cd Online-CV-Builder
-```
-
-#### 2. Setup Backend
-```bash
-cd backend
-mvn clean install
-mvn spring-boot:run
-```
-Backend will run on `http://localhost:8080`
-
-#### 3. Setup Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Frontend will run on `http://localhost:3000`
-
-### Environment Variables
-
-#### Backend (application.properties)
-```properties
-server.port=8080
-spring.datasource.url=jdbc:sqlite:cvbuilder.db
-jwt.secret=your-secret-key-change-this
-jwt.expiration=86400000
-```
-
-#### Frontend (.env)
-```env
-VITE_API_URL=http://localhost:8080/api
-```
-
-## Development Workflow
-
-### Sprint 1 (Current) - Documentation Focus
-- Complete Lab 2 requirements specification
-- Create all required diagrams
-- Define user stories, use cases, FR, NFR
-- Prepare prototypes and change logs
-
-### Sprint 2+ - Implementation
-- Implement authentication and user management
-- Build CV editor with all sections
-- Implement template system
-- Add export functionality
-- Testing and refinement
-
-## Team
-
-- **Quy (Leader):** Project Manager, Integration, Report consolidation
-- **Minh:** Backend Architecture, ERD, API design, Security
-- **Cap:** UI/UX Design, Prototypes, User stories, Template gallery
-- **Duc:** Full-stack Development, Module integration
-- **Kiet:** Non-functional requirements, Editor sections
-- **Khang:** QA/Testing, Documentation, Test cases
-
-## Documentation
-
-All Lab 2 documentation is in the `docs/` folder:
-- [Requirements Specification](docs/requirements/Lab2_Requirements_Specification.md)
-- [User Stories](docs/requirements/User_Stories.md)
-- [Use Cases](docs/requirements/Use_Cases.md)
-- [Functional Requirements](docs/requirements/Functional_Requirements.md)
-- [Non-Functional Requirements](docs/requirements/Non_Functional_Requirements.md)
-- [Sprint 1 Backlog](docs/sprint/Sprint1_Backlog.md)
-
-## API Endpoints (Planned)
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/logout` - Logout user
-
-### CV Management
-- `GET /api/cv` - Get all CVs for authenticated user
-- `GET /api/cv/{id}` - Get specific CV
-- `POST /api/cv` - Create new CV
-- `PUT /api/cv/{id}` - Update CV
-- `DELETE /api/cv/{id}` - Delete CV
-
-### Templates
-- `GET /api/template` - Get all templates
-- `GET /api/template/{id}` - Get specific template
-
-### Export
-- `POST /api/export/{cvId}/pdf` - Export CV to PDF
-- `POST /api/export/{cvId}/docx` - Export CV to DOCX
-
-## Database Schema
-
-### Key Entities
-- **User:** User accounts (email, password, fullName)
-- **CV:** CV documents (title, templateID, userID)
-- **PersonalInformation:** Contact details (contactEmail, phone, address)
-- **Education:** Education entries (institution, degree, dates)
-- **Experience:** Work experience (company, position, dates)
-- **Skill:** Skills (skillName, proficiencyLevel)
-- **Template:** CV templates (name, layout configuration)
-
-See [ERD diagram](docs/diagrams/) for full schema.
-
-## Contributing
-
-1. Create feature branch from `main`
-2. Make changes following code style guidelines
-3. Write/update tests
-4. Submit pull request for review
-5. Require at least one approval before merge
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Course: [Course Name]
-- Instructor: [Instructor Name]
-- Institution: [University Name]
-- Lab: Lab 2 - Requirements and Artefacts
+### Database
+- PostgreSQL (Default)
 
 ---
 
-**Status:** 🟢 Sprint 1 (Documentation) in progress  
-**Last Updated:** March 10, 2026
+## Installation Guide
 
+Follow these steps to run the application on your local machine.
 
+### 1. Database Setup
+1. Ensure **PostgreSQL** is installed and running on port 5432.
+2. Create an empty database named CVBuilder.
+3. The backend uses default credentials. Update "backend/src/main/resources/application.properties" if yours are different:
+   ```properties
+   spring.datasource.username=postgres
+   spring.datasource.password=your_db_password
+   ```
+
+### 2. Backend Setup
+1. Open a terminal and navigate to the backend folder:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies and build the project:
+   ```bash
+   mvn clean install
+   ```
+3. Run the Spring Boot application (Server will start on port 8081):
+   ```bash
+   mvn spring-boot:run
+   ```
+
+### 3. Frontend Setup
+1. Open a new terminal and navigate to the frontend folder:
+   ```bash
+   cd frontend
+   ```
+2. Install Node packages (using npm, yarn, or bun):
+   ```bash
+   yarn install
+   # or npm install
+   ```
+3. Start the Vite development server:
+   ```bash
+   yarn dev
+   # or npm run dev
+   ```
+4. Access the web app at http://localhost:5173.
+
+---
+
+## How to Use (User Guide)
+
+1. **Register an Account:** Head to the auth page and create a new account safely.
+   > [Insert screenshot: Registration page]
+2. **Login:** Use your credentials to access the personalized Dashboard.
+   > [Insert screenshot: Login page]
+3. **Create CV:** Click "Create New", select a template, and an empty draft will be initialized.
+   > [Insert screenshot: Template selection]
+4. **Edit Sections:** Fill out the forms (Personal Info, Experience, Skills, etc.). The app will auto-sync changes every few seconds.
+   > [Insert screenshot: Editor screen]
+5. **Live Preview:** Tap "Preview" in the toolbar to see exactly how your document will look.
+6. **Export:** Click "Export" to download a perfectly formatted PDF to your hard drive.
+
+---
+
+## API Overview
+
+A quick look at the main REST endpoints bridging the application:
+
+*   **Auth Endpoints**
+    *   POST /api/auth/register : Register user
+    *   POST /api/auth/login : Login and receive JWT
+*   **CV Endpoints**
+    *   GET  /api/cv : Fetch all CVs for the authenticated user
+    *   GET  /api/cv/{id} : Read a specific CV 
+    *   POST /api/cv : Initialize a new CV with a template ID
+    *   PUT  /api/cv/{id} : Update nested sections of the CV via structured DTOs
+    *   DELETE /api/cv/{id} : Delete a CV record
+*   **Template Endpoints**
+    *   GET /api/templates : Retrieve active templates
+*   **AI/Matching Endpoints (In-progress)**
+    *   POST /api/ai/analyze-jd : Evaluate CV against a Job Description string
+
+---
+
+## Project Structure
+
+```text
+Online-CV-Builder/
+|-- backend/
+|   |-- src/main/java/com/cvbuilder/
+|   |   |-- controller/   # REST API Entry points
+|   |   |-- dto/          # Data Transfer Objects
+|   |   |-- model/        # JPA Entities (CV, User, etc.)
+|   |   |-- repository/   # DB Interfaces
+|   |   |-- security/     # JWT Filters & Config
+|   |   |-- service/      # Business Logic & DB Transactions
+|   |-- src/main/resources/
+|       |-- application.properties # Server & DB Config
+|-- frontend/
+    |-- src/
+    |   |-- components/   # Modular React Components (Editor, Navbar)
+    |   |-- pages/        # High-level Views (Dashboard, EditorPage, Auth)
+    |   |-- services/     # apiService.js for Fetch calls
+    |   |-- utils/        # Helper logic
+    |-- package.json
+```
+
+---
+
+## Security Highlights
+
+- **Password Hashing:** Passwords are cryptographically hashed via Bcrypt before DB insertion.
+- **Stateless Sessions (JWT):** No server-side sessions. All secure requests require an actively valid Authorization: Bearer <token> header.
+- **Ownership Validation:** All CRUD operations inside CVService explicitly verify that the user ID connected to the CV matches the current user ID, preventing IDOR.
+- **Rate-Limiting:** Multiple failed login attempts trigger an IP/User-based cooldown block, neutralizing brute-force dictionary attacks.
+- **XSS Protection:** The backend validationService actively scans PUT payloads to reject malicious HTML/JS tags, combined with SafePreviewText.jsx rendering logic on the React side.
+
+---
+
+## Contribution
+
+Contributions are welcome!
+1. Fork the repo.
+2. Create a new branch (git checkout -b feature/AmazingFeature).
+3. Commit your changes (git commit -m "Add some AmazingFeature").
+4. Push to the branch (git push origin feature/AmazingFeature).
+5. Open a Pull Request.
+
+---
+
+## License
+
+This project is open-source and available under the [MIT License](LICENSE).

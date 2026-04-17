@@ -1,88 +1,40 @@
 package com.cvbuilder.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-/**
- * Education entity - stores education entries (UC9, US4)
- */
 @Entity
 @Table(name = "education")
 public class Education {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "education_id")
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "cv_id", nullable = false)
+    @JoinColumn(name = "cv_id")
+    @JsonIgnore
     private CV cv;
 
-    @Column(nullable = false)
     private String school;
-
-    @Column(nullable = false)
+    private String degree;
     private String major;
+    @Column(name = "start_date")
+    private String startDate;
+    @Column(name = "end_date")
+    private String endDate;
 
-    @Column(name = "start_year", nullable = false)
-    private int startYear;
-
-    @Column(name = "end_year", nullable = false)
-    private int endYear;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public CV getCv() {
-        return cv;
-    }
-
-    public void setCv(CV cv) {
-        this.cv = cv;
-    }
-
-    public String getSchool() {
-        return school;
-    }
-
-    public void setSchool(String school) {
-        this.school = school;
-    }
-
-    public String getMajor() {
-        return major;
-    }
-
-    public void setMajor(String major) {
-        this.major = major;
-    }
-
-    public int getStartYear() {
-        return startYear;
-    }
-
-    public void setStartYear(int startYear) {
-        this.startYear = startYear;
-    }
-
-    public int getEndYear() {
-        return endYear;
-    }
-
-    public void setEndYear(int endYear) {
-        this.endYear = endYear;
-    }
-
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public CV getCv() { return cv; }
+    public void setCv(CV cv) { this.cv = cv; }
+    public String getSchool() { return school; }
+    public void setSchool(String school) { this.school = school; }
+    public String getDegree() { return degree; }
+    public void setDegree(String degree) { this.degree = degree; }
+    public String getMajor() { return major; }
+    public void setMajor(String major) { this.major = major; }
+    public String getStartDate() { return startDate; }
+    public void setStartDate(String startDate) { this.startDate = startDate; }
+    public String getEndDate() { return endDate; }
+    public void setEndDate(String endDate) { this.endDate = endDate; }
 }
