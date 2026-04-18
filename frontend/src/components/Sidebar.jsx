@@ -1,7 +1,7 @@
 {
   /*  SIDEBAR MENU */
 }
-import React from "react";
+import React from 'react';
 import {
   Box,
   Typography,
@@ -11,47 +11,62 @@ import {
   ListItemIcon,
   ListItemText,
   Button,
-} from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import ArticleIcon from "@mui/icons-material/Article";
-import PersonIcon from "@mui/icons-material/Person";
-import SettingsIcon from "@mui/icons-material/Settings";
-import LogoutIcon from "@mui/icons-material/Logout";
-import FactCheckIcon from "@mui/icons-material/FactCheck";
+} from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import ArticleIcon from '@mui/icons-material/Article';
+import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
+import LogoutIcon from '@mui/icons-material/Logout';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
+import { apiService } from '../services/apiService';
+import { useNavigate } from 'react-router-dom';
 
 export default function Sidebar({ currentView, setCurrentView }) {
+  const navigate = useNavigate();
+
+  const handleLogout = async (e) => {
+    e.preventDefault();
+    console.log('Logging out');
+
+    try {
+      const message = await apiService.logout();
+      navigate('/login');
+    } catch (err) {
+      console.log(err);
+    }
+  };
   return (
     <Box
       sx={{
         width: 225,
-        bgcolor: "#1c7c54",
-        color: "white",
+        bgcolor: '#1c7c54',
+        color: 'white',
         p: 2,
-        display: "flex",
-        position: "fixed",
-        flexDirection: "column",
-        minHeight: "100vh",
+        display: 'flex',
+        position: 'fixed',
+        flexDirection: 'column',
+        minHeight: '100vh',
       }}
     >
       {/* Logo Section */}
       <Box
         sx={{
-          display: "flex",
-          alignItems: "center",
+          display: 'flex',
+          alignItems: 'center',
           gap: 1.5,
           mb: 6,
           mt: 1,
           px: 1,
         }}
       >
-        <CheckCircleIcon sx={{ color: "white", fontSize: 32 }} />
+        <CheckCircleIcon sx={{ color: 'white', fontSize: 32 }} />
         <Typography
           variant="h6"
           fontWeight="bold"
           sx={{
-            fontFamily: "Helvetica1c7c54, sans-serif",
-            letterSpacing: "-0.5px",
+            fontFamily: 'Helvetica1c7c54, sans-serif',
+            letterSpacing: '-0.5px',
           }}
         >
           CVBuilder
@@ -62,31 +77,31 @@ export default function Sidebar({ currentView, setCurrentView }) {
       <List
         sx={{
           flexGrow: 1,
-          "& .MuiListItemButton-root": { borderRadius: 2, mb: 0.5 },
+          '& .MuiListItemButton-root': { borderRadius: 2, mb: 0.5 },
         }}
       >
         {[
-          { text: "Overview", icon: <DashboardIcon /> },
-          { text: "My Resumes", icon: <ArticleIcon /> },
-          { text: "ATS Checker", icon: <FactCheckIcon /> },
-          { text: "Settings", icon: <SettingsIcon /> },
+          { text: 'Overview', icon: <DashboardIcon /> },
+          { text: 'My Resumes', icon: <ArticleIcon /> },
+          { text: 'ATS Checker', icon: <FactCheckIcon /> },
+          { text: 'Settings', icon: <SettingsIcon /> },
         ].map((item, index) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
               selected={currentView === item.text}
               onClick={() => setCurrentView(item.text)}
               sx={{
-                "&.Mui-selected": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+                '&.Mui-selected': {
+                  bgcolor: 'rgba(255,255,255,0.15)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' },
                 },
-                "& .MuiListItemIcon-root": { color: "rgba(255,255,255,0.7)" },
-                "& .MuiTypography-root": {
-                  color: "white",
+                '& .MuiListItemIcon-root': { color: 'rgba(255,255,255,0.7)' },
+                '& .MuiTypography-root': {
+                  color: 'white',
                   fontWeight: index === 0 ? 600 : 400,
-                  fontSize: "0.9rem",
+                  fontSize: '0.9rem',
                 },
-                "&.Mui-selected .MuiListItemIcon-root": { color: "white" },
+                '&.Mui-selected .MuiListItemIcon-root': { color: 'white' },
               }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
@@ -100,13 +115,14 @@ export default function Sidebar({ currentView, setCurrentView }) {
       <Button
         startIcon={<LogoutIcon />}
         fullWidth
+        onClick={handleLogout}
         sx={{
-          textTransform: "none",
-          color: "rgba(255,255,255,0.7)",
-          justifyContent: "flex-start",
+          textTransform: 'none',
+          color: 'rgba(255,255,255,0.7)',
+          justifyContent: 'flex-start',
           px: 2,
           py: 1,
-          "&:hover": { color: "white", bgcolor: "rgba(255,255,255,0.05)" },
+          '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
         }}
       >
         Log out

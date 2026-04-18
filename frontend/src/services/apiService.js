@@ -1,5 +1,6 @@
-  // API Service - handles HTTP requests to backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// API Service - handles HTTP requests to backend
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
 async function request(path, options = {}) {
   const token = localStorage.getItem('token');
@@ -43,6 +44,9 @@ export const apiService = {
     }),
 
   logout: () => {
+    request('/auth/logout', {
+      method: 'POST',
+    });
     localStorage.removeItem('token');
     return null;
   },
@@ -58,16 +62,18 @@ export const apiService = {
       method: 'GET',
     }),
 
-  createCV: (cvData) =>
+  createCV: (cvData, options = {}) =>
     request('/cv', {
       method: 'POST',
       body: JSON.stringify(cvData),
+      ...options,
     }),
 
-  updateCV: (cvId, cvData) =>
+  updateCV: (cvId, cvData, options = {}) =>
     request(`/cv/${cvId}`, {
       method: 'PUT',
       body: JSON.stringify(cvData),
+      ...options,
     }),
 
   deleteCV: (cvId) =>

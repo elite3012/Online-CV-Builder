@@ -1,10 +1,5 @@
 package com.cvbuilder.model;
 
-import org.hibernate.annotations.Type;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -28,11 +23,11 @@ public class Template {
     private String templateName;
 
     // @Column(nullable = false)
-    private byte[] preview;
+    // private byte[] preview;
 
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb", nullable = false)
-    private JsonNode layout;
+    // @Type(JsonBinaryType.class)
+    // @Column(columnDefinition = "jsonb", nullable = false)
+    // private JsonNode layout;
 
     public Long getId() {
         return id;
@@ -50,20 +45,20 @@ public class Template {
         this.templateName = templateName;
     }
 
-    public byte[] getPreview() {
-        return preview;
-    }
+    // public byte[] getPreview() {
+    // return preview;
+    // }
 
-    public void setPreview(byte[] preview) {
-        this.preview = preview;
-    }
+    // public void setPreview(byte[] preview) {
+    // this.preview = preview;
+    // }
 
-    public JsonNode getLayout() {
-        return layout;
-    }
+    // public JsonNode getLayout() {
+    // return layout;
+    // }
 
-    public void setLayout(JsonNode layout) {
-        this.layout = layout;
-    }
+    // public void setLayout(JsonNode layout) {
+    // this.layout = layout;
+    // }
 
 }

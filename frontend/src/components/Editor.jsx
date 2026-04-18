@@ -1,6 +1,6 @@
 // src/components/Editor.jsx
-import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -15,38 +15,38 @@ import {
   Card,
   CardActionArea,
   CardContent,
-} from "@mui/material";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import AddIcon from "@mui/icons-material/Add";
+} from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import AddIcon from '@mui/icons-material/Add';
 
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
-import EditorToolbar from "./EditorToolbar";
-import EditorSidebar from "./EditorSidebar";
-import PreviewModal from "./PreviewModal";
-import CVRenderer from "./template/CVRenderer";
+import EditorToolbar from './EditorToolbar';
+import EditorSidebar from './EditorSidebar';
+import PreviewModal from './PreviewModal';
+import CVRenderer from './template/CVRenderer';
 
-import { apiService } from "../services/apiService";
+import { apiService } from '../services/apiService';
 
-import { templates } from "../data/templates";
-import { TemplateCard } from "./TemplateCard";
+import { templates } from '../data/templates';
+import { TemplateCard } from './TemplateCard';
 
 const sections = [
-  "Personal Info",
-  "Summary",
-  "Education",
-  "Experience",
-  "Skills",
-  "Projects",
-  "Certificates",
+  'Personal Info',
+  'Summary',
+  'Education',
+  'Experience',
+  'Skills',
+  'Projects',
+  'Certificates',
 ];
 
 const FormHeader = ({ title }) => (
   <Typography
     variant="h5"
     fontWeight="bold"
-    sx={{ color: "#102a43", mb: 4, textTransform: "uppercase" }}
+    sx={{ color: '#102a43', mb: 4, textTransform: 'uppercase' }}
   >
     {title}
   </Typography>
@@ -56,43 +56,119 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const location = useLocation();
   const navigate = useNavigate();
   const passedResume = location.state?.resumeToEdit;
-
-  // --- REFS ---
   const componentRef = useRef();
+  const autosaveTimerRef = useRef(null);
+  const abortRef = useRef(null);
+  const didInitRef = useRef(false);
+
+  const getTemplateIdByName = (name) => {
+    const t = templates.find((x) => x.name === name);
+    return t?.id ?? null;
+  };
+
+  const hasAnyText = (v) => String(v ?? '').trim().length > 0;
+
+  const isRowEmpty = (row) => {
+    if (!row || typeof row !== 'object') return true;
+    return !Object.values(row).some((v) => hasAnyText(v));
+  };
+
+  const skillsStringToList = (skillsStr) => {
+    return String(skillsStr ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((skillName) => ({ skillName }));
+  };
+
+  const toLocalDateTimeString = (value) => {
+    const v = String(value ?? '').trim();
+    if (!v) return null;
+
+    // HTML date input -> LocalDateTime at midnight
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return `${v}T00:00:00`;
+
+    // Unknown format -> avoid sending invalid string that crashes backend
+    return null;
+  };
+
+  const normalizeDateFields = (row, fields) => {
+    if (!row || typeof row !== 'object') return row;
+    const out = { ...row };
+    for (const f of fields) out[f] = toLocalDateTimeString(row[f]);
+    return out;
+  };
+
+  const toUpdatePayload = () => {
+    return {
+      title: cvTitle,
+      summary: formData.summary ?? '',
+
+      personalInformation: {
+        fullName: formData.personalInfo.fullName ?? '',
+        jobTitle: formData.personalInfo.jobTitle ?? '',
+        email: formData.personalInfo.email ?? '',
+        phone: formData.personalInfo.phone ?? '',
+        location: formData.personalInfo.location ?? '',
+        linkedin: formData.personalInfo.linkedin ?? '',
+        website: formData.personalInfo.website ?? '',
+      },
+
+      educations: (formData.education || [])
+        .filter((r) => !isRowEmpty(r))
+        .map((r) => normalizeDateFields(r, ['startDate', 'endDate'])),
+      experiences: (formData.experience || [])
+        .filter((r) => !isRowEmpty(r))
+        .map((r) => normalizeDateFields(r, ['startDate', 'endDate'])),
+      projects: (formData.projects || []).filter((r) => !isRowEmpty(r)),
+      certificates: (formData.certificates || [])
+        .filter((r) => !isRowEmpty(r))
+        .map((r) => normalizeDateFields(r, ['date'])),
+
+      skills: skillsStringToList(formData.skills),
+    };
+  };
 
   // --- STATE ---
-  const [activeSection, setActiveSection] = useState("Personal Info");
-  const [cvTitle, setCvTitle] = useState(passedResume?.title || "Untitled CV");
+  const [activeSection, setActiveSection] = useState('Personal Info');
+  const [cvTitle, setCvTitle] = useState(passedResume?.title || 'Untitled CV');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("Saved");
+  const [saveStatus, setSaveStatus] = useState('Saved');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const [currentTemplate, setCurrentTemplate] = useState({
     name: passedResume?.templateName || propTemplate?.name,
   });
-
+  const [cvId, setCvId] = useState(passedResume?.id ?? null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [formData, setFormData] = useState(
     passedResume?.formData || {
+      summary: '',
+      title: '',
       personalInfo: {
-        fullName: "",
-        jobTitle: "",
-        email: "",
-        phone: "",
-        location: "",
-        linkedin: "",
-        website: "",
+        fullName: '',
+        jobTitle: '',
+        email: '',
+        phone: '',
+        location: '',
+        linkedin: '',
+        website: '',
       },
-      summary: "",
       education: [
-        { school: "", degree: "", startDate: "", endDate: "", description: "" },
+        { school: '', degree: '', startDate: '', endDate: '', description: '' },
       ],
       experience: [
-        { company: "", role: "", startDate: "", endDate: "", description: "" },
+        {
+          company: '',
+          jobTitle: '',
+          startDate: '',
+          endDate: '',
+          description: '',
+        },
       ],
-      skills: "",
-      projects: [{ name: "", role: "", link: "", description: "" }],
-      certificates: [{ name: "", organization: "", date: "" }],
+      skills: '',
+      projects: [{ projectName: '', role: '', link: '', description: '' }],
+      certificates: [{ certificateName: '', organization: '', date: '' }],
     },
   );
 
@@ -101,26 +177,26 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
     const element = componentRef.current;
     if (!element) return;
 
-    setSaveStatus("Exporting...");
+    setSaveStatus('Exporting...');
     const hiddenBox = element.parentElement;
 
     // 1. TẠO MỘT CONTAINER TẠM THỜI ĐỂ "THẢ" CV RA
     // Container này nằm ngoài màn hình để user không thấy
-    const tempContainer = document.createElement("div");
-    tempContainer.style.position = "absolute";
-    tempContainer.style.left = "-9999px"; // Đẩy ra xa màn hình
-    tempContainer.style.top = "0";
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-9999px'; // Đẩy ra xa màn hình
+    tempContainer.style.top = '0';
 
     // Ép kích thước A4 chuẩn cho temp container
     // Kích thước A4 ở scale 1x, 96 DPI thường là ~794px x 1123px
-    tempContainer.style.width = "794px";
-    tempContainer.style.height = "1123px";
-    tempContainer.style.overflow = "hidden"; // Cắt bớt phần thừa nếu có
+    tempContainer.style.width = '794px';
+    tempContainer.style.height = '1123px';
+    tempContainer.style.overflow = 'hidden'; // Cắt bớt phần thừa nếu có
     document.body.appendChild(tempContainer);
 
     // 2. DI CHUYỂN CVRenderer THỰC VÀO CONTAINER TẠM THỜI
     // Tạm thời hiện Box gốc để di chuyển nội dung
-    hiddenBox.style.display = "block";
+    hiddenBox.style.display = 'block';
     tempContainer.appendChild(element);
 
     try {
@@ -133,48 +209,94 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         height: 1123, // Chụp đúng chiều cao A4
       });
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL('image/png');
 
       // 4. ĐÓNG GÓI PDF A4 CHUẨN
-      const pdf = new jsPDF("p", "mm", "a4");
+      const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
       // Vẽ ảnh full trang A4 mm
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${cvTitle.replace(/\s+/g, "_")}.pdf`);
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${cvTitle.replace(/\s+/g, '_')}.pdf`);
 
-      setSaveStatus("Saved");
+      setSaveStatus('Saved');
     } catch (err) {
-      console.error("Export error:", err);
-      setSaveStatus("Error");
+      console.error('Export error:', err);
+      setSaveStatus('Error');
     } finally {
       // 5. DỌN DẸP: DI CHUYỂN CVRenderer VỀ CHỖ CŨ VÀ XOÁ TEMP
       hiddenBox.appendChild(element);
-      hiddenBox.style.display = "none";
+      hiddenBox.style.display = 'none';
       document.body.removeChild(tempContainer);
     }
   };
 
   // --- LOGIC HANDLERS ---
   useEffect(() => {
-    if (saveStatus === "Unsaved") {
-      const timer = setTimeout(() => setSaveStatus("Saved"), 1000);
-      return () => clearTimeout(timer);
+    if (!didInitRef.current) {
+      didInitRef.current = true;
+      return;
     }
+
+    if (saveStatus !== 'Unsaved') return;
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => {
+      doAutosave();
+    }, 5000);
+
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
   }, [formData, saveStatus]);
 
+  const doAutosave = async () => {
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      setSaveStatus('Saving...');
+      let ensuredId = cvId;
+      if (!ensuredId) {
+        const templateId = getTemplateIdByName(currentTemplate?.name);
+        if (!templateId)
+          throw new Error('Template not found (missing templateId)');
+
+        const created = await apiService.createCV(
+          { templateId: templateId, title: cvTitle },
+          { signal: controller.signal },
+        );
+
+        ensuredId = created?.id;
+        if (!ensuredId) throw new Error('Create CV did not return an id');
+        setCvId(ensuredId);
+      }
+
+      const payload = toUpdatePayload();
+      console.log(payload);
+      await apiService.updateCV(ensuredId, payload, {
+        signal: controller.signal,
+      });
+      setSaveStatus('Saved');
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      console.error('Autosave failed:', err);
+      setSaveStatus('Error');
+    }
+  };
   const handleBack = () => (propOnBack ? propOnBack() : navigate(-1));
   const handleDataChange = (section, field, value) => {
     setFormData((prev) => ({
       ...prev,
       [section]: { ...prev[section], [field]: value },
     }));
-    setSaveStatus("Unsaved");
+    setSaveStatus('Unsaved');
   };
   const handleStringChange = (section, value) => {
     setFormData((prev) => ({ ...prev, [section]: value }));
-    setSaveStatus("Unsaved");
+    setSaveStatus('Unsaved');
   };
   const handleArrayChange = (section, index, field, value) => {
     setFormData((prev) => {
@@ -182,50 +304,50 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       newArray[index][field] = value;
       return { ...prev, [section]: newArray };
     });
-    setSaveStatus("Unsaved");
+    setSaveStatus('Unsaved');
   };
   const addArrayItem = (section, defaultObj) => {
     setFormData((prev) => ({
       ...prev,
       [section]: [...prev[section], defaultObj],
     }));
-    setSaveStatus("Unsaved");
+    setSaveStatus('Unsaved');
   };
   const removeArrayItem = (section, index) => {
     setFormData((prev) => ({
       ...prev,
       [section]: prev[section].filter((_, i) => i !== index),
     }));
-    setSaveStatus("Unsaved");
+    setSaveStatus('Unsaved');
   };
 
   const checkSectionStatus = (sec) => {
     switch (sec) {
-      case "Personal Info":
+      case 'Personal Info':
         return (
           formData.personalInfo.fullName &&
           formData.personalInfo.jobTitle &&
           formData.personalInfo.email
         );
-      case "Summary":
+      case 'Summary':
         return formData.summary.trim().length > 0;
-      case "Education":
+      case 'Education':
         return (
           formData.education.length > 0 &&
           formData.education.every((e) => e.school && e.degree)
         );
-      case "Experience":
+      case 'Experience':
         return (
           formData.experience.length > 0 &&
           formData.experience.every((e) => e.company && e.role)
         );
-      case "Skills":
+      case 'Skills':
         return formData.skills.trim().length > 0;
-      case "Projects":
+      case 'Projects':
         return (
           formData.projects.length > 0 && formData.projects.every((p) => p.name)
         );
-      case "Certificates":
+      case 'Certificates':
         return (
           formData.certificates.length > 0 &&
           formData.certificates.every((c) => c.name)
@@ -236,16 +358,16 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   };
 
   const previewData = {
-    name: formData.personalInfo.fullName || "Your Name",
-    title: formData.personalInfo.jobTitle || "Your Title",
+    name: formData.personalInfo.fullName || 'Your Name',
+    title: formData.personalInfo.jobTitle || 'Your Title',
     contact: {
-      email: formData.personalInfo.email || "email@example.com",
-      phone: formData.personalInfo.phone || "",
-      address: formData.personalInfo.location || "",
-      linkedin: formData.personalInfo.linkedin || "",
-      website: formData.personalInfo.website || "",
+      email: formData.personalInfo.email || 'email@example.com',
+      phone: formData.personalInfo.phone || '',
+      address: formData.personalInfo.location || '',
+      linkedin: formData.personalInfo.linkedin || '',
+      website: formData.personalInfo.website || '',
     },
-    summary: formData.summary || "Summary goes here...",
+    summary: formData.summary || 'Summary goes here...',
     experience: formData.experience
       .filter((e) => e.company)
       .map((exp) => ({
@@ -255,7 +377,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         desc: exp.description,
       })),
     skills: formData.skills
-      ? formData.skills.split(",").map((s) => s.trim())
+      ? formData.skills.split(',').map((s) => s.trim())
       : [],
     education: formData.education
       .filter((e) => e.school)
@@ -289,33 +411,33 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
     defaultObj,
     renderFields,
   ) => (
-    <Box sx={{ width: "100%", maxWidth: "800px" }}>
+    <Box sx={{ width: '100%', maxWidth: '800px' }}>
       {formData[sectionKey].map((item, index) => (
         <Paper
           key={index}
           elevation={0}
-          sx={{ p: 5, borderRadius: 3, border: "1px solid #e0e0e0", mb: 3 }}
+          sx={{ p: 5, borderRadius: 3, border: '1px solid #e0e0e0', mb: 3 }}
         >
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               mb: 4,
             }}
           >
             <FormHeader title={`${title} ${index + 1}`} />
             <IconButton
               onClick={() => removeArrayItem(sectionKey, index)}
-              sx={{ color: "#f44336", bgcolor: "rgba(244, 67, 54, 0.1)" }}
+              sx={{ color: '#f44336', bgcolor: 'rgba(244, 67, 54, 0.1)' }}
             >
               <DeleteOutlineIcon />
             </IconButton>
           </Box>
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
               gap: 3,
             }}
           >
@@ -328,14 +450,14 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         onClick={() => addArrayItem(sectionKey, defaultObj)}
         startIcon={<AddIcon />}
         sx={{
-          bgcolor: "#52b0c3",
-          color: "white",
-          textTransform: "none",
+          bgcolor: '#52b0c3',
+          color: 'white',
+          textTransform: 'none',
           borderRadius: 8,
           px: 3,
-          display: "flex",
-          mx: "auto",
-          "&:hover": { bgcolor: "#3d94a7" },
+          display: 'flex',
+          mx: 'auto',
+          '&:hover': { bgcolor: '#3d94a7' },
         }}
       >
         Add {itemLabel}
@@ -346,10 +468,10 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   return (
     <Box
       sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        bgcolor: "#f8f9fb",
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        bgcolor: '#f8f9fb',
       }}
     >
       <EditorToolbar
@@ -365,7 +487,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         onChangeTemplate={() => setIsTemplateModalOpen(true)}
       />
 
-      <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
+      <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
         <EditorSidebar
           sections={sections}
           activeSection={activeSection}
@@ -377,28 +499,28 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
           sx={{
             flexGrow: 1,
             p: 5,
-            overflowY: "scroll",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
+            overflowY: 'scroll',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
           }}
         >
-          {activeSection === "Personal Info" && (
+          {activeSection === 'Personal Info' && (
             <Paper
               elevation={0}
               sx={{
                 p: 5,
                 borderRadius: 3,
-                border: "1px solid #e0e0e0",
-                width: "100%",
-                maxWidth: "800px",
+                border: '1px solid #e0e0e0',
+                width: '100%',
+                maxWidth: '800px',
               }}
             >
               <FormHeader title="Personal Information" />
               <Box
                 sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
                   gap: 3,
                 }}
               >
@@ -407,7 +529,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   label="Full Name *"
                   value={formData.personalInfo.fullName}
                   onChange={(e) =>
-                    handleDataChange("personalInfo", "fullName", e.target.value)
+                    handleDataChange('personalInfo', 'fullName', e.target.value)
                   }
                 />
                 <TextField
@@ -415,7 +537,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   label="Job Title *"
                   value={formData.personalInfo.jobTitle}
                   onChange={(e) =>
-                    handleDataChange("personalInfo", "jobTitle", e.target.value)
+                    handleDataChange('personalInfo', 'jobTitle', e.target.value)
                   }
                 />
                 <TextField
@@ -423,7 +545,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   label="Email *"
                   value={formData.personalInfo.email}
                   onChange={(e) =>
-                    handleDataChange("personalInfo", "email", e.target.value)
+                    handleDataChange('personalInfo', 'email', e.target.value)
                   }
                 />
                 <TextField
@@ -431,7 +553,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   label="Phone"
                   value={formData.personalInfo.phone}
                   onChange={(e) =>
-                    handleDataChange("personalInfo", "phone", e.target.value)
+                    handleDataChange('personalInfo', 'phone', e.target.value)
                   }
                 />
                 <TextField
@@ -439,7 +561,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   label="Location"
                   value={formData.personalInfo.location}
                   onChange={(e) =>
-                    handleDataChange("personalInfo", "location", e.target.value)
+                    handleDataChange('personalInfo', 'location', e.target.value)
                   }
                 />
                 <TextField
@@ -447,7 +569,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   label="LinkedIn"
                   value={formData.personalInfo.linkedin}
                   onChange={(e) =>
-                    handleDataChange("personalInfo", "linkedin", e.target.value)
+                    handleDataChange('personalInfo', 'linkedin', e.target.value)
                   }
                 />
                 <TextField
@@ -455,23 +577,23 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   label="Website / Portfolio"
                   value={formData.personalInfo.website}
                   onChange={(e) =>
-                    handleDataChange("personalInfo", "website", e.target.value)
+                    handleDataChange('personalInfo', 'website', e.target.value)
                   }
-                  sx={{ gridColumn: { sm: "span 2" } }}
+                  sx={{ gridColumn: { sm: 'span 2' } }}
                 />
               </Box>
             </Paper>
           )}
 
-          {activeSection === "Summary" && (
+          {activeSection === 'Summary' && (
             <Paper
               elevation={0}
               sx={{
                 p: 5,
                 borderRadius: 3,
-                border: "1px solid #e0e0e0",
-                width: "100%",
-                maxWidth: "800px",
+                border: '1px solid #e0e0e0',
+                width: '100%',
+                maxWidth: '800px',
               }}
             >
               <FormHeader title="Executive Summary" />
@@ -481,20 +603,20 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                 rows={6}
                 placeholder="Write a brief and engaging summary..."
                 value={formData.summary}
-                onChange={(e) => handleStringChange("summary", e.target.value)}
+                onChange={(e) => handleStringChange('summary', e.target.value)}
               />
             </Paper>
           )}
 
-          {activeSection === "Skills" && (
+          {activeSection === 'Skills' && (
             <Paper
               elevation={0}
               sx={{
                 p: 5,
                 borderRadius: 3,
-                border: "1px solid #e0e0e0",
-                width: "100%",
-                maxWidth: "800px",
+                border: '1px solid #e0e0e0',
+                width: '100%',
+                maxWidth: '800px',
               }}
             >
               <FormHeader title="Skills & Competencies" />
@@ -504,23 +626,23 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                 rows={3}
                 placeholder="React.js, Node.js, Project Management..."
                 value={formData.skills}
-                onChange={(e) => handleStringChange("skills", e.target.value)}
+                onChange={(e) => handleStringChange('skills', e.target.value)}
               />
             </Paper>
           )}
 
           {/* Render các mục Array (Education, Experience, Projects, Certificates) */}
-          {activeSection === "Education" &&
+          {activeSection === 'Education' &&
             renderArraySection(
-              "Education",
-              "education",
-              "Education",
+              'Education',
+              'education',
+              'Education',
               {
-                school: "",
-                degree: "",
-                startDate: "",
-                endDate: "",
-                description: "",
+                school: '',
+                degree: '',
+                startDate: '',
+                endDate: '',
+                description: '',
               },
               (edu, idx) => (
                 <>
@@ -530,9 +652,9 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                     value={edu.school}
                     onChange={(e) =>
                       handleArrayChange(
-                        "education",
+                        'education',
                         idx,
-                        "school",
+                        'school',
                         e.target.value,
                       )
                     }
@@ -543,9 +665,9 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                     value={edu.degree}
                     onChange={(e) =>
                       handleArrayChange(
-                        "education",
+                        'education',
                         idx,
-                        "degree",
+                        'degree',
                         e.target.value,
                       )
                     }
@@ -558,36 +680,38 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                     value={edu.description}
                     onChange={(e) =>
                       handleArrayChange(
-                        "education",
+                        'education',
                         idx,
-                        "description",
+                        'description',
                         e.target.value,
                       )
                     }
-                    sx={{ gridRow: { sm: "span 2" } }}
+                    sx={{ gridRow: { sm: 'span 2' } }}
                   />
                   <TextField
                     size="small"
+                    type="date"
                     label="Start Date"
                     value={edu.startDate}
                     onChange={(e) =>
                       handleArrayChange(
-                        "education",
+                        'education',
                         idx,
-                        "startDate",
+                        'startDate',
                         e.target.value,
                       )
                     }
                   />
                   <TextField
                     size="small"
+                    type="date"
                     label="End Date"
                     value={edu.endDate}
                     onChange={(e) =>
                       handleArrayChange(
-                        "education",
+                        'education',
                         idx,
-                        "endDate",
+                        'endDate',
                         e.target.value,
                       )
                     }
@@ -595,17 +719,17 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                 </>
               ),
             )}
-          {activeSection === "Experience" &&
+          {activeSection === 'Experience' &&
             renderArraySection(
-              "Work Experience",
-              "experience",
-              "Job",
+              'Work Experience',
+              'experience',
+              'Job',
               {
-                company: "",
-                role: "",
-                startDate: "",
-                endDate: "",
-                description: "",
+                company: '',
+                jobTitle: '',
+                startDate: '',
+                endDate: '',
+                description: '',
               },
               (exp, idx) => (
                 <>
@@ -615,9 +739,9 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                     value={exp.company}
                     onChange={(e) =>
                       handleArrayChange(
-                        "experience",
+                        'experience',
                         idx,
-                        "company",
+                        'company',
                         e.target.value,
                       )
                     }
@@ -625,12 +749,12 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   <TextField
                     size="small"
                     label="Job Title *"
-                    value={exp.role}
+                    value={exp.jobTitle}
                     onChange={(e) =>
                       handleArrayChange(
-                        "experience",
+                        'experience',
                         idx,
-                        "role",
+                        'jobTitle',
                         e.target.value,
                       )
                     }
@@ -643,36 +767,38 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                     value={exp.description}
                     onChange={(e) =>
                       handleArrayChange(
-                        "experience",
+                        'experience',
                         idx,
-                        "description",
+                        'description',
                         e.target.value,
                       )
                     }
-                    sx={{ gridRow: { sm: "span 2" } }}
+                    sx={{ gridRow: { sm: 'span 2' } }}
                   />
                   <TextField
                     size="small"
+                    type="date"
                     label="Start Date"
                     value={exp.startDate}
                     onChange={(e) =>
                       handleArrayChange(
-                        "experience",
+                        'experience',
                         idx,
-                        "startDate",
+                        'startDate',
                         e.target.value,
                       )
                     }
                   />
                   <TextField
                     size="small"
+                    type="date"
                     label="End Date"
                     value={exp.endDate}
                     onChange={(e) =>
                       handleArrayChange(
-                        "experience",
+                        'experience',
                         idx,
-                        "endDate",
+                        'endDate',
                         e.target.value,
                       )
                     }
@@ -680,20 +806,25 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                 </>
               ),
             )}
-          {activeSection === "Projects" &&
+          {activeSection === 'Projects' &&
             renderArraySection(
-              "Project",
-              "projects",
-              "Project",
-              { name: "", role: "", link: "", description: "" },
+              'Project',
+              'projects',
+              'Project',
+              { projectName: '', role: '', link: '', description: '' },
               (proj, idx) => (
                 <>
                   <TextField
                     size="small"
                     label="Project Name *"
-                    value={proj.name}
+                    value={proj.projectName}
                     onChange={(e) =>
-                      handleArrayChange("projects", idx, "name", e.target.value)
+                      handleArrayChange(
+                        'projects',
+                        idx,
+                        'projectName',
+                        e.target.value,
+                      )
                     }
                   />
                   <TextField
@@ -701,7 +832,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                     label="Your Role"
                     value={proj.role}
                     onChange={(e) =>
-                      handleArrayChange("projects", idx, "role", e.target.value)
+                      handleArrayChange('projects', idx, 'role', e.target.value)
                     }
                   />
                   <TextField
@@ -712,43 +843,43 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                     value={proj.description}
                     onChange={(e) =>
                       handleArrayChange(
-                        "projects",
+                        'projects',
                         idx,
-                        "description",
+                        'description',
                         e.target.value,
                       )
                     }
-                    sx={{ gridRow: { sm: "span 2" } }}
+                    sx={{ gridRow: { sm: 'span 2' } }}
                   />
                   <TextField
                     size="small"
                     label="Link"
                     value={proj.link}
                     onChange={(e) =>
-                      handleArrayChange("projects", idx, "link", e.target.value)
+                      handleArrayChange('projects', idx, 'link', e.target.value)
                     }
-                    sx={{ gridColumn: { sm: "span 2" } }}
+                    sx={{ gridColumn: { sm: 'span 2' } }}
                   />
                 </>
               ),
             )}
-          {activeSection === "Certificates" &&
+          {activeSection === 'Certificates' &&
             renderArraySection(
-              "Certificate",
-              "certificates",
-              "Certificate",
-              { name: "", organization: "", date: "" },
+              'Certificate',
+              'certificates',
+              'Certificate',
+              { certificateName: '', organization: '', date: '' },
               (cert, idx) => (
                 <>
                   <TextField
                     size="small"
                     label="Certificate Name *"
-                    value={cert.name}
+                    value={cert.certificateName}
                     onChange={(e) =>
                       handleArrayChange(
-                        "certificates",
+                        'certificates',
                         idx,
-                        "name",
+                        'certificateName',
                         e.target.value,
                       )
                     }
@@ -759,22 +890,23 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                     value={cert.organization}
                     onChange={(e) =>
                       handleArrayChange(
-                        "certificates",
+                        'certificates',
                         idx,
-                        "organization",
+                        'organization',
                         e.target.value,
                       )
                     }
                   />
                   <TextField
                     size="small"
+                    type="date"
                     label="Date"
                     value={cert.date}
                     onChange={(e) =>
                       handleArrayChange(
-                        "certificates",
+                        'certificates',
                         idx,
-                        "date",
+                        'date',
                         e.target.value,
                       )
                     }
@@ -788,10 +920,10 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       </Box>
 
       {/* 3. VÙNG CHỨA CV ẨN (Để render dữ liệu thực cho PDF) */}
-      <Box sx={{ display: "none" }}>
+      <Box sx={{ display: 'none' }}>
         <Box ref={componentRef}>
           <CVRenderer
-            templateName={currentTemplate?.name || "Unknown"}
+            templateName={currentTemplate?.name || 'Unknown'}
             data={previewData}
           />
         </Box>
@@ -800,7 +932,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       <PreviewModal
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
-        templateName={currentTemplate?.name || "Unknown"}
+        templateName={currentTemplate?.name || 'Unknown'}
         previewData={previewData}
       />
       <Dialog
@@ -811,35 +943,35 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       >
         <DialogTitle
           sx={{
-            fontWeight: "bold",
-            textAlign: "center",
+            fontWeight: 'bold',
+            textAlign: 'center',
             mt: 2,
-            fontSize: "1.5rem",
+            fontSize: '1.5rem',
           }}
         >
           Choose a new Template
         </DialogTitle>
-        <DialogContent sx={{ p: 4, bgcolor: "#f8f9fb" }}>
+        <DialogContent sx={{ p: 4, bgcolor: '#f8f9fb' }}>
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, 250px)", // Tự động căn chỉnh bằng kích thước TemplateCard
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, 250px)', // Tự động căn chỉnh bằng kích thước TemplateCard
               gap: 4,
-              justifyContent: "center",
-              mx: "auto",
+              justifyContent: 'center',
+              mx: 'auto',
               py: 2,
             }}
           >
             {templates.map((item) => (
-              <Box key={item.id} sx={{ height: "450px" }}>
-                {" "}
+              <Box key={item.id} sx={{ height: '450px' }}>
+                {' '}
                 {/* Fix chiều cao để BorderGlow không bị cắt */}
                 <TemplateCard
                   item={item}
                   onPreview={() => {}} // Preview đã được xử lý ngầm bên trong TemplateCard rồi
                   onUse={() => {
                     setCurrentTemplate({ name: item.name }); // Cập nhật template mới
-                    setSaveStatus("Unsaved"); // Kích hoạt trạng thái chưa lưu
+                    setSaveStatus('Unsaved'); // Kích hoạt trạng thái chưa lưu
                     setIsTemplateModalOpen(false); // Đóng Modal
                   }}
                 />

@@ -38,30 +38,39 @@ public class MatchingService {
 
         // 3. Preprocess CV content
         StringBuilder sb = new StringBuilder();
-        if (cv.getSummary() != null) sb.append(cv.getSummary()).append(" ");
+        if (cv.getSummary() != null)
+            sb.append(cv.getSummary()).append(" ");
         if (cv.getEducations() != null) {
             cv.getEducations().forEach(e -> {
-                if (e.getDegree() != null) sb.append(e.getDegree()).append(" ");
-                if (e.getMajor() != null) sb.append(e.getMajor()).append(" ");
-                if (e.getSchool() != null) sb.append(e.getSchool()).append(" ");
+                if (e.getDegree() != null)
+                    sb.append(e.getDegree()).append(" ");
+                // if (e.getMajor() != null) sb.append(e.getMajor()).append(" ");
+                if (e.getSchool() != null)
+                    sb.append(e.getSchool()).append(" ");
             });
         }
         if (cv.getExperiences() != null) {
             cv.getExperiences().forEach(e -> {
-                if (e.getJobTitle() != null) sb.append(e.getJobTitle()).append(" ");
-                if (e.getCompany() != null) sb.append(e.getCompany()).append(" ");
-                if (e.getDescription() != null) sb.append(e.getDescription()).append(" ");
+                if (e.getJobTitle() != null)
+                    sb.append(e.getJobTitle()).append(" ");
+                if (e.getCompany() != null)
+                    sb.append(e.getCompany()).append(" ");
+                if (e.getDescription() != null)
+                    sb.append(e.getDescription()).append(" ");
             });
         }
         if (cv.getSkills() != null) {
             cv.getSkills().forEach(s -> {
-                if (s.getSkillName() != null) sb.append(s.getSkillName()).append(" ");
+                if (s.getSkillName() != null)
+                    sb.append(s.getSkillName()).append(" ");
             });
         }
         if (cv.getProjects() != null) {
             cv.getProjects().forEach(p -> {
-                if (p.getProjectName() != null) sb.append(p.getProjectName()).append(" ");
-                if (p.getDescription() != null) sb.append(p.getDescription()).append(" ");
+                if (p.getProjectName() != null)
+                    sb.append(p.getProjectName()).append(" ");
+                if (p.getDescription() != null)
+                    sb.append(p.getDescription()).append(" ");
             });
         }
         String cvContent = sb.toString();
@@ -85,7 +94,7 @@ public class MatchingService {
         }
 
         int score = (int) Math.round(((double) matchedSkills.size() / jdTokens.size()) * 100);
-        
+
         // 5. ATS Rules evaluation
         boolean atsPassed = score >= 60; // Arbitrary Sprint 4 threshold
 
@@ -94,7 +103,8 @@ public class MatchingService {
 
         if (score < 40) {
             atsWarnings.add("Low overlap with Job Description keywords. Your CV might be automatically rejected.");
-            suggestions.add("Analyze the 'Missing Skills' and incorporate them naturally into your experience if applicable.");
+            suggestions.add(
+                    "Analyze the 'Missing Skills' and incorporate them naturally into your experience if applicable.");
         } else if (score < 70) {
             suggestions.add("Add more specific keywords from the JD to boost your match score.");
         } else {
@@ -104,7 +114,7 @@ public class MatchingService {
         if (missingSkills.size() > 10) {
             atsWarnings.add("A high number of terms from the JD are missing. Ensure you are targeting the right role.");
         }
-        
+
         if (cvContent.length() < 200) {
             atsWarnings.add("CV text is very short. ATS may reject resumes lacking adequate detail.");
         }
@@ -121,7 +131,8 @@ public class MatchingService {
     }
 
     private MatchingResult buildEmptyResult(String warningMsg) {
-        MatchingResult result = new MatchingResult(0, false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        MatchingResult result = new MatchingResult(0, false, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),
+                new ArrayList<>());
         result.getAtsWarnings().add(warningMsg);
         return result;
     }

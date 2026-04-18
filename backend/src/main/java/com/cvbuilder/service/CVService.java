@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cvbuilder.controller.CVController.UpdateCVRequest;
 import com.cvbuilder.model.CV;
 import com.cvbuilder.model.Template;
 import com.cvbuilder.model.User;
@@ -27,7 +28,7 @@ public class CVService {
     private TemplateRepository templateRepository;
 
     @Transactional
-    public CV createCV(Long templateId, String summary, String userEmail) {
+    public CV createCV(Long templateId, String title, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -37,7 +38,7 @@ public class CVService {
         CV cv = new CV();
         cv.setUser(user);
         cv.setTemplate(template);
-        cv.setSummary(summary);
+        cv.setTitle(title);
         cv.setCreatedAt(LocalDateTime.now());
         cv.setUpdatedAt(LocalDateTime.now());
 
@@ -59,21 +60,21 @@ public class CVService {
     }
 
     @Transactional
-    public CV updateCV(Long cvId, com.cvbuilder.controller.CVController.UpdateCVRequest request, String userEmail) {
+    public CV updateCV(Long cvId, UpdateCVRequest request, String userEmail) {
         CV cv = getCVByIdAndOwner(cvId, userEmail);
-        
-        if (request.title != null && request.summary == null) {
-            cv.setSummary(request.title); // Fallback for frontend compatibility
+
+        if (request.title != null) {
+            cv.setTitle(request.title);
         }
         if (request.summary != null) {
             cv.setSummary(request.summary);
         }
-        
+
         if (request.personalInformation != null) {
             request.personalInformation.setCv(cv);
             cv.setPersonalInformation(request.personalInformation);
         }
-        
+
         if (request.educations != null) {
             cv.getEducations().clear();
             request.educations.forEach(edu -> {
@@ -81,7 +82,7 @@ public class CVService {
                 cv.getEducations().add(edu);
             });
         }
-        
+
         if (request.experiences != null) {
             cv.getExperiences().clear();
             request.experiences.forEach(exp -> {
@@ -89,7 +90,7 @@ public class CVService {
                 cv.getExperiences().add(exp);
             });
         }
-        
+
         if (request.projects != null) {
             cv.getProjects().clear();
             request.projects.forEach(proj -> {
@@ -97,7 +98,7 @@ public class CVService {
                 cv.getProjects().add(proj);
             });
         }
-        
+
         if (request.certificates != null) {
             cv.getCertificates().clear();
             request.certificates.forEach(cert -> {
@@ -105,7 +106,7 @@ public class CVService {
                 cv.getCertificates().add(cert);
             });
         }
-        
+
         if (request.skills != null) {
             cv.getSkills().clear();
             request.skills.forEach(skill -> {
@@ -113,7 +114,7 @@ public class CVService {
                 cv.getSkills().add(skill);
             });
         }
-        
+
         cv.setUpdatedAt(LocalDateTime.now());
         return cvRepository.save(cv);
     }

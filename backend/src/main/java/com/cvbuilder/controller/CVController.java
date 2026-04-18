@@ -17,17 +17,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cvbuilder.model.CV;
+import com.cvbuilder.model.Certificate;
+import com.cvbuilder.model.Education;
+import com.cvbuilder.model.Experience;
+import com.cvbuilder.model.PersonalInformation;
+import com.cvbuilder.model.Project;
+import com.cvbuilder.model.Skill;
 import com.cvbuilder.service.CVService;
 import com.cvbuilder.service.ValidationService;
 
 @RestController
 @RequestMapping("/api/cv")
-@CrossOrigin(origins = "*") 
+@CrossOrigin(origins = "http://localhost:3000")
 public class CVController {
 
     @Autowired
     private CVService cvService;
-    
+
     @Autowired
     private ValidationService validationService;
 
@@ -39,12 +45,12 @@ public class CVController {
     public static class UpdateCVRequest {
         public String title;
         public String summary;
-        public com.cvbuilder.model.PersonalInformation personalInformation;
-        public List<com.cvbuilder.model.Education> educations;
-        public List<com.cvbuilder.model.Experience> experiences;
-        public List<com.cvbuilder.model.Project> projects;
-        public List<com.cvbuilder.model.Certificate> certificates;
-        public List<com.cvbuilder.model.Skill> skills;
+        public PersonalInformation personalInformation;
+        public List<Education> educations;
+        public List<Experience> experiences;
+        public List<Project> projects;
+        public List<Certificate> certificates;
+        public List<Skill> skills;
     }
 
     @GetMapping
@@ -62,19 +68,21 @@ public class CVController {
     @PostMapping
     public ResponseEntity<CV> createCV(@RequestBody CreateCVRequest request, Principal principal) {
         if (request.templateId == null) {
-            return ResponseEntity.badRequest().build(); 
+            return ResponseEntity.badRequest().build();
         }
-        
+
         CV createdCV = cvService.createCV(request.templateId, request.title, principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdCV);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateCV(@PathVariable Long id, @RequestBody UpdateCVRequest request, Principal principal) {
+    public ResponseEntity<?> updateCV(@PathVariable Long id, @RequestBody UpdateCVRequest request,
+            Principal principal) {
         if (request.summary != null && validationService.containsXssPayload(request.summary)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("XSS payload detected in summary. Request rejected.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("XSS payload detected in summary. Request rejected.");
         }
-        
+
         CV updatedCV = cvService.updateCV(id, request, principal.getName());
         return ResponseEntity.ok(updatedCV);
     }
