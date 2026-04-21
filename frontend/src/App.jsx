@@ -16,22 +16,21 @@ import FeaturesPage from './pages/marketing/FeaturesPage';
 import Editor from './components/Editor';
 import ProtectedRoute from './components/ProtectedRoute';
 
-
 export default function App() {
   return (
     <>
       <GlobalStyles
         styles={{
-          html: { 
-            margin: 0, 
-            padding: 0, 
-            overscrollBehaviorY: 'none', 
-            backgroundColor: '#050505'  
+          html: {
+            margin: 0,
+            padding: 0,
+            overscrollBehaviorY: 'none',
+            backgroundColor: '#050505',
           },
-          body: { 
-            margin: 0, 
-            padding: 0, 
-            overscrollBehaviorY: 'none' 
+          body: {
+            margin: 0,
+            padding: 0,
+            overscrollBehaviorY: 'none',
           },
         }}
       />
@@ -44,24 +43,38 @@ export default function App() {
           <Route path="/help" element={<HelpCenter />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/features" element={<FeaturesPage />} />
-          
+
           {/* Auth Routes - Cả 3 dùng chung AuthPage layout */}
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
           <Route path="/forgot-password" element={<AuthPage />} />
-          
-          {/* Protected Routes */}
-          <Route path="/editor" element={
-            //<ProtectedRoute>
-              <Editor />
-            //</ProtectedRoute>
-          } />
 
-          <Route path="/dashboard" element={
-            //<ProtectedRoute>
+          {/* Protected Routes */}
+          <Route
+            path="/editor"
+            element={
+              //<ProtectedRoute>
+              <Editor />
+              //</ProtectedRoute>
+            }
+          />
+          <Route
+            path="/editor/:id"
+            element={
+              //<ProtectedRoute>
+              <Editor />
+              //<ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              //<ProtectedRoute>
               <DashboardPage />
-            //</ProtectedRoute>
-          } />
+              //</ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </>

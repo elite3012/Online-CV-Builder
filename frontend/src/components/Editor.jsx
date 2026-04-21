@@ -60,7 +60,6 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const autosaveTimerRef = useRef(null);
   const abortRef = useRef(null);
   const didInitRef = useRef(false);
-
   const getTemplateIdByName = (name) => {
     const t = templates.find((x) => x.name === name);
     return t?.id ?? null;
@@ -110,7 +109,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         email: formData.personalInfo.email ?? '',
         phone: formData.personalInfo.phone ?? '',
         location: formData.personalInfo.location ?? '',
-        linkedin: formData.personalInfo.linkedin ?? '',
+        linkedIn: formData.personalInfo.linkedIn ?? '',
         website: formData.personalInfo.website ?? '',
       },
 
@@ -137,40 +136,69 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const [currentTemplate, setCurrentTemplate] = useState({
-    name: passedResume?.templateName || propTemplate?.name,
+    name: passedResume?.template.templateName || propTemplate?.name,
   });
   const [cvId, setCvId] = useState(passedResume?.id ?? null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
-  const [formData, setFormData] = useState(
-    passedResume?.formData || {
-      summary: '',
-      title: '',
-      personalInfo: {
-        fullName: '',
-        jobTitle: '',
-        email: '',
-        phone: '',
-        location: '',
-        linkedin: '',
-        website: '',
-      },
-      education: [
-        { school: '', degree: '', startDate: '', endDate: '', description: '' },
-      ],
-      experience: [
-        {
-          company: '',
-          jobTitle: '',
-          startDate: '',
-          endDate: '',
-          description: '',
-        },
-      ],
-      skills: '',
-      projects: [{ projectName: '', role: '', link: '', description: '' }],
-      certificates: [{ certificateName: '', organization: '', date: '' }],
+
+  const defaultFormData = {
+    summary: '',
+    personalInfo: {
+      fullName: '',
+      jobTitle: '',
+      email: '',
+      phone: '',
+      location: '',
+      linkedIn: '',
+      website: '',
     },
-  );
+    education: [
+      { school: '', degree: '', startDate: '', endDate: '', description: '' },
+    ],
+    experience: [
+      {
+        company: '',
+        jobTitle: '',
+        startDate: '',
+        endDate: '',
+        description: '',
+      },
+    ],
+    skills: '',
+    projects: [{ projectName: '', role: '', link: '', description: '' }],
+    certificates: [{ certificateName: '', organization: '', date: '' }],
+  };
+
+  const [formData, setFormData] = useState(() => {
+    if (passedResume)
+      return {
+        ...defaultFormData,
+        summary: passedResume.summary ?? '',
+        skills: passedResume.skills
+          ? passedResume.skills.map((s) => s.skillName).join(', ')
+          : defaultFormData.skills,
+        personalInfo: passedResume.personalInfo
+          ? passedResume.personalInfo
+          : defaultFormData.personalInfo,
+        education:
+          passedResume.education.length > 0
+            ? passedResume.education
+            : defaultFormData.education,
+        projects:
+          passedResume.projects.length > 0
+            ? passedResume.projects
+            : defaultFormData.projects,
+        certificates:
+          passedResume.certificates.length > 0
+            ? passedResume.certificates
+            : defaultFormData.certificates,
+        experience:
+          passedResume.experience.length > 0
+            ? passedResume.experience
+            : defaultFormData.experience,
+      };
+    return defaultFormData;
+  });
 
   // --- HÀM TẢI PDF ---
   const handleDownloadPDF = async () => {
@@ -283,7 +311,6 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       }
 
       const payload = toUpdatePayload();
-      console.log(payload);
       await apiService.updateCV(ensuredId, payload, {
         signal: controller.signal,
       });
@@ -350,7 +377,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
           formData.experience.every((e) => e.company && e.jobTitle)
         );
       case 'Skills':
-        return formData.skills.trim().length > 0;
+        return formData.skills.length > 0;
       case 'Projects':
         return (
           formData.projects.length > 0 &&
@@ -373,7 +400,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       email: formData.personalInfo.email || 'email@example.com',
       phone: formData.personalInfo.phone || '',
       address: formData.personalInfo.location || '',
-      linkedin: formData.personalInfo.linkedin || '',
+      linkedIn: formData.personalInfo.linkedIn || '',
       website: formData.personalInfo.website || '',
     },
     summary: formData.summary || 'Summary goes here...',
@@ -381,13 +408,11 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       .filter((e) => e.company)
       .map((exp) => ({
         company: exp.company,
-        role: exp.role,
+        jobTitle: exp.jobTitle,
         duration: `${exp.startDate} - ${exp.endDate}`,
         desc: exp.description,
       })),
-    skills: formData.skills
-      ? formData.skills.split(',').map((s) => s.trim())
-      : [],
+    skills: skillsStringToList(formData.skills).map((s) => s.skillName),
     education: formData.education
       .filter((e) => e.school)
       .map((edu) => ({
@@ -397,17 +422,17 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         desc: edu.description,
       })),
     projects: formData.projects
-      .filter((p) => p.name)
+      .filter((p) => p.projectName)
       .map((proj) => ({
-        name: proj.name,
+        projectName: proj.projectName,
         role: proj.role,
         link: proj.link,
         desc: proj.description,
       })),
     certificates: formData.certificates
-      .filter((c) => c.name)
+      .filter((c) => c.certificateName)
       .map((cert) => ({
-        name: cert.name,
+        certificateName: cert.certificateName,
         organization: cert.organization,
         date: cert.date,
       })),
@@ -576,9 +601,9 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                 <TextField
                   size="small"
                   label="LinkedIn"
-                  value={formData.personalInfo.linkedin}
+                  value={formData.personalInfo.linkedIn}
                   onChange={(e) =>
-                    handleDataChange('personalInfo', 'linkedin', e.target.value)
+                    handleDataChange('personalInfo', 'linkedIn', e.target.value)
                   }
                 />
                 <TextField

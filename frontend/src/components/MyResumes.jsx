@@ -10,19 +10,22 @@ import PreviewModal from './PreviewModal';
 import { apiService } from '../services/apiService';
 
 // Helper function để chuyển đổi formData sang định dạng cho CVRenderer
-const getPreviewData = (formData) => ({
-  name: formData?.personalInfo?.fullName,
-  title: formData?.personalInfo?.jobTitle,
-  contact: {
-    email: formData?.personalInfo?.email,
-    phone: formData?.personalInfo?.phone,
-    address: formData?.personalInfo?.location,
-    linkedin: formData?.personalInfo?.linkedin,
-    website: formData?.personalInfo?.website,
+const getPreviewData = (cv) => ({
+  name: cv.personalInfo?.fullName,
+  title: cv.personalInfo?.jobTitle,
+  template: {
+    templateName: cv.template.templateName,
   },
-  summary: formData?.summary,
+  contact: {
+    email: cv.personalInfo?.email,
+    phone: cv.personalInfo?.phone,
+    address: cv.personalInfo?.location,
+    linkedIn: cv.personalInfo?.linkedIn,
+    website: cv.personalInfo?.website,
+  },
+  summary: cv.summary,
   experience:
-    formData?.experience
+    cv.experience
       ?.filter((e) => e.company)
       .map((exp) => ({
         company: exp.company,
@@ -30,11 +33,9 @@ const getPreviewData = (formData) => ({
         duration: `${exp.startDate}${exp.startDate && exp.endDate ? ' - ' : ''}${exp.endDate}`,
         desc: exp.description,
       })) || [],
-  skills: formData?.skills
-    ? formData.skills.split(',').map((s) => s.trim())
-    : [],
+  skills: cv.skills?.map((s) => s.skillName),
   education:
-    formData?.education
+    cv.education
       ?.filter((e) => e.school)
       .map((edu) => ({
         school: edu.school,
@@ -43,7 +44,7 @@ const getPreviewData = (formData) => ({
         desc: edu.description,
       })) || [],
   projects:
-    formData?.projects
+    cv.projects
       ?.filter((p) => p.projectName)
       .map((proj) => ({
         projectName: proj.projectName,
@@ -52,7 +53,7 @@ const getPreviewData = (formData) => ({
         desc: proj.description,
       })) || [],
   certificates:
-    formData?.certificates
+    cv.certificates
       ?.filter((c) => c.certificateName)
       .map((cert) => ({
         certificateName: cert.certificateName,
@@ -72,19 +73,19 @@ export default function MyResumes({ setCurrentView }) {
       .then((data) => {
         const mapped = data.map((cv) => {
           let parsedData = {
+            id: cv.id,
+            title: cv.title,
+            updatedAt: cv.updatedAt ?? '',
             summary: cv.summary || '',
+            template: cv.template || { templateName: 'Modern' },
             personalInfo: cv.personalInformation || {},
             education: cv.educations || [],
             experience: cv.experiences || [],
-            project: cv.projects || [],
-            certifications: cv.certificates || [],
+            projects: cv.projects || [],
+            certificates: cv.certificates || [],
             skills: cv.skills || [],
           };
-          console.log(parsedData);
-          return {
-            id: cv.id,
-            name: cv.title || 'Untitled',
-          };
+          return parsedData;
         });
         setResumeList(mapped);
       })
@@ -105,16 +106,14 @@ export default function MyResumes({ setCurrentView }) {
   };
 
   const handleEdit = (cv) =>
-    navigate('/editor', { state: { resumeToEdit: cv } });
+    navigate(`/editor/${cv.id}`, { state: { resumeToEdit: cv } });
 
   const handleCreateNew = () =>
     setCurrentView ? setCurrentView('Overview') : navigate('/dashboard');
 
   // Tìm CV đang được chọn để lấy data truyền vào Modal Preview
   const activeResume = resumeList.find((cv) => cv.id === previewOpenId);
-  const activePreviewData = activeResume?.formData
-    ? getPreviewData(activeResume.formData)
-    : {};
+  const activePreviewData = activeResume ? getPreviewData(activeResume) : null;
 
   return (
     <Box
@@ -169,7 +168,7 @@ export default function MyResumes({ setCurrentView }) {
       {hasResumes ? (
         <Grid container spacing={4}>
           {resumeList.map((cv, index) => {
-            const previewData = cv.formData ? getPreviewData(cv.formData) : {};
+            const previewData = cv ? getPreviewData(cv) : {};
             return (
               <Grid
                 item
@@ -236,7 +235,7 @@ export default function MyResumes({ setCurrentView }) {
       <PreviewModal
         isOpen={Boolean(previewOpenId)}
         onClose={() => setPreviewOpenId(null)}
-        templateName={activeResume?.templateName || 'Modern'}
+        templateName={activeResume?.template.templateName || 'Modern'}
         previewData={activePreviewData}
       />
     </Box>
