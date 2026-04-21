@@ -249,7 +249,15 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
     return () => {
       if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     };
-  }, [formData, saveStatus]);
+  }, [formData, saveStatus, cvTitle]);
+
+  const setCvTitleDirty = (next) => {
+    setCvTitle((prev) => {
+      const resolved = typeof next === 'function' ? next(prev) : next;
+      if (resolved !== prev) setSaveStatus('Unsaved');
+      return resolved;
+    });
+  };
 
   const doAutosave = async () => {
     if (abortRef.current) abortRef.current.abort();
@@ -339,18 +347,19 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       case 'Experience':
         return (
           formData.experience.length > 0 &&
-          formData.experience.every((e) => e.company && e.role)
+          formData.experience.every((e) => e.company && e.jobTitle)
         );
       case 'Skills':
         return formData.skills.trim().length > 0;
       case 'Projects':
         return (
-          formData.projects.length > 0 && formData.projects.every((p) => p.name)
+          formData.projects.length > 0 &&
+          formData.projects.every((p) => p.projectName)
         );
       case 'Certificates':
         return (
           formData.certificates.length > 0 &&
-          formData.certificates.every((c) => c.name)
+          formData.certificates.every((c) => c.certificateName)
         );
       default:
         return false;
@@ -477,7 +486,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       <EditorToolbar
         onBack={handleBack}
         cvTitle={cvTitle}
-        setCvTitle={setCvTitle}
+        setCvTitle={setCvTitleDirty}
         isEditingTitle={isEditingTitle}
         setIsEditingTitle={setIsEditingTitle}
         templateName={currentTemplate?.name}
