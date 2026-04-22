@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,7 @@ import com.cvbuilder.service.MatchingService;
 
 @RestController
 @RequestMapping("/api/ai")
+@CrossOrigin(origins = "*")
 public class AIController {
 
     @Autowired
@@ -22,16 +24,16 @@ public class AIController {
 
     // Matching front-end payload { cvId, jdText }
     @PostMapping("/analyze-jd")
-    public ResponseEntity<MatchingResult> analyzeJD(@RequestBody Map<String, Object> request, Principal principal) {
+    public ResponseEntity<?> analyzeJD(@RequestBody Map<String, Object> request, Principal principal) {
         if (principal == null) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(401).body(Map.of("message", "Session expired. Please log in again."));
         }
         
         Long cvId = request.containsKey("cvId") ? Long.valueOf(request.get("cvId").toString()) : null;
         String jdText = request.containsKey("jdText") ? request.get("jdText").toString() : null;
 
         if (cvId == null || jdText == null || jdText.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", "Please choose a resume and paste a job description."));
         }
 
         try {
@@ -39,9 +41,9 @@ public class AIController {
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
             if (e.getMessage().contains("unauthorized") || e.getMessage().contains("not found")) {
-                return ResponseEntity.status(403).build();
+                return ResponseEntity.status(403).body(Map.of("message", "CV not found or you do not have access."));
             }
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 }
