@@ -28,6 +28,10 @@ import PreviewModal from './PreviewModal';
 import CVRenderer from './template/CVRenderer';
 
 import { apiService } from '../services/apiService';
+import {
+  validateDateRange,
+  validateEmail,
+} from '../utils/validation';
 
 import { templates } from '../data/templates';
 import { TemplateCard } from './TemplateCard';
@@ -51,6 +55,10 @@ const FormHeader = ({ title }) => (
     {title}
   </Typography>
 );
+
+const dateInputProps = {
+  InputLabelProps: { shrink: true },
+};
 
 export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const location = useLocation();
@@ -134,6 +142,37 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       ...rest,
       issueDate: toLocalDateTimeString(date ?? issueDate),
     };
+  };
+
+  const getEmailValidationError = (value) => {
+    const email = String(value ?? '').trim();
+    if (!email) return '';
+    return validateEmail(email) ? '' : 'Enter a valid email address.';
+  };
+
+  const getDateRangeError = (startDate, endDate) => {
+    return validateDateRange(startDate, endDate)
+      ? ''
+      : 'End date must be after start date.';
+  };
+
+  const getAutosaveValidationMessage = (currentFormData = formDataRef.current ?? formData) => {
+    const personalEmailError = getEmailValidationError(
+      currentFormData.personalInfo?.email,
+    );
+    if (personalEmailError) return personalEmailError;
+
+    const invalidEducation = (currentFormData.education || []).some(
+      (row) => !validateDateRange(row.startDate, row.endDate),
+    );
+    if (invalidEducation) return 'Fix education date ranges before saving.';
+
+    const invalidExperience = (currentFormData.experience || []).some(
+      (row) => !validateDateRange(row.startDate, row.endDate),
+    );
+    if (invalidExperience) return 'Fix experience date ranges before saving.';
+
+    return '';
   };
 
   const toUpdatePayload = () => {
@@ -370,6 +409,12 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
     isSavingRef.current = true;
 
     try {
+      const validationMessage = getAutosaveValidationMessage();
+      if (validationMessage) {
+        setSaveStatus('Invalid');
+        return;
+      }
+
       setSaveStatus('Saving...');
       let ensuredId = cvIdRef.current;
       if (!ensuredId) {
@@ -456,19 +501,30 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         return (
           formData.personalInfo.fullName &&
           formData.personalInfo.jobTitle &&
-          formData.personalInfo.email
+          formData.personalInfo.email &&
+          !getEmailValidationError(formData.personalInfo.email)
         );
       case 'Summary':
         return formData.summary.trim().length > 0;
       case 'Education':
         return (
           formData.education.length > 0 &&
-          formData.education.every((e) => e.school && e.degree)
+          formData.education.every(
+            (e) =>
+              e.school &&
+              e.degree &&
+              !getDateRangeError(e.startDate, e.endDate),
+          )
         );
       case 'Experience':
         return (
           formData.experience.length > 0 &&
-          formData.experience.every((e) => e.company && e.jobTitle)
+          formData.experience.every(
+            (e) =>
+              e.company &&
+              e.jobTitle &&
+              !getDateRangeError(e.startDate, e.endDate),
+          )
         );
       case 'Skills':
         return formData.skills.length > 0;
@@ -675,6 +731,12 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   onChange={(e) =>
                     handleDataChange('personalInfo', 'email', e.target.value)
                   }
+                  error={Boolean(
+                    getEmailValidationError(formData.personalInfo.email),
+                  )}
+                  helperText={getEmailValidationError(
+                    formData.personalInfo.email,
+                  )}
                 />
                 <TextField
                   size="small"
@@ -772,80 +834,89 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                 endDate: '',
                 description: '',
               },
-              (edu, idx) => (
-                <>
-                  <TextField
-                    size="small"
-                    label="School *"
-                    value={edu.school}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'education',
-                        idx,
-                        'school',
-                        e.target.value,
-                      )
-                    }
-                  />
-                  <TextField
-                    size="small"
-                    label="Degree *"
-                    value={edu.degree}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'education',
-                        idx,
-                        'degree',
-                        e.target.value,
-                      )
-                    }
-                  />
-                  <TextField
-                    multiline
-                    rows={4}
-                    size="small"
-                    label="Description"
-                    value={edu.description}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'education',
-                        idx,
-                        'description',
-                        e.target.value,
-                      )
-                    }
-                    sx={{ gridRow: { sm: 'span 2' } }}
-                  />
-                  <TextField
-                    size="small"
-                    type="date"
-                    label="Start Date"
-                    value={edu.startDate}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'education',
-                        idx,
-                        'startDate',
-                        e.target.value,
-                      )
-                    }
-                  />
-                  <TextField
-                    size="small"
-                    type="date"
-                    label="End Date"
-                    value={edu.endDate}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'education',
-                        idx,
-                        'endDate',
-                        e.target.value,
-                      )
-                    }
-                  />
-                </>
-              ),
+              (edu, idx) => {
+                const dateError = getDateRangeError(edu.startDate, edu.endDate);
+
+                return (
+                  <>
+                    <TextField
+                      size="small"
+                      label="School *"
+                      value={edu.school}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'education',
+                          idx,
+                          'school',
+                          e.target.value,
+                        )
+                      }
+                    />
+                    <TextField
+                      size="small"
+                      label="Degree *"
+                      value={edu.degree}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'education',
+                          idx,
+                          'degree',
+                          e.target.value,
+                        )
+                      }
+                    />
+                    <TextField
+                      multiline
+                      rows={4}
+                      size="small"
+                      label="Description"
+                      value={edu.description}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'education',
+                          idx,
+                          'description',
+                          e.target.value,
+                        )
+                      }
+                      sx={{ gridRow: { sm: 'span 2' } }}
+                    />
+                    <TextField
+                      size="small"
+                      type="date"
+                      label="Start Date"
+                      {...dateInputProps}
+                      value={edu.startDate}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'education',
+                          idx,
+                          'startDate',
+                          e.target.value,
+                        )
+                      }
+                      error={Boolean(dateError)}
+                    />
+                    <TextField
+                      size="small"
+                      type="date"
+                      label="End Date"
+                      {...dateInputProps}
+                      value={edu.endDate}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'education',
+                          idx,
+                          'endDate',
+                          e.target.value,
+                        )
+                      }
+                      error={Boolean(dateError)}
+                      helperText={dateError}
+                    />
+                  </>
+                );
+              },
             )}
           {activeSection === 'Experience' &&
             renderArraySection(
@@ -859,80 +930,89 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                 endDate: '',
                 description: '',
               },
-              (exp, idx) => (
-                <>
-                  <TextField
-                    size="small"
-                    label="Company *"
-                    value={exp.company}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'experience',
-                        idx,
-                        'company',
-                        e.target.value,
-                      )
-                    }
-                  />
-                  <TextField
-                    size="small"
-                    label="Job Title *"
-                    value={exp.jobTitle}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'experience',
-                        idx,
-                        'jobTitle',
-                        e.target.value,
-                      )
-                    }
-                  />
-                  <TextField
-                    multiline
-                    rows={4}
-                    size="small"
-                    label="Description"
-                    value={exp.description}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'experience',
-                        idx,
-                        'description',
-                        e.target.value,
-                      )
-                    }
-                    sx={{ gridRow: { sm: 'span 2' } }}
-                  />
-                  <TextField
-                    size="small"
-                    type="date"
-                    label="Start Date"
-                    value={exp.startDate}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'experience',
-                        idx,
-                        'startDate',
-                        e.target.value,
-                      )
-                    }
-                  />
-                  <TextField
-                    size="small"
-                    type="date"
-                    label="End Date"
-                    value={exp.endDate}
-                    onChange={(e) =>
-                      handleArrayChange(
-                        'experience',
-                        idx,
-                        'endDate',
-                        e.target.value,
-                      )
-                    }
-                  />
-                </>
-              ),
+              (exp, idx) => {
+                const dateError = getDateRangeError(exp.startDate, exp.endDate);
+
+                return (
+                  <>
+                    <TextField
+                      size="small"
+                      label="Company *"
+                      value={exp.company}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'experience',
+                          idx,
+                          'company',
+                          e.target.value,
+                        )
+                      }
+                    />
+                    <TextField
+                      size="small"
+                      label="Job Title *"
+                      value={exp.jobTitle}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'experience',
+                          idx,
+                          'jobTitle',
+                          e.target.value,
+                        )
+                      }
+                    />
+                    <TextField
+                      multiline
+                      rows={4}
+                      size="small"
+                      label="Description"
+                      value={exp.description}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'experience',
+                          idx,
+                          'description',
+                          e.target.value,
+                        )
+                      }
+                      sx={{ gridRow: { sm: 'span 2' } }}
+                    />
+                    <TextField
+                      size="small"
+                      type="date"
+                      label="Start Date"
+                      {...dateInputProps}
+                      value={exp.startDate}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'experience',
+                          idx,
+                          'startDate',
+                          e.target.value,
+                        )
+                      }
+                      error={Boolean(dateError)}
+                    />
+                    <TextField
+                      size="small"
+                      type="date"
+                      label="End Date"
+                      {...dateInputProps}
+                      value={exp.endDate}
+                      onChange={(e) =>
+                        handleArrayChange(
+                          'experience',
+                          idx,
+                          'endDate',
+                          e.target.value,
+                        )
+                      }
+                      error={Boolean(dateError)}
+                      helperText={dateError}
+                    />
+                  </>
+                );
+              },
             )}
           {activeSection === 'Projects' &&
             renderArraySection(
@@ -1029,6 +1109,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                     size="small"
                     type="date"
                     label="Date"
+                    {...dateInputProps}
                     value={cert.date}
                     onChange={(e) =>
                       handleArrayChange(

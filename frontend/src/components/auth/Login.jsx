@@ -1,38 +1,79 @@
 // src/components/auth/Login.jsx
 import { useState } from 'react';
-import { apiService } from '../../services/apiService';
 import {
+  Alert,
   Box,
-  TextField,
   Button,
-  Typography,
-  Link as MuiLink,
-  InputAdornment,
-  IconButton,
-  FormControlLabel,
   Checkbox,
+  FormControlLabel,
+  IconButton,
+  InputAdornment,
+  Link as MuiLink,
+  TextField,
+  Typography,
 } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { apiService } from '../../services/apiService';
+import {
+  PASSWORD_MIN_LENGTH,
+  getApiErrorMessage,
+  validateEmail,
+  validatePassword,
+  validateRequired,
+} from '../../utils/validation';
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false); // State lưu trạng thái tickbox
+  const [rememberMe, setRememberMe] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateForm = () => {
+    const nextErrors = {};
+    const normalizedEmail = email.trim();
+
+    if (!validateRequired(normalizedEmail)) {
+      nextErrors.email = 'Email is required.';
+    } else if (!validateEmail(normalizedEmail)) {
+      nextErrors.email = 'Enter a valid email address.';
+    }
+
+    if (!validateRequired(password)) {
+      nextErrors.password = 'Password is required.';
+    } else if (!validatePassword(password)) {
+      nextErrors.password = `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
+    }
+
+    return nextErrors;
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('Logging in with this shit:', { email, password });
+
+    const nextErrors = validateForm();
+    setErrors(nextErrors);
+    setServerError('');
+
+    if (Object.keys(nextErrors).length > 0) return;
 
     try {
-      const data = await apiService.login({ email, password });
-      navigate('/dashboard');
+      setIsSubmitting(true);
+      const data = await apiService.login({
+        email: email.trim().toLowerCase(),
+        password,
+      });
       localStorage.setItem('token', data.token);
+      navigate('/dashboard');
     } catch (err) {
-      console.log(err);
+      setServerError(getApiErrorMessage(err, 'Login failed. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -42,6 +83,7 @@ export default function Login() {
     <Box
       component="form"
       onSubmit={handleLogin}
+      noValidate
       sx={{
         width: '100%',
         maxWidth: 400,
@@ -74,14 +116,22 @@ export default function Login() {
         </Typography>
       </Box>
 
+      {serverError && <Alert severity="error">{serverError}</Alert>}
+
       <TextField
         label="Email"
         type="email"
         variant="outlined"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          setServerError('');
+          if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
+        }}
         required
         fullWidth
+        error={Boolean(errors.email)}
+        helperText={errors.email}
       />
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -90,9 +140,17 @@ export default function Login() {
           type={showPassword ? 'text' : 'password'}
           variant="outlined"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setServerError('');
+            if (errors.password) {
+              setErrors((prev) => ({ ...prev, password: '' }));
+            }
+          }}
           required
           fullWidth
+          error={Boolean(errors.password)}
+          helperText={errors.password}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -108,7 +166,6 @@ export default function Login() {
           }}
         />
 
-        
         <Box
           sx={{
             display: 'flex',
@@ -152,6 +209,7 @@ export default function Login() {
         type="submit"
         variant="contained"
         size="large"
+        disabled={isSubmitting}
         sx={{
           marginTop: 1,
           padding: '10px 0',
@@ -161,7 +219,7 @@ export default function Login() {
           '&:hover': { bgcolor: '#3d94a7' },
         }}
       >
-        Log in
+        {isSubmitting ? 'Logging in...' : 'Log in'}
       </Button>
 
       <Typography textAlign="center" variant="body2" color="text.secondary">
