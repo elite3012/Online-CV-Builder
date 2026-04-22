@@ -11,7 +11,6 @@ import PersonIcon from "@mui/icons-material/Person";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 
 export default function Settings() {
-  // Thêm field avatar vào state profile
   const [profile, setProfile] = useState({ 
     fullName: "quý10z", 
     email: "quy10z@cvbuilder.com",
@@ -22,10 +21,8 @@ export default function Settings() {
   const [showPass, setShowPass] = useState(false);
   const [status, setStatus] = useState({ msg: "", type: "success" });
 
-  // 1. Khởi tạo Ref để điều khiển input file ẩn
   const fileInputRef = useRef(null);
 
-  // 2. Xử lý khi chọn ảnh mới
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -67,7 +64,7 @@ export default function Settings() {
 
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={3} sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              {/* Bọc Box để khi click vào Avatar hoặc Icon Camera đều mở chọn file */}
+              
               <Box 
                 sx={{ position: "relative", cursor: "pointer" }} 
                 onClick={() => fileInputRef.current.click()}
@@ -95,7 +92,7 @@ export default function Settings() {
                   <CameraAltIcon fontSize="small" />
                 </IconButton>
 
-                {/* Input file bị ẩn */}
+                
                 <input
                   type="file"
                   ref={fileInputRef}

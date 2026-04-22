@@ -1,7 +1,6 @@
 // src/api.js
 import axios from "axios";
 
-// Tạo instance axios với cấu hình mặc định
 const api = axios.create({
   baseURL: "http://localhost:8080/api", 
   headers: {
@@ -9,7 +8,6 @@ const api = axios.create({
   },
 });
 
-// Nếu bạn có token lưu trong localStorage/sessionStorage thì gắn vào header
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token"); // hoặc sessionStorage
@@ -21,7 +19,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Xử lý lỗi chung
 api.interceptors.response.use(
   (response) => response,
   (error) => {

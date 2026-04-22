@@ -44,7 +44,7 @@ export default function App() {
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/features" element={<FeaturesPage />} />
 
-          {/* Auth Routes - Cả 3 dùng chung AuthPage layout */}
+          {/* Auth Routes */}
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
           <Route path="/forgot-password" element={<AuthPage />} />
@@ -53,26 +53,26 @@ export default function App() {
           <Route
             path="/editor"
             element={
-              //<ProtectedRoute>
-              <Editor />
-              //</ProtectedRoute>
+              <ProtectedRoute>
+                <Editor />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/editor/:id"
             element={
-              //<ProtectedRoute>
-              <Editor />
-              //<ProtectedRoute>
+              <ProtectedRoute>
+                <Editor />
+              </ProtectedRoute>
             }
           />
 
           <Route
             path="/dashboard"
             element={
-              //<ProtectedRoute>
-              <DashboardPage />
-              //</ProtectedRoute>
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
             }
           />
         </Routes>

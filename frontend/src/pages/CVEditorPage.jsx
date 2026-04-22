@@ -32,7 +32,6 @@ export default function CVEditorPage() {
         id: data?.id ?? cvId,
         title: data?.title ?? '',
         summary: data?.summary ?? '',
-        // map từ experiences, projects, skills nếu có
         experience: data?.experiences?.[0]?.jobDescription ?? '',
         goal: data?.goal ?? '',
         projectLinkText: data?.projects?.[0]?.projectName ?? '',
@@ -66,7 +65,6 @@ export default function CVEditorPage() {
       projects: [{ projectName: cvData.projectLinkText }],
       skills: cvData.skills.split(',').map(s => ({ skillName: s.trim() }))
     });
-    // Sau khi save xong, reload lại từ backend để đảm bảo sync
     await loadCV();
     setStatus('Saved successfully');
   } catch (error) {

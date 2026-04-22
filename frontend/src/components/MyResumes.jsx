@@ -9,7 +9,6 @@ import ResumeCard from './ResumeCard';
 import PreviewModal from './PreviewModal';
 import { apiService } from '../services/apiService';
 
-// Helper function để chuyển đổi formData sang định dạng cho CVRenderer
 const getPreviewData = (cv) => ({
   name: cv.personalInfo?.fullName,
   title: cv.personalInfo?.jobTitle,
@@ -62,10 +61,31 @@ const getPreviewData = (cv) => ({
       })) || [],
 });
 
-export default function MyResumes({ setCurrentView }) {
+export default function MyResumes({ setCurrentView, searchQuery = '' }) {
   const [resumeList, setResumeList] = useState([]);
   const [previewOpenId, setPreviewOpenId] = useState(null);
   const navigate = useNavigate();
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const filteredResumeList = resumeList.filter((cv) => {
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const searchableText = [
+      cv.title,
+      cv.summary,
+      cv.personalInfo?.fullName,
+      cv.personalInfo?.jobTitle,
+      ...(cv.skills || []).map((skill) => skill.skillName),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return searchableText.includes(normalizedQuery);
+  });
 
   useEffect(() => {
     apiService
@@ -92,7 +112,8 @@ export default function MyResumes({ setCurrentView }) {
       .catch((err) => console.error(err));
   }, []);
 
-  const hasResumes = resumeList.length > 0;
+  const hasAnyResumes = resumeList.length > 0;
+  const hasFilteredResumes = filteredResumeList.length > 0;
 
   const handleDelete = (idToDelete) => {
     if (window.confirm('Are you sure you want to delete this resume?')) {
@@ -111,8 +132,8 @@ export default function MyResumes({ setCurrentView }) {
   const handleCreateNew = () =>
     setCurrentView ? setCurrentView('Overview') : navigate('/dashboard');
 
-  // Tìm CV đang được chọn để lấy data truyền vào Modal Preview
-  const activeResume = resumeList.find((cv) => cv.id === previewOpenId);
+  const activeResume = filteredResumeList.find((cv) => cv.id === previewOpenId)
+    || resumeList.find((cv) => cv.id === previewOpenId);
   const activePreviewData = activeResume ? getPreviewData(activeResume) : null;
 
   return (
@@ -145,10 +166,12 @@ export default function MyResumes({ setCurrentView }) {
             Your Collection
           </Typography>
           <Typography variant="body1" color="rgba(255,255,255,0.7)">
-            Manage and edit your created resumes here.
+            {hasAnyResumes
+              ? `Showing ${filteredResumeList.length} of ${resumeList.length} resumes`
+              : 'Manage and edit your created resumes here.'}
           </Typography>
         </Box>
-        {hasResumes && (
+        {hasAnyResumes && (
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -164,10 +187,9 @@ export default function MyResumes({ setCurrentView }) {
         )}
       </Box>
 
-      {/* RẼ NHÁNH HIỂN THỊ */}
-      {hasResumes ? (
+      {hasAnyResumes && hasFilteredResumes ? (
         <Grid container spacing={4}>
-          {resumeList.map((cv, index) => {
+          {filteredResumeList.map((cv, index) => {
             const previewData = cv ? getPreviewData(cv) : {};
             return (
               <Grid
@@ -192,7 +214,6 @@ export default function MyResumes({ setCurrentView }) {
           })}
         </Grid>
       ) : (
-        /* EMPTY STATE */
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -210,22 +231,28 @@ export default function MyResumes({ setCurrentView }) {
               }}
             >
               <Typography color="white" variant="h6" sx={{ mb: 1 }}>
-                You haven't created any resumes yet.
+                {hasAnyResumes
+                  ? 'No resumes match your search.'
+                  : "You haven't created any resumes yet."}
               </Typography>
               <Typography
                 color="rgba(255,255,255,0.5)"
                 variant="body2"
                 sx={{ mb: 3 }}
               >
-                Start building your professional profile today.
+                {hasAnyResumes
+                  ? 'Try a different keyword to find a resume.'
+                  : 'Start building your professional profile today.'}
               </Typography>
-              <Button
-                variant="contained"
-                onClick={handleCreateNew}
-                sx={{ bgcolor: '#52b0c3', '&:hover': { bgcolor: '#3d94a7' } }}
-              >
-                Create New Resume
-              </Button>
+              {hasAnyResumes ? null : (
+                <Button
+                  variant="contained"
+                  onClick={handleCreateNew}
+                  sx={{ bgcolor: '#52b0c3', '&:hover': { bgcolor: '#3d94a7' } }}
+                >
+                  Create New Resume
+                </Button>
+              )}
             </Paper>
           </Box>
         </motion.div>

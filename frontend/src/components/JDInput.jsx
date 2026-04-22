@@ -14,61 +14,106 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import { apiService } from "../services/apiService";
 
-export default function JDInput({ onAnalyze }) {
-  // --- STATE ---
+function normalizeMatchingResult(payload) {
+  return {
+    score: Number(payload?.score || 0),
+    matchedSkills: Array.isArray(payload?.matchedSkills)
+      ? payload.matchedSkills
+      : [],
+    missingSkills: Array.isArray(payload?.missingSkills)
+      ? payload.missingSkills
+      : [],
+    atsWarnings: Array.isArray(payload?.atsWarnings) ? payload.atsWarnings : [],
+    suggestions: Array.isArray(payload?.suggestions) ? payload.suggestions : [],
+  };
+}
+
+function parseApiErrorMessage(error) {
+  if (!error || !error.message) {
+    return "Unable to analyze this job description right now.";
+  }
+
+  try {
+    const parsed = JSON.parse(error.message);
+    if (parsed?.message) {
+      return parsed.message;
+    }
+  } catch (_) {
+    // Ignore JSON parsing errors and use the raw message fallback.
+  }
+
+  return error.message;
+}
+
+export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
   const [jdText, setJdText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
 
-  // --- HANDLERS ---
   const handleClearJD = () => {
     setJdText("");
     setError("");
     setResult(null);
+    if (onAnalyzeResult) {
+      onAnalyzeResult(null);
+    }
   };
 
-  const handleAnalyzeJD = () => {
+  const handleAnalyzeJD = async () => {
+    if (!selectedCvId) {
+      setError("Please choose a resume before analyzing the job description.");
+      return;
+    }
+
     if (!jdText.trim()) {
       setError("Please paste a Job Description first to analyze.");
       return;
     }
+
     setError("");
     setLoading(true);
 
-    // MOCK API CALL
-    setTimeout(() => {
-      setLoading(false);
-      setResult({
-        score: 82,
-        matchedSkills: ["React", "Design Patterns", "UI/UX"],
-        missingSkills: ["GraphQL", "CI/CD Pipeline"],
-        atsWarnings: ["Missing some core keywords from JD"],
-        suggestions: ["Incorporate the missing skills naturally into your work history"],
-      });
-      
-      if (onAnalyze) {
-        onAnalyze();
+    try {
+      const response = await apiService.analyzeJD(selectedCvId, jdText.trim());
+      const normalizedResult = normalizeMatchingResult(response);
+
+      setResult(normalizedResult);
+
+      if (onAnalyzeResult) {
+        onAnalyzeResult(normalizedResult);
       }
-    }, 2000);
+      if (onAnalyze) {
+        onAnalyze(normalizedResult);
+      }
+    } catch (err) {
+      setError(parseApiErrorMessage(err));
+      setResult(null);
+      if (onAnalyzeResult) {
+        onAnalyzeResult(null);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // --- RENDER ---
   return (
     <Box sx={{ width: "100%" }}>
-      {/* ĐÃ FIX: Đổi nền tối, viền dashed, hiệu ứng hover giống hệt Upload section
-      */}
       <Paper
         elevation={0}
         sx={{
           p: 4,
           borderRadius: 4,
           bgcolor: "rgba(255,255,255,0.05)",
-          color: "white", // Đổi text mặc định thành màu trắng
+          color: "white",
           border: "2px dashed rgba(255,255,255,0.2)",
           transition: "0.2s",
-          "&:hover": { borderColor: "#52b0c3", bgcolor: "rgba(82, 176, 195, 0.05)" }
+          "&:hover": {
+            borderColor: "#52b0c3",
+            bgcolor: "rgba(82, 176, 195, 0.05)",
+          },
         }}
       >
         <Typography variant="h5" fontWeight="bold" sx={{ color: "#52b0c3", mb: 1 }}>
@@ -78,7 +123,6 @@ export default function JDInput({ onAnalyze }) {
           Paste the Job Description to check how well your CV matches the ATS requirements.
         </Typography>
 
-        {/* Cập nhật style cho TextField để nổi bật trên nền tối */}
         <TextField
           fullWidth
           multiline
@@ -95,22 +139,22 @@ export default function JDInput({ onAnalyze }) {
             mb: 2,
             "& .MuiOutlinedInput-root": {
               borderRadius: 3,
-              color: "white", // Text màu trắng
-              bgcolor: "rgba(0,0,0,0.2)", // Làm nền ô nhập liệu tối hơn xíu để có chiều sâu
+              color: "white",
+              bgcolor: "rgba(0,0,0,0.2)",
               "& fieldset": {
-                borderColor: "rgba(255,255,255,0.2)", // Viền mặc định
+                borderColor: "rgba(255,255,255,0.2)",
               },
               "&:hover fieldset": {
-                borderColor: "rgba(255,255,255,0.5)", // Viền khi hover
+                borderColor: "rgba(255,255,255,0.5)",
               },
               "&.Mui-focused fieldset": {
-                borderColor: "#52b0c3", // Viền khi click vào nhập liệu
+                borderColor: "#52b0c3",
               },
             },
             "& .MuiInputBase-input::placeholder": {
               color: "rgba(255,255,255,0.5)",
               opacity: 1,
-            }
+            },
           }}
         />
 
@@ -124,7 +168,6 @@ export default function JDInput({ onAnalyze }) {
           <Button
             variant="contained"
             onClick={handleAnalyzeJD}
-            disabled={loading}
             startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeIcon />}
             sx={{
               bgcolor: "#52b0c3",
@@ -222,7 +265,7 @@ export default function JDInput({ onAnalyze }) {
                   {result.suggestions.length > 0 && (
                     <Box>
                       <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}>
-                        💡 Suggestions to Improve
+                        Suggestions to Improve
                       </Typography>
                       {result.suggestions.map((sug, idx) => (
                         <Typography key={idx} variant="body2" sx={{ ml: 4, color: "rgba(255,255,255,0.9)" }}>

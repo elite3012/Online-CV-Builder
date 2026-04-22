@@ -8,11 +8,21 @@ import {
   Avatar,
 } from "@mui/material";
 
-export default function TopNavbar({ title }) {
-  
-  const searchPlaceholder = title === "Overview" 
-    ? "Search templates..." 
+export default function TopNavbar({
+  title,
+  searchQuery = "",
+  onSearchChange,
+  searchEnabled = true,
+}) {
+  const searchPlaceholder = title === "Overview"
+    ? "Search templates..."
     : `Search in ${title}...`;
+
+  const handleSearchInputChange = (event) => {
+    if (onSearchChange) {
+      onSearchChange(event.target.value);
+    }
+  };
 
   return (
     <Box
@@ -21,12 +31,11 @@ export default function TopNavbar({ title }) {
         justifyContent: "space-between",
         alignItems: "center",
         p: 3,
-        bgcolor: "#183c54e7", 
-        backdropFilter: "blur(100px)", 
+        bgcolor: "#183c54e7",
+        backdropFilter: "blur(100px)",
         borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
         position: "fixed",
         zIndex: 1000,
-        // Chiều rộng trừ đi Sidebar (225px)
         width: "calc(100% - 225px)",
       }}
     >
@@ -34,19 +43,25 @@ export default function TopNavbar({ title }) {
         variant="h5"
         fontWeight="900"
         color="white"
-        sx={{ 
+        sx={{
           fontFamily: "'Helvetica', sans-serif",
-          textTransform: "capitalize" 
+          textTransform: "capitalize"
         }}
       >
-        {/* HIỂN THỊ TITLE ĐỘNG */}
         {title === "Overview" ? "Templates Gallery" : title}
       </Typography>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
         <TextField
           size="small"
-          placeholder={searchPlaceholder}
+          value={searchQuery}
+          onChange={handleSearchInputChange}
+          disabled={!searchEnabled}
+          placeholder={
+            searchEnabled
+              ? searchPlaceholder
+              : "Search unavailable in this section"
+          }
           variant="outlined"
           sx={{
             width: 300,
@@ -64,10 +79,10 @@ export default function TopNavbar({ title }) {
             ),
           }}
         />
-        <Avatar 
-          sx={{ 
-            bgcolor: "#52b0c3", 
-            width: 40, 
+        <Avatar
+          sx={{
+            bgcolor: "#52b0c3",
+            width: 40,
             height: 40,
             fontSize: "0.9rem",
             fontWeight: "bold"

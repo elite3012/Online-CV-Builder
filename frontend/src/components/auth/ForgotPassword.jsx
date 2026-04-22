@@ -11,7 +11,6 @@ export default function ForgotPassword() {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Đang gửi link reset password tới:', email);
-    // Giả lập gọi API thành công
     setIsSubmitted(true);
   };
 

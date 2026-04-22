@@ -43,11 +43,15 @@ export const apiService = {
       body: JSON.stringify(userData),
     }),
 
-  logout: () => {
-    request('/auth/logout', {
-      method: 'POST',
-    });
-    localStorage.removeItem('token');
+  logout: async () => {
+    try {
+      await request('/auth/logout', {
+        method: 'POST',
+      });
+    } finally {
+      localStorage.removeItem('token');
+    }
+
     return null;
   },
 
@@ -83,11 +87,11 @@ export const apiService = {
 
   // Template endpoints
   getTemplates: () =>
-    request('/templates', {
+    request('/template', {
       method: 'GET',
     }),
 
-  // AI endpoints (Sprint 4 preparation)
+  // AI endpoints
   analyzeJD: (cvId, jdText) =>
     request(`/ai/analyze-jd`, {
       method: 'POST',

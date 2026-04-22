@@ -1,5 +1,5 @@
 ﻿// src/components/ATSChecker.jsx
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -7,11 +7,13 @@ import {
   Button,
   Checkbox,
   Divider,
+  TextField,
+  MenuItem,
   CircularProgress,
 } from "@mui/material";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
+import { apiService } from "../services/apiService";
 import JDInput from "./JDInput";
 
 const INITIAL_CHECKLIST = [
@@ -23,63 +25,144 @@ const INITIAL_CHECKLIST = [
   { id: 6, label: "Save resume as PDF or DOCX", checked: false },
 ];
 
+function buildChecklistFromResult(result) {
+  const warnings = (result?.atsWarnings || []).map((warning) =>
+    String(warning).toLowerCase(),
+  );
+  const matchedSkills = result?.matchedSkills?.length || 0;
+  const missingSkills = result?.missingSkills?.length || 0;
+  const score = Number(result?.score || 0);
+
+  const hasFormattingWarning = warnings.some((warning) =>
+    /format|font|table|image|read/.test(warning),
+  );
+
+  return [
+    {
+      id: 1,
+      label: "Use standard section headings",
+      checked: score >= 50 && !hasFormattingWarning,
+    },
+    {
+      id: 2,
+      label: "Avoid tables, graphics, and images",
+      checked: !hasFormattingWarning,
+    },
+    {
+      id: 3,
+      label: "Use keywords from the job description",
+      checked: matchedSkills >= missingSkills,
+    },
+    {
+      id: 4,
+      label: "Use a simple readable font",
+      checked: !hasFormattingWarning,
+    },
+    {
+      id: 5,
+      label: "Include measurable achievements",
+      checked: score >= 70 || matchedSkills >= 8,
+    },
+    {
+      id: 6,
+      label: "Save resume as PDF or DOCX",
+      checked: true,
+    },
+  ];
+}
+
 export default function ATSChecker() {
-  const [file, setFile] = useState(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const [cvOptions, setCvOptions] = useState([]);
+  const [selectedCvId, setSelectedCvId] = useState("");
+  const [loadingCvList, setLoadingCvList] = useState(true);
+  const [cvListError, setCvListError] = useState("");
+
   const [checklist, setChecklist] = useState(INITIAL_CHECKLIST);
-  const [scanResult, setScanResult] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
 
-  const handleFileChange = (e) => {
-    if (e.target.files[0]) {
-      setFile(e.target.files[0]);
-      setScanResult(false);
+  useEffect(() => {
+    let active = true;
+
+    const loadResumes = async () => {
+      try {
+        const data = await apiService.getCVList();
+        if (!active) {
+          return;
+        }
+
+        const mapped = (data || []).map((cv) => ({
+          id: cv.id,
+          title: cv.title || `Resume #${cv.id}`,
+        }));
+
+        setCvOptions(mapped);
+        if (mapped.length > 0) {
+          setSelectedCvId(String(mapped[0].id));
+        }
+      } catch (err) {
+        if (active) {
+          setCvListError("Unable to load your resumes. Please try again.");
+        }
+      } finally {
+        if (active) {
+          setLoadingCvList(false);
+        }
+      }
+    };
+
+    loadResumes();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const completedCount = useMemo(
+    () => checklist.filter((item) => item.checked).length,
+    [checklist],
+  );
+
+  const handleAnalyzeResult = (result) => {
+    setAnalysisResult(result);
+
+    if (!result) {
       setChecklist(INITIAL_CHECKLIST);
+      return;
     }
+
+    setChecklist(buildChecklistFromResult(result));
   };
 
-  const handleStartScan = () => {
-    if (!file) return alert("Please upload a file first!");
-
-    setIsScanning(true);
-
-    setTimeout(() => {
-      setIsScanning(false);
-      setScanResult(true);
-      const results = [true, true, false, true, false, true];
-      setChecklist((prev) =>
-        prev.map((item, idx) => ({ ...item, checked: results[idx] })),
-      );
-    }, 2500);
+  const handleResetChecklist = () => {
+    setChecklist(INITIAL_CHECKLIST);
+    setAnalysisResult(null);
   };
 
-  const completedCount = checklist.filter((item) => item.checked).length;
+  const handleMarkAllItems = () => {
+    setChecklist((prev) => prev.map((item) => ({ ...item, checked: true })));
+  };
+
+  const hasResumeOptions = cvOptions.length > 0;
 
   return (
     <Box sx={{ p: 4, mt: "80px", color: "white", minHeight: "100vh", maxWidth: "1200px", mx: "auto" }}>
-      
-      {/* HEADER */}
       <Box sx={{ mb: 5 }}>
         <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
-          AI Resume Checker
+          ATS Resume Checker
         </Typography>
         <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.7)" }}>
-          Upload your resume and paste a Job Description to see how well you match the ATS filters.
+          Choose one of your saved resumes and analyze it against a job description.
         </Typography>
       </Box>
 
-      {/* MAIN LAYOUT: CHIA 2 CỘT (STRETCH ĐỂ BẰNG NHAU) */}
       <Box
         sx={{
           display: "flex",
           gap: 4,
           flexDirection: { xs: "column", lg: "row" },
-          alignItems: "stretch", 
+          alignItems: "stretch",
         }}
       >
-        {/* CỘT TRÁI: UPLOAD + JD INPUT                              */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-          
-          {/* UPLOAD SECTION (Quay lại style nền tối, viền dashed) */}
           <Paper
             elevation={0}
             sx={{
@@ -91,71 +174,75 @@ export default function ATSChecker() {
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
+              gap: 2,
               transition: "0.2s",
-              "&:hover": { borderColor: "#52b0c3", bgcolor: "rgba(82, 176, 195, 0.05)" }
+              "&:hover": {
+                borderColor: "#52b0c3",
+                bgcolor: "rgba(82, 176, 195, 0.05)",
+              },
             }}
           >
-            <input
-              type="file"
-              accept=".pdf,.docx"
-              id="upload-pdf"
-              style={{ display: "none" }}
-              onChange={handleFileChange}
-            />
-            <label htmlFor="upload-pdf">
-              <Box sx={{ cursor: "pointer", p: 3 }}>
-                <CloudUploadIcon sx={{ fontSize: 60, color: "#52b0c3", mb: 2 }} />
-                <Typography variant="h6" color="white" fontWeight="medium" sx={{ mb: 0.5 }}>
-                  {file ? file.name : "Drop your CV here or click to upload"}
-                </Typography>
-                <Typography variant="caption" color="rgba(255,255,255,0.5)">
-                  Supports PDF or DOCX (Max 5MB)
+            <Typography variant="h6" fontWeight="bold" sx={{ color: "#52b0c3" }}>
+              Select Resume
+            </Typography>
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)" }}>
+              Pick the resume you want to compare with the job description.
+            </Typography>
+
+            <TextField
+              select
+              fullWidth
+              value={selectedCvId}
+              onChange={(event) => setSelectedCvId(event.target.value)}
+              disabled={loadingCvList || !hasResumeOptions}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                  color: "white",
+                  "& fieldset": { borderColor: "rgba(255,255,255,0.3)" },
+                  "&:hover fieldset": { borderColor: "rgba(255,255,255,0.6)" },
+                  "&.Mui-focused fieldset": { borderColor: "#52b0c3" },
+                },
+                "& .MuiSvgIcon-root": { color: "white" },
+              }}
+            >
+              {cvOptions.map((cv) => (
+                <MenuItem key={cv.id} value={String(cv.id)}>
+                  {cv.title}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {loadingCvList && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <CircularProgress size={18} sx={{ color: "#52b0c3" }} />
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)" }}>
+                  Loading your resumes...
                 </Typography>
               </Box>
-            </label>
+            )}
 
-            <AnimatePresence>
-              {file && (
-                <motion.div
-                  key="check-button"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Box sx={{ mt: 2 }}>
-                    <Button
-                      variant="contained"
-                      onClick={handleStartScan}
-                      disabled={isScanning}
-                      sx={{
-                        bgcolor: "#52b0c3",
-                        px: 5,
-                        py: 1.2,
-                        borderRadius: 8,
-                        fontWeight: "bold",
-                        textTransform: "none", 
-                        "&:hover": { bgcolor: "#3d94a7" },
-                      }}
-                    >
-                      {isScanning ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Check with AI"}
-                    </Button>
-                  </Box>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {cvListError && (
+              <Typography variant="caption" color="error">
+                {cvListError}
+              </Typography>
+            )}
+
+            {!loadingCvList && !hasResumeOptions && !cvListError && (
+              <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)" }}>
+                You do not have any saved resumes yet. Create one first to run ATS analysis.
+              </Typography>
+            )}
           </Paper>
 
-          {/* JD INPUT COMPONENT */}
           <Box sx={{ width: "100%" }}>
-            <JDInput />
+            <JDInput
+              selectedCvId={selectedCvId ? Number(selectedCvId) : null}
+              onAnalyzeResult={handleAnalyzeResult}
+            />
           </Box>
-          
         </Box>
 
-        {/* ======================================================== */}
-        {/* CỘT PHẢI: ATS CHECKLIST (TỰ ĐỘNG GIÃN VỪA KHÍT CỘT TRÁI) */}
-        {/* ======================================================== */}
         <Paper
           elevation={4}
           sx={{
@@ -164,8 +251,8 @@ export default function ATSChecker() {
             borderRadius: 4,
             bgcolor: "white",
             color: "#102a43",
-            display: "flex", 
-            flexDirection: "column", // Để sử dụng flexGrow bên trong
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           <Typography variant="h5" fontWeight="900" sx={{ color: "#102a43", mb: 0.5 }}>
@@ -175,7 +262,6 @@ export default function ATSChecker() {
             Does your format meet the standards?
           </Typography>
 
-          {/* BÍ KÍP 2: flexGrow: 1 và justifyContent: "space-evenly" để các mục tự động giãn cách đều nhau lấp đầy khoảng trống */}
           <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "space-evenly", my: 2, minHeight: "350px" }}>
             {checklist.map((item) => (
               <Box
@@ -207,25 +293,46 @@ export default function ATSChecker() {
 
           <Divider sx={{ mb: 3 }} />
 
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
             <Typography variant="body2" fontWeight="bold" sx={{ color: "#52b0c3", bgcolor: "rgba(82, 176, 195, 0.1)", px: 1.5, py: 0.5, borderRadius: 2 }}>
               {completedCount} / 6 passed
             </Typography>
-            <Button
-              size="small"
-              onClick={() => {
-                setFile(null);
-                setChecklist(INITIAL_CHECKLIST);
-                setScanResult(false);
-              }}
-              sx={{ color: "#94a3b8", textTransform: "none", fontWeight: "bold", "&:hover": { color: "#f43f5e", bgcolor: "transparent" } }}
-            >
-              Reset
-            </Button>
+
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button
+                size="small"
+                onClick={handleMarkAllItems}
+                sx={{
+                  color: "#52b0c3",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  "&:hover": { bgcolor: "rgba(82,176,195,0.1)" },
+                }}
+              >
+                Mark all
+              </Button>
+              <Button
+                size="small"
+                onClick={handleResetChecklist}
+                sx={{
+                  color: "#94a3b8",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  "&:hover": { color: "#f43f5e", bgcolor: "transparent" },
+                }}
+              >
+                Reset
+              </Button>
+            </Box>
           </Box>
+
+          {analysisResult && (
+            <Typography variant="caption" sx={{ mt: 2, color: "#64748b" }}>
+              Latest ATS score: {analysisResult.score}%
+            </Typography>
+          )}
         </Paper>
       </Box>
-
     </Box>
   );
 }

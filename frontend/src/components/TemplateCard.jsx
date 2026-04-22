@@ -5,13 +5,11 @@ import { Box, Typography, Chip, Button } from "@mui/material";
 import BorderGlow from "./reactbits/BorderGlow";
 import { AnimatePresence, motion } from "motion/react";
 
-// Import Giao diện và Data
 import CVRenderer from "./template/CVRenderer"; 
 import { mockResumesData } from "../data/mockResumes";
 
 export const TemplateCard = ({ item, onPreview, onUse }) => { 
 
-  // Lấy data tương ứng với id của template
   const resumeData = mockResumesData[item.id];
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -42,7 +40,7 @@ export const TemplateCard = ({ item, onPreview, onUse }) => {
             borderRadius: "12px",
           }}
         >
-          {/* KHU VỰC LIVE THUMBNAIL  */}
+          
           <Box
             sx={{
               width: "100%",
@@ -106,7 +104,7 @@ export const TemplateCard = ({ item, onPreview, onUse }) => {
         </Box>
       </BorderGlow>
 
-      {/* PHẦN POPUP PREVIEW (HIỆN TOÀN BỘ CV KHI BẤM)   */}
+      
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>

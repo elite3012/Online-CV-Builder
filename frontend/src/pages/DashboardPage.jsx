@@ -1,6 +1,6 @@
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom"; // Import thêm hook này
+import { useLocation } from "react-router-dom";
 import { Box } from "@mui/material";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -14,19 +14,25 @@ import ATSChecker from "../components/ATSChecker";
 import Settings from "../components/Settings";
 
 export default function Dashboard() {
-  const location = useLocation(); // Khởi tạo location để bắt tín hiệu
+  const location = useLocation();
 
-  // Khởi tạo tab mặc định dựa trên tín hiệu truyền tới (nếu có), không thì về Overview
   const defaultView = location.state?.activeTab || "Overview";
   const [currentView, setCurrentView] = useState(defaultView);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Lắng nghe tín hiệu: Khi bấm "Create New" ở My Resumes, nó sẽ cập nhật lại view
+  const searchableViews = new Set(["Overview", "My Resumes"]);
+  const isSearchEnabled = searchableViews.has(currentView);
+
   useEffect(() => {
     if (location.state?.activeTab) {
       setCurrentView(location.state.activeTab);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    setSearchQuery("");
+  }, [currentView]);
 
   const handleUseTemplate = (template) => {
     setSelectedTemplate(template);
@@ -35,28 +41,31 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f8f9fb", display: "flex" }}>
-      {/* Chỉ hiện Sidebar nếu không phải là Editor */}
       {currentView !== "Editor" && (
         <Sidebar currentView={currentView} setCurrentView={setCurrentView} />
       )}
 
-      {/* CONTENT AREA */}
       <Box
         sx={{
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
-          // Thu hồi margin-left về 0px nếu là Editor để chiếm full màn hình
           ml: currentView === "Editor" ? "0px" : "225px",
-          // Nền Editor màu sáng, nền Dashboard màu tối
           bgcolor: currentView === "Editor" ? "#f4f7f6" : "#050505",
           minHeight: "100vh",
           position: "relative",
           overflow: "hidden",
-          transition: "margin-left 0.3s ease", // Hiệu ứng trượt
+          transition: "margin-left 0.3s ease",
         }}
       >
-        {currentView !== "Editor" && <TopNavbar title={currentView} />}
+        {currentView !== "Editor" && (
+          <TopNavbar
+            title={currentView}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchEnabled={isSearchEnabled}
+          />
+        )}
 
         <AnimatePresence mode="wait">
           {currentView === "Overview" && (
@@ -68,7 +77,10 @@ export default function Dashboard() {
               transition={{ duration: 0.3, ease: "easeOut" }}
               style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
             >
-              <TemplateGallery onUseTemplate={handleUseTemplate} />
+              <TemplateGallery
+                onUseTemplate={handleUseTemplate}
+                searchQuery={searchQuery}
+              />
             </motion.div>
           )}
 
@@ -81,7 +93,10 @@ export default function Dashboard() {
               transition={{ duration: 0.3, ease: "easeOut" }}
               style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
             >
-              <MyResumes setCurrentView={setCurrentView} />
+              <MyResumes
+                setCurrentView={setCurrentView}
+                searchQuery={searchQuery}
+              />
             </motion.div>
           )}
 

@@ -200,7 +200,6 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
     return defaultFormData;
   });
 
-  // --- HÀM TẢI PDF ---
   const handleDownloadPDF = async () => {
     const element = componentRef.current;
     if (!element) return;
@@ -208,27 +207,20 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
     setSaveStatus('Exporting...');
     const hiddenBox = element.parentElement;
 
-    // 1. TẠO MỘT CONTAINER TẠM THỜI ĐỂ "THẢ" CV RA
-    // Container này nằm ngoài màn hình để user không thấy
     const tempContainer = document.createElement('div');
     tempContainer.style.position = 'absolute';
     tempContainer.style.left = '-9999px'; // Đẩy ra xa màn hình
     tempContainer.style.top = '0';
 
-    // Ép kích thước A4 chuẩn cho temp container
-    // Kích thước A4 ở scale 1x, 96 DPI thường là ~794px x 1123px
     tempContainer.style.width = '794px';
     tempContainer.style.height = '1123px';
     tempContainer.style.overflow = 'hidden'; // Cắt bớt phần thừa nếu có
     document.body.appendChild(tempContainer);
 
-    // 2. DI CHUYỂN CVRenderer THỰC VÀO CONTAINER TẠM THỜI
-    // Tạm thời hiện Box gốc để di chuyển nội dung
     hiddenBox.style.display = 'block';
     tempContainer.appendChild(element);
 
     try {
-      // 3. CHỤP ẢNH TỪ CONTAINER TẠM THỜI ĐÃ ĐƯỢC ÉP KÍCH THƯỚC ĐẸP
       const canvas = await html2canvas(element, {
         scale: 2, // retina quality
         useCORS: true,
@@ -239,12 +231,10 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
 
       const imgData = canvas.toDataURL('image/png');
 
-      // 4. ĐÓNG GÓI PDF A4 CHUẨN
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // Vẽ ảnh full trang A4 mm
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${cvTitle.replace(/\s+/g, '_')}.pdf`);
 
@@ -253,7 +243,6 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       console.error('Export error:', err);
       setSaveStatus('Error');
     } finally {
-      // 5. DỌN DẸP: DI CHUYỂN CVRenderer VỀ CHỖ CŨ VÀ XOÁ TEMP
       hiddenBox.appendChild(element);
       hiddenBox.style.display = 'none';
       document.body.removeChild(tempContainer);
@@ -665,7 +654,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
             </Paper>
           )}
 
-          {/* Render các mục Array (Education, Experience, Projects, Certificates) */}
+          
           {activeSection === 'Education' &&
             renderArraySection(
               'Education',
@@ -953,7 +942,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         </Box>
       </Box>
 
-      {/* 3. VÙNG CHỨA CV ẨN (Để render dữ liệu thực cho PDF) */}
+      
       <Box sx={{ display: 'none' }}>
         <Box ref={componentRef}>
           <CVRenderer
@@ -999,7 +988,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
             {templates.map((item) => (
               <Box key={item.id} sx={{ height: '450px' }}>
                 {' '}
-                {/* Fix chiều cao để BorderGlow không bị cắt */}
+                
                 <TemplateCard
                   item={item}
                   onPreview={() => {}} // Preview đã được xử lý ngầm bên trong TemplateCard rồi

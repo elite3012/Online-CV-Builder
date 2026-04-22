@@ -5,7 +5,7 @@ import { CssBaseline } from '@mui/material'; // Thêm cái này để reset CSS 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <CssBaseline> {/* Đặt ở đây để áp dụng reset cho toàn bộ ứng dụng */}
+    <CssBaseline> 
     <App />
     </CssBaseline>
   </React.StrictMode>,

@@ -28,16 +28,28 @@ const tabCategories = [
   'Elegant',
 ];
 
-export default function TemplateGallery({ onUseTemplate }) {
+export default function TemplateGallery({ onUseTemplate, searchQuery = '' }) {
   const [activeTab, setActiveTab] = useState(0);
-
-  // State lưu trữ Template đang được Preview (null = không bật popup)
   const [previewItem, setPreviewItem] = useState(null);
 
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
   const filteredTemplates = templates.filter((template) => {
-    if (activeTab === 0) return true;
-    const selectedCategory = tabCategories[activeTab];
-    return template.tags.includes(selectedCategory);
+    const matchesCategory =
+      activeTab === 0 || template.tags.includes(tabCategories[activeTab]);
+
+    if (!matchesCategory) {
+      return false;
+    }
+
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const searchableText =
+      `${template.name} ${template.desc} ${template.tags.join(' ')}`.toLowerCase();
+
+    return searchableText.includes(normalizedQuery);
   });
 
   return (
@@ -138,23 +150,33 @@ export default function TemplateGallery({ onUseTemplate }) {
             >
               <Box
                 sx={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, 250px)', // Tự động tạo cột vừa bằng chiều rộng thẻ (250px)
-                  gap: 4,
+                  display: filteredTemplates.length ? 'grid' : 'block',
+                  gridTemplateColumns: 'repeat(auto-fit, 250px)',
+                  gap: filteredTemplates.length ? 4 : 0,
                   justifyContent: 'center',
                   maxWidth: '900px',
                   mx: 'auto',
                 }}
               >
-                {filteredTemplates.map((item) => (
-                  <Box key={item.id}>
-                    <TemplateCard
-                      item={item}
-                      onPreview={() => setPreviewItem(item)}
-                      onUse={() => onUseTemplate(item)}
-                    />
-                  </Box>
-                ))}
+                {filteredTemplates.length === 0 ? (
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ textAlign: 'center', py: 6 }}
+                  >
+                    No templates match your search.
+                  </Typography>
+                ) : (
+                  filteredTemplates.map((item) => (
+                    <Box key={item.id}>
+                      <TemplateCard
+                        item={item}
+                        onPreview={() => setPreviewItem(item)}
+                        onUse={() => onUseTemplate(item)}
+                      />
+                    </Box>
+                  ))
+                )}
               </Box>
             </motion.div>
           </AnimatePresence>
@@ -171,7 +193,7 @@ export default function TemplateGallery({ onUseTemplate }) {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                onClick={() => setPreviewItem(null)} // Bấm ra viền xám để đóng
+                onClick={() => setPreviewItem(null)}
                 style={{
                   position: 'fixed',
                   top: 0,
@@ -179,7 +201,7 @@ export default function TemplateGallery({ onUseTemplate }) {
                   width: '100vw',
                   height: '100vh',
                   backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                  backdropFilter: 'blur(8px)', // Nền tối mờ
+                  backdropFilter: 'blur(8px)',
                   zIndex: 99999,
                   display: 'flex',
                   justifyContent: 'center',
@@ -189,7 +211,6 @@ export default function TemplateGallery({ onUseTemplate }) {
                   cursor: 'zoom-out',
                 }}
               >
-                {/* Nút X đóng góc trên */}
                 <IconButton
                   onClick={() => setPreviewItem(null)}
                   sx={{
@@ -209,7 +230,7 @@ export default function TemplateGallery({ onUseTemplate }) {
                   animate={{ scale: 1, y: 0 }}
                   exit={{ scale: 0.8, y: 50 }}
                   transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                  onClick={(e) => e.stopPropagation()} //
+                  onClick={(e) => e.stopPropagation()}
                   style={{ cursor: 'default', marginBottom: '40px' }}
                 >
                   <CVRenderer

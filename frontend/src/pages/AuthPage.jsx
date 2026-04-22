@@ -22,7 +22,7 @@ export default function AuthPage() {
   return (
     <Box sx={{ minHeight: "100vh", width: "100vw", position: "relative", overflow: "hidden" }}>
       
-      {/* LỚP NỀN: Luôn cố định, không bị ảnh hưởng bởi Animation */}
+      
       <Box sx={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0 }}>
         <Grainient
           color1="#52b0c3"
@@ -30,13 +30,12 @@ export default function AuthPage() {
           color3="#def4c6"
           timeSpeed={0.05} // Giảm tốc độ một chút cho mượt
           gridSize={2}     // Đảm bảo có tham số này nếu component yêu cầu
-          // ... giữ nguyên các thông số cũ của sếp ...
           noiseScale={2}
           contrast={1.5}
         />
       </Box>
 
-      {/* LỚP NỘI DUNG: Nằm trên nền (zIndex: 1) */}
+      
       <Box
         sx={{
           position: "relative",
