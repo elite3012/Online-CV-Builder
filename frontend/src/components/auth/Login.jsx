@@ -68,7 +68,7 @@ export default function Login() {
         email: email.trim().toLowerCase(),
         password,
       });
-      localStorage.setItem('token', data.token);
+      apiService.saveAuthSession(data);
       navigate('/dashboard');
     } catch (err) {
       setServerError(getApiErrorMessage(err, 'Login failed. Please try again.'));

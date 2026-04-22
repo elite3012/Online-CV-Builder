@@ -90,7 +90,7 @@ export default function Register() {
         password: formData.password,
         confirmPassword: formData.confirmPassword,
       });
-      localStorage.setItem('token', data.token);
+      apiService.saveAuthSession(data);
       navigate('/dashboard');
     } catch (err) {
       const message = getApiErrorMessage(
