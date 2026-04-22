@@ -12,6 +12,7 @@ import MyResumes from "../components/MyResumes";
 import Editor from "../components/Editor";
 import ATSChecker from "../components/ATSChecker";
 import Settings from "../components/Settings";
+import { apiService } from "../services/apiService";
 
 export default function Dashboard() {
   const location = useLocation();
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [currentView, setCurrentView] = useState(defaultView);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [authUser, setAuthUser] = useState(() => apiService.getStoredUser());
 
   const searchableViews = new Set(["Overview", "My Resumes"]);
   const isSearchEnabled = searchableViews.has(currentView);
@@ -33,6 +35,30 @@ export default function Dashboard() {
   useEffect(() => {
     setSearchQuery("");
   }, [currentView]);
+
+  useEffect(() => {
+    let active = true;
+
+    apiService
+      .getCurrentUser()
+      .then((user) => {
+        if (!active) return;
+        const nextUser = {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+        };
+        localStorage.setItem("authUser", JSON.stringify(nextUser));
+        setAuthUser(nextUser);
+      })
+      .catch(() => {
+        if (active) setAuthUser(apiService.getStoredUser());
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleUseTemplate = (template) => {
     setSelectedTemplate(template);
@@ -64,6 +90,8 @@ export default function Dashboard() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             searchEnabled={isSearchEnabled}
+            user={authUser}
+            onAvatarClick={() => setCurrentView("Settings")}
           />
         )}
 
@@ -142,7 +170,7 @@ export default function Dashboard() {
               transition={{ duration: 0.3 }}
               style={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
             >
-              <Settings />
+              <Settings user={authUser} onUserChange={setAuthUser} />
             </motion.div>
           )}
         </AnimatePresence>

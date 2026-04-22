@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Avatar,
@@ -20,17 +20,20 @@ import PersonIcon from '@mui/icons-material/Person';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import {
   PASSWORD_MIN_LENGTH,
+  getApiErrorMessage,
   validateEmail,
   validateMatchingPassword,
   validateMinLength,
   validatePassword,
   validateRequired,
 } from '../utils/validation';
+import { apiService } from '../services/apiService';
 
-export default function Settings() {
+export default function Settings({ user, onUserChange }) {
+  const storedUser = user || apiService.getStoredUser();
   const [profile, setProfile] = useState({
-    fullName: 'quy10z',
-    email: 'quy10z@cvbuilder.com',
+    fullName: storedUser?.fullName || '',
+    email: storedUser?.email || '',
     avatar: null,
   });
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
@@ -38,8 +41,47 @@ export default function Settings() {
   const [passwordErrors, setPasswordErrors] = useState({});
   const [showPass, setShowPass] = useState(false);
   const [status, setStatus] = useState({ msg: '', type: 'success' });
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProfile = async () => {
+      try {
+        setLoadingProfile(true);
+        const currentUser = await apiService.getCurrentUser();
+        if (!active) return;
+
+        const nextUser = {
+          id: currentUser.id,
+          fullName: currentUser.fullName,
+          email: currentUser.email,
+        };
+        localStorage.setItem('authUser', JSON.stringify(nextUser));
+        setProfile((prev) => ({
+          ...prev,
+          fullName: nextUser.fullName || '',
+          email: nextUser.email || '',
+        }));
+        if (onUserChange) onUserChange(nextUser);
+      } catch (err) {
+        if (active) {
+          showStatus(getApiErrorMessage(err, 'Unable to load profile.'), 'error');
+        }
+      } finally {
+        if (active) setLoadingProfile(false);
+      }
+    };
+
+    loadProfile();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -97,7 +139,7 @@ export default function Settings() {
     return nextErrors;
   };
 
-  const handleUpdate = (type) => {
+  const handleUpdate = async (type) => {
     if (type === 'profile') {
       const nextErrors = validateProfile();
       setProfileErrors(nextErrors);
@@ -106,7 +148,33 @@ export default function Settings() {
         return;
       }
 
-      showStatus('Profile updated!');
+      try {
+        setSavingProfile(true);
+        const updatedUser = await apiService.updateCurrentUser({
+          fullName: profile.fullName.trim(),
+          email: profile.email.trim().toLowerCase(),
+        });
+        apiService.saveAuthSession(updatedUser);
+        const nextUser = apiService.getStoredUser();
+        setProfile((prev) => ({
+          ...prev,
+          fullName: nextUser.fullName || '',
+          email: nextUser.email || '',
+        }));
+        if (onUserChange) onUserChange(nextUser);
+        showStatus('Profile updated!');
+      } catch (err) {
+        const message = getApiErrorMessage(err, 'Unable to update profile.');
+        if (message.toLowerCase().includes('email already exists')) {
+          setProfileErrors((prev) => ({
+            ...prev,
+            email: 'This email is already registered.',
+          }));
+        }
+        showStatus(message, 'error');
+      } finally {
+        setSavingProfile(false);
+      }
       return;
     }
 
@@ -117,8 +185,20 @@ export default function Settings() {
       return;
     }
 
-    setPasswords({ current: '', new: '', confirm: '' });
-    showStatus('Password changed!');
+    try {
+      setSavingPassword(true);
+      await apiService.changePassword({
+        currentPassword: passwords.current,
+        newPassword: passwords.new,
+        confirmPassword: passwords.confirm,
+      });
+      setPasswords({ current: '', new: '', confirm: '' });
+      showStatus('Password changed!');
+    } catch (err) {
+      showStatus(getApiErrorMessage(err, 'Unable to update password.'), 'error');
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   const textFieldStyle = {
@@ -135,6 +215,12 @@ export default function Settings() {
 
   return (
     <Box sx={{ p: 4, mt: '80px', maxWidth: '1000px', mx: 'auto' }}>
+      {loadingProfile && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Loading your profile...
+        </Alert>
+      )}
+
       {status.msg && (
         <Alert severity={status.type} sx={{ mb: 3 }}>
           {status.msg}
@@ -237,9 +323,10 @@ export default function Settings() {
                     variant="contained"
                     startIcon={<SaveIcon />}
                     onClick={() => handleUpdate('profile')}
+                    disabled={savingProfile || loadingProfile}
                     sx={{ bgcolor: '#52b0c3', textTransform: 'none', borderRadius: 2, '&:hover': { bgcolor: '#3d94a7' } }}
                   >
-                    Save Changes
+                    {savingProfile ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </Grid>
               </Grid>
@@ -323,9 +410,10 @@ export default function Settings() {
               <Button
                 variant="outlined"
                 onClick={() => handleUpdate('password')}
+                disabled={savingPassword}
                 sx={{ color: '#e53e3e', borderColor: '#e53e3e', textTransform: 'none', borderRadius: 2, '&:hover': { borderColor: '#ff5a5a', bgcolor: 'rgba(229, 62, 62, 0.05)' } }}
               >
-                Update Password
+                {savingPassword ? 'Updating...' : 'Update Password'}
               </Button>
             </Grid>
           </Grid>

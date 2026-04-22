@@ -6,6 +6,7 @@ import {
   TextField,
   InputAdornment,
   Avatar,
+  IconButton,
 } from "@mui/material";
 
 export default function TopNavbar({
@@ -13,6 +14,8 @@ export default function TopNavbar({
   searchQuery = "",
   onSearchChange,
   searchEnabled = true,
+  user,
+  onAvatarClick,
 }) {
   const searchPlaceholder = title === "Overview"
     ? "Search templates..."
@@ -79,17 +82,27 @@ export default function TopNavbar({
             ),
           }}
         />
-        <Avatar
-          sx={{
-            bgcolor: "#52b0c3",
-            width: 40,
-            height: 40,
-            fontSize: "0.9rem",
-            fontWeight: "bold"
-          }}
+        <IconButton
+          onClick={onAvatarClick}
+          aria-label="Open settings"
+          sx={{ p: 0 }}
         >
-          QUY
-        </Avatar>
+          <Avatar
+            sx={{
+              bgcolor: "#52b0c3",
+              width: 40,
+              height: 40,
+              fontSize: "0.9rem",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            {String(user?.fullName || user?.email || "U")
+              .trim()
+              .slice(0, 2)
+              .toUpperCase()}
+          </Avatar>
+        </IconButton>
       </Box>
     </Box>
   );
