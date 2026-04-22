@@ -198,10 +198,14 @@ export const apiService = {
     }),
 
   // AI endpoints
-  analyzeJD: (cvId, jdText) =>
+  analyzeJD: (cvId, jdText, options = {}) =>
     request('/ai/analyze-jd', {
       method: 'POST',
-      body: JSON.stringify({ cvId, jdText }),
+      body: JSON.stringify({
+        cvId,
+        jdText,
+        atsOnly: Boolean(options.atsOnly),
+      }),
     }),
 
   // Export endpoints

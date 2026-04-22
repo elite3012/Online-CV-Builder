@@ -21,6 +21,77 @@ public class MatchingService {
     @Autowired
     private CVService cvService; // Need this to load CV safely with ownership check
 
+    public MatchingResult checkAtsOnly(Long cvId, String userEmail) {
+        CV cv = cvService.getCVByIdAndOwner(cvId, userEmail);
+
+        StringBuilder cvContentBuilder = new StringBuilder();
+        appendCvContent(cv, cvContentBuilder);
+        String cvContent = cvContentBuilder.toString().trim();
+
+        List<String> atsWarnings = new ArrayList<>();
+        List<String> suggestions = new ArrayList<>();
+        int score = 100;
+
+        if (cvContent.isEmpty()) {
+            atsWarnings.add("CV appears to be empty or lacks processable text.");
+            suggestions.add("Add a summary, skills, education, and work experience before exporting.");
+            return new MatchingResult(0, false, new ArrayList<>(), new ArrayList<>(), atsWarnings, suggestions);
+        }
+
+        if (cv.getPersonalInformation() == null) {
+            score -= 20;
+            atsWarnings.add("Missing personal information section.");
+            suggestions.add("Add your full name, job title, email, phone, and location.");
+        } else {
+            if (isBlank(cv.getPersonalInformation().getFullName())) {
+                score -= 10;
+                atsWarnings.add("Missing full name.");
+            }
+            if (isBlank(cv.getPersonalInformation().getEmail())) {
+                score -= 10;
+                atsWarnings.add("Missing contact email.");
+            }
+        }
+
+        if (isBlank(cv.getSummary())) {
+            score -= 15;
+            atsWarnings.add("Missing professional summary.");
+            suggestions.add("Add a concise 3-4 line summary with target role, experience, and core strengths.");
+        }
+
+        if (cv.getSkills() == null || cv.getSkills().isEmpty()) {
+            score -= 15;
+            atsWarnings.add("Missing skills section.");
+            suggestions.add("List hard skills and tools as comma-separated keywords.");
+        }
+
+        if (cv.getExperiences() == null || cv.getExperiences().isEmpty()) {
+            score -= 20;
+            atsWarnings.add("Missing work experience section.");
+            suggestions.add("Add role titles, companies, dates, and achievement-focused bullet points.");
+        }
+
+        if (cv.getEducations() == null || cv.getEducations().isEmpty()) {
+            score -= 10;
+            atsWarnings.add("Missing education section.");
+        }
+
+        if (cvContent.length() < 300) {
+            score -= 10;
+            atsWarnings.add("CV text is short. ATS may rank resumes with sparse detail lower.");
+            suggestions.add("Add measurable achievements, relevant tools, and domain keywords.");
+        }
+
+        score = Math.max(0, Math.min(100, score));
+        boolean atsPassed = score >= 70 && atsWarnings.size() <= 3;
+
+        if (suggestions.isEmpty()) {
+            suggestions.add("ATS structure looks solid. For better matching, run JD Matching with a complete job description.");
+        }
+
+        return new MatchingResult(score, atsPassed, new ArrayList<>(), new ArrayList<>(), atsWarnings, suggestions);
+    }
+
     public MatchingResult matchCvToJd(Long cvId, String jdText, String userEmail) {
         // 1. Load CV and ensure ownership
         CV cv = cvService.getCVByIdAndOwner(cvId, userEmail);
@@ -38,41 +109,7 @@ public class MatchingService {
 
         // 3. Preprocess CV content
         StringBuilder sb = new StringBuilder();
-        if (cv.getSummary() != null)
-            sb.append(cv.getSummary()).append(" ");
-        if (cv.getEducations() != null) {
-            cv.getEducations().forEach(e -> {
-                if (e.getDegree() != null)
-                    sb.append(e.getDegree()).append(" ");
-                // if (e.getMajor() != null) sb.append(e.getMajor()).append(" ");
-                if (e.getSchool() != null)
-                    sb.append(e.getSchool()).append(" ");
-            });
-        }
-        if (cv.getExperiences() != null) {
-            cv.getExperiences().forEach(e -> {
-                if (e.getJobTitle() != null)
-                    sb.append(e.getJobTitle()).append(" ");
-                if (e.getCompany() != null)
-                    sb.append(e.getCompany()).append(" ");
-                if (e.getDescription() != null)
-                    sb.append(e.getDescription()).append(" ");
-            });
-        }
-        if (cv.getSkills() != null) {
-            cv.getSkills().forEach(s -> {
-                if (s.getSkillName() != null)
-                    sb.append(s.getSkillName()).append(" ");
-            });
-        }
-        if (cv.getProjects() != null) {
-            cv.getProjects().forEach(p -> {
-                if (p.getProjectName() != null)
-                    sb.append(p.getProjectName()).append(" ");
-                if (p.getDescription() != null)
-                    sb.append(p.getDescription()).append(" ");
-            });
-        }
+        appendCvContent(cv, sb);
         String cvContent = sb.toString();
         NLPResult cvNlp = nlpService.preprocessCV(cvContent);
         Set<String> cvTokens = new HashSet<>(cvNlp.getTokens());
@@ -135,5 +172,58 @@ public class MatchingService {
                 new ArrayList<>());
         result.getAtsWarnings().add(warningMsg);
         return result;
+    }
+
+    private void appendCvContent(CV cv, StringBuilder sb) {
+        if (cv.getSummary() != null)
+            sb.append(cv.getSummary()).append(" ");
+        if (cv.getEducations() != null) {
+            cv.getEducations().forEach(e -> {
+                if (e.getDegree() != null)
+                    sb.append(e.getDegree()).append(" ");
+                if (e.getSchool() != null)
+                    sb.append(e.getSchool()).append(" ");
+                if (e.getDescription() != null)
+                    sb.append(e.getDescription()).append(" ");
+            });
+        }
+        if (cv.getExperiences() != null) {
+            cv.getExperiences().forEach(e -> {
+                if (e.getJobTitle() != null)
+                    sb.append(e.getJobTitle()).append(" ");
+                if (e.getCompany() != null)
+                    sb.append(e.getCompany()).append(" ");
+                if (e.getDescription() != null)
+                    sb.append(e.getDescription()).append(" ");
+            });
+        }
+        if (cv.getSkills() != null) {
+            cv.getSkills().forEach(s -> {
+                if (s.getSkillName() != null)
+                    sb.append(s.getSkillName()).append(" ");
+            });
+        }
+        if (cv.getProjects() != null) {
+            cv.getProjects().forEach(p -> {
+                if (p.getProjectName() != null)
+                    sb.append(p.getProjectName()).append(" ");
+                if (p.getRole() != null)
+                    sb.append(p.getRole()).append(" ");
+                if (p.getDescription() != null)
+                    sb.append(p.getDescription()).append(" ");
+            });
+        }
+        if (cv.getCertificates() != null) {
+            cv.getCertificates().forEach(c -> {
+                if (c.getCertificateName() != null)
+                    sb.append(c.getCertificateName()).append(" ");
+                if (c.getOrganization() != null)
+                    sb.append(c.getOrganization()).append(" ");
+            });
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

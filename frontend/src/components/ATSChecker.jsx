@@ -36,6 +36,49 @@ function buildChecklistFromResult(result) {
   const hasFormattingWarning = warnings.some((warning) =>
     /format|font|table|image|read/.test(warning),
   );
+  const hasMissingPersonalInfo = warnings.some((warning) =>
+    /personal|contact|email|phone/.test(warning),
+  );
+  const hasMissingSummary = warnings.some((warning) => /summary/.test(warning));
+  const hasMissingSkills = warnings.some((warning) => /skill/.test(warning));
+  const hasShortContent = warnings.some((warning) =>
+    /short|brief|detail|content/.test(warning),
+  );
+
+  if (result?.mode === "ats") {
+    return [
+      {
+        id: 1,
+        label: "Use standard section headings",
+        checked: score >= 70,
+      },
+      {
+        id: 2,
+        label: "Avoid tables, graphics, and images",
+        checked: !hasFormattingWarning,
+      },
+      {
+        id: 3,
+        label: "Include contact, summary, and skills",
+        checked: !hasMissingPersonalInfo && !hasMissingSummary && !hasMissingSkills,
+      },
+      {
+        id: 4,
+        label: "Use a simple readable font",
+        checked: !hasFormattingWarning,
+      },
+      {
+        id: 5,
+        label: "Add enough role details and achievements",
+        checked: score >= 70 && !hasShortContent,
+      },
+      {
+        id: 6,
+        label: "Save resume as PDF or DOCX",
+        checked: true,
+      },
+    ];
+  }
 
   return [
     {
@@ -150,7 +193,7 @@ export default function ATSChecker() {
           ATS Resume Checker
         </Typography>
         <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.7)" }}>
-          Choose one of your saved resumes and analyze it against a job description.
+          Choose one of your saved resumes, then run an ATS-only check or compare it with a structured job description.
         </Typography>
       </Box>
 
