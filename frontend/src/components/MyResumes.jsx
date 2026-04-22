@@ -9,6 +9,12 @@ import ResumeCard from './ResumeCard';
 import PreviewModal from './PreviewModal';
 import { apiService } from '../services/apiService';
 
+const toDateDisplay = (value) => {
+  const v = String(value ?? '').trim();
+  const match = v.match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : v;
+};
+
 const getPreviewData = (cv) => ({
   name: cv.personalInfo?.fullName,
   title: cv.personalInfo?.jobTitle,
@@ -57,7 +63,7 @@ const getPreviewData = (cv) => ({
       .map((cert) => ({
         certificateName: cert.certificateName,
         organization: cert.organization,
-        date: cert.date,
+        date: toDateDisplay(cert.date ?? cert.issueDate),
       })) || [],
 });
 
@@ -102,7 +108,11 @@ export default function MyResumes({ setCurrentView, searchQuery = '' }) {
             education: cv.educations || [],
             experience: cv.experiences || [],
             projects: cv.projects || [],
-            certificates: cv.certificates || [],
+            certificates:
+              cv.certificates?.map((cert) => ({
+                ...cert,
+                date: toDateDisplay(cert.date ?? cert.issueDate),
+              })) || [],
             skills: cv.skills || [],
           };
           return parsedData;

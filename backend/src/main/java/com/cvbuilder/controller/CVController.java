@@ -44,6 +44,7 @@ public class CVController {
 
     public static class UpdateCVRequest {
         public String title;
+        public Long templateId;
         public String summary;
         public PersonalInformation personalInformation;
         public List<Education> educations;

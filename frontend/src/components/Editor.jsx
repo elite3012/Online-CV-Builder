@@ -60,6 +60,14 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const autosaveTimerRef = useRef(null);
   const abortRef = useRef(null);
   const didInitRef = useRef(false);
+  const isSavingRef = useRef(false);
+  const pendingAutosaveRef = useRef(false);
+  const changeSeqRef = useRef(0);
+  const lastSavedSeqRef = useRef(0);
+  const cvIdRef = useRef(passedResume?.id ?? null);
+  const formDataRef = useRef(null);
+  const cvTitleRef = useRef(null);
+  const currentTemplateRef = useRef(null);
   const getTemplateIdByName = (name) => {
     const t = templates.find((x) => x.name === name);
     return t?.id ?? null;
@@ -86,45 +94,83 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
 
     // HTML date input -> LocalDateTime at midnight
     if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return `${v}T00:00:00`;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(v)) return v;
 
     // Unknown format -> avoid sending invalid string that crashes backend
     return null;
   };
 
-  const normalizeDateFields = (row, fields) => {
+  const toDateInputValue = (value) => {
+    const v = String(value ?? '').trim();
+    const match = v.match(/^\d{4}-\d{2}-\d{2}/);
+    return match ? match[0] : '';
+  };
+
+  const stripPersistenceFields = (row) => {
+    if (!row || typeof row !== 'object') return {};
+    const rest = { ...row };
+    delete rest.id;
+    delete rest.cv;
+    return rest;
+  };
+
+  const normalizeDateTimeFields = (row, fields) => {
     if (!row || typeof row !== 'object') return row;
-    const out = { ...row };
+    const out = stripPersistenceFields(row);
     for (const f of fields) out[f] = toLocalDateTimeString(row[f]);
     return out;
   };
 
-  const toUpdatePayload = () => {
+  const normalizeDateStringFields = (row, fields) => {
+    if (!row || typeof row !== 'object') return row;
+    const out = stripPersistenceFields(row);
+    for (const f of fields) out[f] = toDateInputValue(row[f]);
+    return out;
+  };
+
+  const normalizeCertificateForPayload = (certificate) => {
+    const { date, issueDate, ...rest } = stripPersistenceFields(certificate);
     return {
-      title: cvTitle,
-      summary: formData.summary ?? '',
+      ...rest,
+      issueDate: toLocalDateTimeString(date ?? issueDate),
+    };
+  };
+
+  const toUpdatePayload = () => {
+    const currentFormData = formDataRef.current ?? formData;
+    const currentTitle = cvTitleRef.current ?? cvTitle;
+    const currentTemplateName =
+      currentTemplateRef.current?.name ?? currentTemplate?.name;
+
+    return {
+      title: currentTitle,
+      templateId: getTemplateIdByName(currentTemplateName),
+      summary: currentFormData.summary ?? '',
 
       personalInformation: {
-        fullName: formData.personalInfo.fullName ?? '',
-        jobTitle: formData.personalInfo.jobTitle ?? '',
-        email: formData.personalInfo.email ?? '',
-        phone: formData.personalInfo.phone ?? '',
-        location: formData.personalInfo.location ?? '',
-        linkedIn: formData.personalInfo.linkedIn ?? '',
-        website: formData.personalInfo.website ?? '',
+        fullName: currentFormData.personalInfo.fullName ?? '',
+        jobTitle: currentFormData.personalInfo.jobTitle ?? '',
+        email: currentFormData.personalInfo.email ?? '',
+        phone: currentFormData.personalInfo.phone ?? '',
+        location: currentFormData.personalInfo.location ?? '',
+        linkedIn: currentFormData.personalInfo.linkedIn ?? '',
+        website: currentFormData.personalInfo.website ?? '',
       },
 
-      educations: (formData.education || [])
+      educations: (currentFormData.education || [])
         .filter((r) => !isRowEmpty(r))
-        .map((r) => normalizeDateFields(r, ['startDate', 'endDate'])),
-      experiences: (formData.experience || [])
+        .map((r) => normalizeDateTimeFields(r, ['startDate', 'endDate'])),
+      experiences: (currentFormData.experience || [])
         .filter((r) => !isRowEmpty(r))
-        .map((r) => normalizeDateFields(r, ['startDate', 'endDate'])),
-      projects: (formData.projects || []).filter((r) => !isRowEmpty(r)),
-      certificates: (formData.certificates || [])
+        .map((r) => normalizeDateStringFields(r, ['startDate', 'endDate'])),
+      projects: (currentFormData.projects || [])
         .filter((r) => !isRowEmpty(r))
-        .map((r) => normalizeDateFields(r, ['date'])),
+        .map(stripPersistenceFields),
+      certificates: (currentFormData.certificates || [])
+        .filter((r) => !isRowEmpty(r))
+        .map(normalizeCertificateForPayload),
 
-      skills: skillsStringToList(formData.skills),
+      skills: skillsStringToList(currentFormData.skills),
     };
   };
 
@@ -136,9 +182,8 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const [currentTemplate, setCurrentTemplate] = useState({
-    name: passedResume?.template.templateName || propTemplate?.name,
+    name: passedResume?.template.templateName || propTemplate?.name || 'Modern',
   });
-  const [cvId, setCvId] = useState(passedResume?.id ?? null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   const defaultFormData = {
@@ -169,6 +214,21 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
     certificates: [{ certificateName: '', organization: '', date: '' }],
   };
 
+  const normalizeRowsForDateInputs = (rows, dateFields) =>
+    rows.map((row) => {
+      const normalized = { ...row };
+      dateFields.forEach((field) => {
+        normalized[field] = toDateInputValue(row[field]);
+      });
+      return normalized;
+    });
+
+  const normalizeCertificatesForForm = (certificates) =>
+    certificates.map((certificate) => ({
+      ...certificate,
+      date: toDateInputValue(certificate.date ?? certificate.issueDate),
+    }));
+
   const [formData, setFormData] = useState(() => {
     if (passedResume)
       return {
@@ -182,7 +242,10 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
           : defaultFormData.personalInfo,
         education:
           passedResume.education.length > 0
-            ? passedResume.education
+            ? normalizeRowsForDateInputs(passedResume.education, [
+                'startDate',
+                'endDate',
+              ])
             : defaultFormData.education,
         projects:
           passedResume.projects.length > 0
@@ -190,15 +253,22 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
             : defaultFormData.projects,
         certificates:
           passedResume.certificates.length > 0
-            ? passedResume.certificates
+            ? normalizeCertificatesForForm(passedResume.certificates)
             : defaultFormData.certificates,
         experience:
           passedResume.experience.length > 0
-            ? passedResume.experience
+            ? normalizeRowsForDateInputs(passedResume.experience, [
+                'startDate',
+                'endDate',
+              ])
             : defaultFormData.experience,
       };
     return defaultFormData;
   });
+
+  formDataRef.current = formData;
+  cvTitleRef.current = cvTitle;
+  currentTemplateRef.current = currentTemplate;
 
   const handleDownloadPDF = async () => {
     const element = componentRef.current;
@@ -238,7 +308,9 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${cvTitle.replace(/\s+/g, '_')}.pdf`);
 
-      setSaveStatus('Saved');
+      setSaveStatus(
+        changeSeqRef.current === lastSavedSeqRef.current ? 'Saved' : 'Unsaved',
+      );
     } catch (err) {
       console.error('Export error:', err);
       setSaveStatus('Error');
@@ -250,6 +322,18 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   };
 
   // --- LOGIC HANDLERS ---
+  const markDirty = () => {
+    changeSeqRef.current += 1;
+    setSaveStatus('Unsaved');
+  };
+
+  const scheduleAutosave = (delay = 5000) => {
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => {
+      doAutosave();
+    }, delay);
+  };
+
   useEffect(() => {
     if (!didInitRef.current) {
       didInitRef.current = true;
@@ -258,56 +342,77 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
 
     if (saveStatus !== 'Unsaved') return;
 
-    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(() => {
-      doAutosave();
-    }, 5000);
+    scheduleAutosave();
 
     return () => {
       if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     };
-  }, [formData, saveStatus, cvTitle]);
+  }, [formData, saveStatus, cvTitle, currentTemplate]);
 
   const setCvTitleDirty = (next) => {
     setCvTitle((prev) => {
       const resolved = typeof next === 'function' ? next(prev) : next;
-      if (resolved !== prev) setSaveStatus('Unsaved');
+      if (resolved !== prev) markDirty();
       return resolved;
     });
   };
 
   const doAutosave = async () => {
-    if (abortRef.current) abortRef.current.abort();
+    if (isSavingRef.current) {
+      pendingAutosaveRef.current = true;
+      return;
+    }
+
+    const saveSeq = changeSeqRef.current;
+    let saveSucceeded = false;
     const controller = new AbortController();
     abortRef.current = controller;
+    isSavingRef.current = true;
 
     try {
       setSaveStatus('Saving...');
-      let ensuredId = cvId;
+      let ensuredId = cvIdRef.current;
       if (!ensuredId) {
-        const templateId = getTemplateIdByName(currentTemplate?.name);
+        const templateName =
+          currentTemplateRef.current?.name ?? currentTemplate?.name;
+        const templateId = getTemplateIdByName(templateName);
         if (!templateId)
           throw new Error('Template not found (missing templateId)');
 
         const created = await apiService.createCV(
-          { templateId: templateId, title: cvTitle },
+          { templateId: templateId, title: cvTitleRef.current ?? cvTitle },
           { signal: controller.signal },
         );
 
         ensuredId = created?.id;
         if (!ensuredId) throw new Error('Create CV did not return an id');
-        setCvId(ensuredId);
+        cvIdRef.current = ensuredId;
       }
 
       const payload = toUpdatePayload();
       await apiService.updateCV(ensuredId, payload, {
         signal: controller.signal,
       });
-      setSaveStatus('Saved');
+      saveSucceeded = true;
     } catch (err) {
       if (err?.name === 'AbortError') return;
       console.error('Autosave failed:', err);
       setSaveStatus('Error');
+    } finally {
+      isSavingRef.current = false;
+      if (abortRef.current === controller) abortRef.current = null;
+
+      if (!saveSucceeded) return;
+
+      if (pendingAutosaveRef.current || changeSeqRef.current !== saveSeq) {
+        pendingAutosaveRef.current = false;
+        setSaveStatus('Unsaved');
+        scheduleAutosave();
+        return;
+      }
+
+      lastSavedSeqRef.current = saveSeq;
+      setSaveStatus('Saved');
     }
   };
   const handleBack = () => (propOnBack ? propOnBack() : navigate(-1));
@@ -316,33 +421,33 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       ...prev,
       [section]: { ...prev[section], [field]: value },
     }));
-    setSaveStatus('Unsaved');
+    markDirty();
   };
   const handleStringChange = (section, value) => {
     setFormData((prev) => ({ ...prev, [section]: value }));
-    setSaveStatus('Unsaved');
+    markDirty();
   };
   const handleArrayChange = (section, index, field, value) => {
     setFormData((prev) => {
       const newArray = [...prev[section]];
-      newArray[index][field] = value;
+      newArray[index] = { ...newArray[index], [field]: value };
       return { ...prev, [section]: newArray };
     });
-    setSaveStatus('Unsaved');
+    markDirty();
   };
   const addArrayItem = (section, defaultObj) => {
     setFormData((prev) => ({
       ...prev,
       [section]: [...prev[section], defaultObj],
     }));
-    setSaveStatus('Unsaved');
+    markDirty();
   };
   const removeArrayItem = (section, index) => {
     setFormData((prev) => ({
       ...prev,
       [section]: prev[section].filter((_, i) => i !== index),
     }));
-    setSaveStatus('Unsaved');
+    markDirty();
   };
 
   const checkSectionStatus = (sec) => {
@@ -994,7 +1099,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
                   onPreview={() => {}} // Preview đã được xử lý ngầm bên trong TemplateCard rồi
                   onUse={() => {
                     setCurrentTemplate({ name: item.name }); // Cập nhật template mới
-                    setSaveStatus('Unsaved'); // Kích hoạt trạng thái chưa lưu
+                    markDirty(); // Kích hoạt trạng thái chưa lưu
                     setIsTemplateModalOpen(false); // Đóng Modal
                   }}
                 />
