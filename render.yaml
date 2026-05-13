@@ -63,5 +63,5 @@ databases:
     plan: free
     region: singapore
     postgresMajorVersion: "16"
-    databaseName: CVBuilder
+    databaseName: cvbuilder
     user: cvbuilder
