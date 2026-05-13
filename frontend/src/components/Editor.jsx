@@ -114,6 +114,19 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
     return match ? match[0] : '';
   };
 
+  const toDateDisplay = (value) => {
+    const v = String(value ?? '').trim();
+    const match = v.match(/^\d{4}-\d{2}-\d{2}/);
+    return match ? match[0] : v;
+  };
+
+  const formatDateRange = (startDate, endDate) => {
+    const start = toDateDisplay(startDate);
+    const end = toDateDisplay(endDate);
+    if (start && end) return `${start} - ${end}`;
+    return start || end || '';
+  };
+
   const stripPersistenceFields = (row) => {
     if (!row || typeof row !== 'object') return {};
     const rest = { ...row };
@@ -559,7 +572,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       .map((exp) => ({
         company: exp.company,
         jobTitle: exp.jobTitle,
-        duration: `${exp.startDate} - ${exp.endDate}`,
+        duration: formatDateRange(exp.startDate, exp.endDate),
         desc: exp.description,
       })),
     skills: skillsStringToList(formData.skills).map((s) => s.skillName),
@@ -568,7 +581,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       .map((edu) => ({
         school: edu.school,
         degree: edu.degree,
-        duration: `${edu.startDate} - ${edu.endDate}`,
+        duration: formatDateRange(edu.startDate, edu.endDate),
         desc: edu.description,
       })),
     projects: formData.projects

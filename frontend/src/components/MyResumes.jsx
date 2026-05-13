@@ -15,6 +15,13 @@ const toDateDisplay = (value) => {
   return match ? match[0] : v;
 };
 
+const formatDateRange = (startDate, endDate) => {
+  const start = toDateDisplay(startDate);
+  const end = toDateDisplay(endDate);
+  if (start && end) return `${start} - ${end}`;
+  return start || end || '';
+};
+
 const getPreviewData = (cv) => ({
   name: cv.personalInfo?.fullName,
   title: cv.personalInfo?.jobTitle,
@@ -35,7 +42,7 @@ const getPreviewData = (cv) => ({
       .map((exp) => ({
         company: exp.company,
         jobTitle: exp.jobTitle,
-        duration: `${exp.startDate}${exp.startDate && exp.endDate ? ' - ' : ''}${exp.endDate}`,
+        duration: formatDateRange(exp.startDate, exp.endDate),
         desc: exp.description,
       })) || [],
   skills: cv.skills?.map((s) => s.skillName),
@@ -45,7 +52,7 @@ const getPreviewData = (cv) => ({
       .map((edu) => ({
         school: edu.school,
         degree: edu.degree,
-        duration: `${edu.startDate}${edu.startDate && edu.endDate ? ' - ' : ''}${edu.endDate}`,
+        duration: formatDateRange(edu.startDate, edu.endDate),
         desc: edu.description,
       })) || [],
   projects:
