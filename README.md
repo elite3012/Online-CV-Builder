@@ -182,18 +182,19 @@ The compose stack also mounts AI traces and model cache volumes so the system lo
 
 This repo now includes a production-style [render.yaml](/D:/MainProject/Online-CV-Builder/render.yaml) blueprint for deploying:
 
-- `cv-builder-frontend` as a public web service
+- `cv-builder-frontend` as a static site
 - `cv-builder-backend` as a public web service
 - `cv-builder-ai-service` as a public web service
 - `cv-builder-db` as a free Render Postgres database
 
 Render-specific production touches already wired in:
 
-- frontend Nginx proxy resolves the backend over Render private networking via `BACKEND_HOSTPORT`
+- frontend build derives `VITE_API_URL` from the backend public Render URL
 - backend entrypoint converts Render Postgres `connectionString` into Spring JDBC settings
-- backend auto-resolves the AI service through `AI_SERVICE_HOSTPORT`
+- backend reads the AI service public URL from Render environment variables
 - backend health endpoint is available at `GET /api/health`
 - AI service respects Render's `PORT` environment variable
+- SPA routing is handled through a static-site rewrite to `/index.html`
 
 Quick start:
 

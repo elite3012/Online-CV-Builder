@@ -1,18 +1,19 @@
 services:
   - type: web
     name: cv-builder-frontend
-    runtime: docker
-    plan: free
-    region: singapore
-    dockerContext: ./frontend
-    dockerfilePath: ./frontend/Dockerfile
-    healthCheckPath: /
+    runtime: static
+    buildCommand: cd frontend && npm install && VITE_API_URL="${BACKEND_PUBLIC_URL}/api" npm run build
+    staticPublishPath: ./frontend/dist
     envVars:
-      - key: BACKEND_HOSTPORT
+      - key: BACKEND_PUBLIC_URL
         fromService:
           name: cv-builder-backend
           type: web
-          property: hostport
+          envVarKey: RENDER_EXTERNAL_URL
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
   - type: web
     name: cv-builder-backend
@@ -29,11 +30,11 @@ services:
         value: "true"
       - key: AI_SERVICE_TIMEOUT_MS
         value: "7000"
-      - key: AI_SERVICE_HOSTPORT
+      - key: AI_SERVICE_URL
         fromService:
           name: cv-builder-ai-service
           type: web
-          property: hostport
+          envVarKey: RENDER_EXTERNAL_URL
       - key: DATABASE_URL
         fromDatabase:
           name: cv-builder-db
@@ -61,6 +62,6 @@ databases:
   - name: cv-builder-db
     plan: free
     region: singapore
-    postgresMajorVersion: "17"
-    databaseName: cvbuilder
+    postgresMajorVersion: "16"
+    databaseName: CVBuilder
     user: cvbuilder

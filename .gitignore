@@ -29,6 +29,3 @@ Thumbs.db
 frontend/package-lock.json
 *.json
 *.lock
-Sprint_Backlogs_RMT.xlsx
-python-ai-service/**/__pycache__/
-python-ai-service/**/*.pyc
