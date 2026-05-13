@@ -16,6 +16,8 @@ public class MatchingResult {
     private Double sectionCoverage;
     private List<String> strengths;
     private List<String> focusAreas;
+    private List<String> evidenceHighlights;
+    private String traceId;
 
     public MatchingResult() {
     }
@@ -32,7 +34,8 @@ public class MatchingResult {
 
     public MatchingResult(int score, boolean atsPassed, List<String> matchedSkills, List<String> missingSkills,
             List<String> atsWarnings, List<String> suggestions, String analysisEngine, Double semanticScore,
-            Double keywordCoverage, Double sectionCoverage, List<String> strengths, List<String> focusAreas) {
+            Double keywordCoverage, Double sectionCoverage, List<String> strengths, List<String> focusAreas,
+            List<String> evidenceHighlights, String traceId) {
         this.score = score;
         this.atsPassed = atsPassed;
         this.matchedSkills = matchedSkills;
@@ -45,6 +48,8 @@ public class MatchingResult {
         this.sectionCoverage = sectionCoverage;
         this.strengths = strengths;
         this.focusAreas = focusAreas;
+        this.evidenceHighlights = evidenceHighlights;
+        this.traceId = traceId;
     }
 
     public int getScore() {
@@ -141,6 +146,22 @@ public class MatchingResult {
 
     public void setFocusAreas(List<String> focusAreas) {
         this.focusAreas = focusAreas;
+    }
+
+    public List<String> getEvidenceHighlights() {
+        return evidenceHighlights;
+    }
+
+    public void setEvidenceHighlights(List<String> evidenceHighlights) {
+        this.evidenceHighlights = evidenceHighlights;
+    }
+
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
     }
 
 }

@@ -28,7 +28,7 @@ import com.cvbuilder.service.ValidationService;
 
 @RestController
 @RequestMapping("/api/cv")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class CVController {
 
     @Autowired

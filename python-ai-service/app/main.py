@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import json
+import importlib.util
+import os
 import re
+import time
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -63,11 +70,19 @@ ACHIEVEMENT_HINTS = (
     "%",
 )
 
+DEFAULT_EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL_NAME", "sentence-transformers/all-MiniLM-L6-v2")
+TRACE_DIR = Path(os.getenv("TRACE_DIR", Path(__file__).resolve().parents[1] / "traces"))
+TRACE_DIR.mkdir(parents=True, exist_ok=True)
+
+_EMBEDDING_MODEL = None
+_EMBEDDING_MODEL_ERROR: str | None = None
+
 
 class AnalyzeRequest(BaseModel):
     mode: str
     jdText: str | None = None
     cv: dict[str, Any]
+    engine: str | None = "auto"
 
 
 class AnalyzeResponse(BaseModel):
@@ -83,29 +98,72 @@ class AnalyzeResponse(BaseModel):
     sectionCoverage: float | None = None
     strengths: list[str]
     focusAreas: list[str]
+    evidenceHighlights: list[str] = []
+    traceId: str | None = None
 
 
-app = FastAPI(title="CV Builder AI Service", version="1.0.0")
+app = FastAPI(title="CV Builder AI Service", version="2.0.0")
+
+
+@app.get("/")
+def root() -> dict[str, Any]:
+    return {
+        "service": "CV Builder AI Service",
+        "status": "ok",
+        "endpoints": ["/health", "/engines", "/analyze", "/traces/{trace_id}"],
+        "defaultEmbeddingModel": DEFAULT_EMBEDDING_MODEL,
+    }
 
 
 @app.get("/health")
 def health() -> dict[str, Any]:
     return {
         "status": "ok",
-        "engine": "python-fastapi-tfidf",
-        "features": ["semantic-match", "keyword-gap-analysis", "ats-structure-scoring"],
+        "engines": describe_engines(),
+        "defaultEmbeddingModel": DEFAULT_EMBEDDING_MODEL,
+        "traceDir": str(TRACE_DIR),
     }
+
+
+@app.get("/engines")
+def engines() -> dict[str, Any]:
+    return {"engines": describe_engines()}
+
+
+@app.get("/traces/{trace_id}")
+def read_trace(trace_id: str) -> dict[str, Any]:
+    trace_path = TRACE_DIR / f"{trace_id}.json"
+    if not trace_path.exists():
+        raise HTTPException(status_code=404, detail="Trace not found.")
+    return json.loads(trace_path.read_text(encoding="utf-8"))
 
 
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
+    started_at = time.perf_counter()
+    trace_id = uuid.uuid4().hex
+    requested_engine = normalize_engine_name(request.engine)
     mode = (request.mode or "match").strip().lower()
+
     if mode == "ats":
-        return analyze_ats(request.cv)
-    return analyze_match(request.cv, request.jdText or "")
+        response, trace_meta = analyze_ats(request.cv, requested_engine)
+    else:
+        response, trace_meta = analyze_match(request.cv, request.jdText or "", requested_engine)
+
+    response.traceId = trace_id
+    write_trace(
+        trace_id=trace_id,
+        mode=mode,
+        requested_engine=requested_engine,
+        response=response,
+        trace_meta=trace_meta,
+        request=request,
+        duration_ms=round_metric((time.perf_counter() - started_at) * 1000.0),
+    )
+    return response
 
 
-def analyze_ats(cv: dict[str, Any]) -> AnalyzeResponse:
+def analyze_ats(cv: dict[str, Any], requested_engine: str = "auto") -> tuple[AnalyzeResponse, dict[str, Any]]:
     full_text = normalize_text(str(cv.get("fullText", "")))
     skills = coerce_list(cv.get("skills"))
     experiences = coerce_list(cv.get("experiences"))
@@ -113,7 +171,8 @@ def analyze_ats(cv: dict[str, Any]) -> AnalyzeResponse:
     section_coverage = compute_section_coverage(cv)
     detail_density = clamp(len(full_text) / 12.0, 0.0, 100.0)
     achievement_density = clamp(count_achievement_signals(full_text) * 12.5, 0.0, 100.0)
-    score = round_int(section_coverage * 0.55 + detail_density * 0.25 + achievement_density * 0.20)
+    evidence_bonus = (5 if experiences else 0) + (5 if projects else 0) + (2 if len(skills) >= 5 else 0)
+    score = round_int(section_coverage * 0.5 + detail_density * 0.2 + achievement_density * 0.2 + evidence_bonus)
 
     warnings: list[str] = []
     suggestions: list[str] = []
@@ -151,63 +210,74 @@ def analyze_ats(cv: dict[str, Any]) -> AnalyzeResponse:
     if not projects and len(experiences) < 2:
         suggestions.append("Projects can strengthen early-career resumes when experience is still limited.")
 
-    return AnalyzeResponse(
+    response = AnalyzeResponse(
         score=score,
         atsPassed=score >= 70 and section_coverage >= 60,
         matchedSkills=[],
         missingSkills=[],
         atsWarnings=limit_items(warnings),
         suggestions=limit_items(suggestions),
-        analysisEngine="python-fastapi-tfidf",
+        analysisEngine="python-ats-heuristic",
         sectionCoverage=section_coverage,
         strengths=limit_items(strengths),
         focusAreas=limit_items(focus_areas),
+        evidenceHighlights=[],
     )
+    trace_meta = {
+        "effectiveEngine": "ats-heuristic",
+        "metrics": {
+            "sectionCoverage": section_coverage,
+            "detailDensity": round_metric(detail_density),
+            "achievementDensity": round_metric(achievement_density),
+            "evidenceBonus": evidence_bonus,
+        },
+    }
+    return response, trace_meta
 
 
-def analyze_match(cv: dict[str, Any], jd_text: str) -> AnalyzeResponse:
+def analyze_match(
+    cv: dict[str, Any],
+    jd_text: str,
+    requested_engine: str = "auto",
+) -> tuple[AnalyzeResponse, dict[str, Any]]:
     normalized_jd = normalize_text(jd_text)
     cv_text = normalize_text(str(cv.get("fullText", "")))
 
     if not normalized_jd:
-        return AnalyzeResponse(
+        response = AnalyzeResponse(
             score=0,
             atsPassed=False,
             matchedSkills=[],
             missingSkills=[],
             atsWarnings=["Job description is empty or unreadable."],
             suggestions=["Paste the target JD to run semantic comparison."],
-            analysisEngine="python-fastapi-tfidf",
+            analysisEngine="validation-empty-jd",
             strengths=[],
             focusAreas=["Provide a complete job description before analysis."],
+            evidenceHighlights=[],
         )
+        return response, {"effectiveEngine": "none", "metrics": {}}
 
     if not cv_text:
-        return AnalyzeResponse(
+        response = AnalyzeResponse(
             score=0,
             atsPassed=False,
             matchedSkills=[],
             missingSkills=[],
             atsWarnings=["Resume content is empty or unreadable."],
             suggestions=["Add summary, skills, experience, and projects before matching."],
-            analysisEngine="python-fastapi-tfidf",
+            analysisEngine="validation-empty-cv",
             strengths=[],
             focusAreas=["Populate the resume with enough content for semantic analysis."],
+            evidenceHighlights=[],
         )
+        return response, {"effectiveEngine": "none", "metrics": {}}
 
     summary_text = normalize_text(str(cv.get("summary", "")))
     skills_text = normalize_text(" ".join(coerce_list(cv.get("skills"))))
     experience_text = normalize_text(join_structured_items(coerce_list(cv.get("experiences"))))
     project_text = normalize_text(join_structured_items(coerce_list(cv.get("projects"))))
     education_text = normalize_text(join_structured_items(coerce_list(cv.get("educations"))))
-
-    vectorizer = TfidfVectorizer(
-        ngram_range=(1, 3),
-        stop_words="english",
-        lowercase=True,
-        sublinear_tf=True,
-        token_pattern=r"(?u)\b[a-zA-Z][a-zA-Z0-9+#./-]{1,}\b",
-    )
 
     docs = [
         normalized_jd,
@@ -218,47 +288,66 @@ def analyze_match(cv: dict[str, Any], jd_text: str) -> AnalyzeResponse:
         project_text or "projects",
         education_text or "education",
     ]
+
+    tfidf_vectorizer = TfidfVectorizer(
+        ngram_range=(1, 3),
+        stop_words="english",
+        lowercase=True,
+        sublinear_tf=True,
+        token_pattern=r"(?u)\b[a-zA-Z][a-zA-Z0-9+#./-]{1,}\b",
+    )
+
     try:
-        matrix = vectorizer.fit_transform(docs)
+        tfidf_matrix = tfidf_vectorizer.fit_transform(docs)
     except ValueError:
-        return AnalyzeResponse(
+        response = AnalyzeResponse(
             score=0,
             atsPassed=False,
             matchedSkills=[],
             missingSkills=[],
             atsWarnings=["The job description does not contain enough analyzable language."],
             suggestions=["Paste a fuller JD with responsibilities, tools, qualifications, and business context."],
-            analysisEngine="python-fastapi-tfidf",
+            analysisEngine="validation-unreadable-jd",
             strengths=[],
             focusAreas=["Provide a richer job description for semantic analysis."],
+            evidenceHighlights=[],
         )
-    feature_names = vectorizer.get_feature_names_out()
+        return response, {"effectiveEngine": "none", "metrics": {}}
 
-    overall_semantic = cosine_similarity(matrix[0:1], matrix[1:2])[0, 0] * 100.0
-    section_coverage = compute_section_coverage(cv)
-    section_scores = {
-        "summary": cosine_similarity(matrix[0:1], matrix[2:3])[0, 0] * 100.0,
-        "skills": cosine_similarity(matrix[0:1], matrix[3:4])[0, 0] * 100.0,
-        "experience": cosine_similarity(matrix[0:1], matrix[4:5])[0, 0] * 100.0,
-        "projects": cosine_similarity(matrix[0:1], matrix[5:6])[0, 0] * 100.0,
-        "education": cosine_similarity(matrix[0:1], matrix[6:7])[0, 0] * 100.0,
-    }
+    effective_engine, semantic_scores, engine_warning = compute_semantic_scores(
+        docs,
+        requested_engine,
+    )
+    feature_names = tfidf_vectorizer.get_feature_names_out()
+    overall_semantic = semantic_scores["overall"]
+    section_scores = semantic_scores["sections"]
     semantic_score = max(overall_semantic, overall_semantic * 0.6 + max(section_scores.values()) * 0.4)
 
     jd_terms = merge_terms(
         extract_candidate_phrases(normalized_jd),
-        extract_top_terms(matrix[0], feature_names),
+        extract_top_terms(tfidf_matrix[0], feature_names),
     )
     cv_token_set = build_token_set(cv_text)
     matched_terms = [term for term in jd_terms if phrase_tokens_present(term, cv_token_set)]
     missing_terms = [term for term in jd_terms if term not in matched_terms]
     keyword_coverage = (len(matched_terms) / len(jd_terms) * 100.0) if jd_terms else 0.0
+    section_coverage = compute_section_coverage(cv)
+    evidence_highlights = retrieve_evidence(normalized_jd, cv)
 
-    score = round_int(semantic_score * 0.55 + keyword_coverage * 0.30 + section_coverage * 0.15)
+    score = round_int(
+        semantic_score * 0.5
+        + keyword_coverage * 0.3
+        + section_coverage * 0.1
+        + min(len(evidence_highlights), 3) * 4.0
+    )
+
     warnings: list[str] = []
     suggestions: list[str] = []
     strengths: list[str] = []
     focus_areas: list[str] = []
+
+    if engine_warning:
+        warnings.append(engine_warning)
 
     if semantic_score < 45:
         warnings.append("Semantic alignment is weak: the resume narrative does not yet sound close to the target JD.")
@@ -280,6 +369,11 @@ def analyze_match(cv: dict[str, Any], jd_text: str) -> AnalyzeResponse:
     else:
         strengths.append("Experience section contributes useful evidence for the target role.")
 
+    if evidence_highlights:
+        strengths.append("Grounded evidence was retrieved from the resume to support the match analysis.")
+    else:
+        suggestions.append("Add richer project or experience bullets so the retriever can surface stronger evidence.")
+
     if section_scores["skills"] < 45:
         suggestions.append("Move critical tools from the JD into the explicit skills section for better ATS retrieval.")
 
@@ -293,30 +387,131 @@ def analyze_match(cv: dict[str, Any], jd_text: str) -> AnalyzeResponse:
     if top_missing:
         focus_areas.append("Highest-priority gaps: " + ", ".join(top_missing))
 
-    return AnalyzeResponse(
+    response = AnalyzeResponse(
         score=score,
         atsPassed=score >= 70 and section_coverage >= 60,
         matchedSkills=limit_items(matched_terms, 8),
         missingSkills=limit_items(missing_terms, 8),
         atsWarnings=limit_items(warnings),
         suggestions=limit_items(suggestions),
-        analysisEngine="python-fastapi-tfidf",
+        analysisEngine=effective_engine,
         semanticScore=round_metric(semantic_score),
         keywordCoverage=round_metric(keyword_coverage),
         sectionCoverage=section_coverage,
         strengths=limit_items(strengths),
         focusAreas=limit_items(focus_areas),
+        evidenceHighlights=limit_items(evidence_highlights, 3),
     )
+    trace_meta = {
+        "effectiveEngine": effective_engine,
+        "metrics": {
+            "overallSemantic": round_metric(overall_semantic),
+            "semanticScore": round_metric(semantic_score),
+            "keywordCoverage": round_metric(keyword_coverage),
+            "sectionCoverage": round_metric(section_coverage),
+        },
+        "sectionScores": {key: round_metric(value) for key, value in section_scores.items()},
+        "jdTerms": jd_terms,
+        "matchedTerms": matched_terms,
+        "missingTerms": missing_terms,
+        "evidenceHighlights": evidence_highlights,
+    }
+    return response, trace_meta
+
+
+def compute_semantic_scores(docs: list[str], requested_engine: str) -> tuple[str, dict[str, Any], str | None]:
+    section_names = ["summary", "skills", "experience", "projects", "education"]
+    effective_engine = "tfidf-cosine"
+    engine_warning = None
+
+    use_embedding = requested_engine in {"auto", "sentence-transformers"}
+    if use_embedding:
+        model = get_embedding_model()
+        if model is not None:
+            vectors = model.encode(docs, normalize_embeddings=True)
+            overall = cosine_similarity([vectors[0]], [vectors[1]])[0, 0] * 100.0
+            sections = {
+                section_names[index]: cosine_similarity([vectors[0]], [vectors[index + 2]])[0, 0] * 100.0
+                for index in range(len(section_names))
+            }
+            effective_engine = f"sentence-transformers::{DEFAULT_EMBEDDING_MODEL.split('/')[-1]}"
+            return effective_engine, {"overall": overall, "sections": sections}, None
+
+        if requested_engine == "sentence-transformers":
+            engine_warning = "Sentence-transformers was requested but is not available, so the service fell back to TF-IDF."
+        elif _EMBEDDING_MODEL_ERROR:
+            engine_warning = "Embedding model was unavailable during auto mode, so TF-IDF was used."
+
+    fallback_scores = compute_tfidf_semantic_scores(docs)
+    return effective_engine, fallback_scores, engine_warning
+
+
+def compute_tfidf_semantic_scores(docs: list[str]) -> dict[str, Any]:
+    vectorizer = TfidfVectorizer(
+        ngram_range=(1, 3),
+        stop_words="english",
+        lowercase=True,
+        sublinear_tf=True,
+        token_pattern=r"(?u)\b[a-zA-Z][a-zA-Z0-9+#./-]{1,}\b",
+    )
+    matrix = vectorizer.fit_transform(docs)
+    return {
+        "overall": cosine_similarity(matrix[0:1], matrix[1:2])[0, 0] * 100.0,
+        "sections": {
+            "summary": cosine_similarity(matrix[0:1], matrix[2:3])[0, 0] * 100.0,
+            "skills": cosine_similarity(matrix[0:1], matrix[3:4])[0, 0] * 100.0,
+            "experience": cosine_similarity(matrix[0:1], matrix[4:5])[0, 0] * 100.0,
+            "projects": cosine_similarity(matrix[0:1], matrix[5:6])[0, 0] * 100.0,
+            "education": cosine_similarity(matrix[0:1], matrix[6:7])[0, 0] * 100.0,
+        },
+    }
+
+
+def get_embedding_model():
+    global _EMBEDDING_MODEL, _EMBEDDING_MODEL_ERROR
+    if _EMBEDDING_MODEL is not None:
+        return _EMBEDDING_MODEL
+    if _EMBEDDING_MODEL_ERROR is not None:
+        return None
+
+    try:
+        from sentence_transformers import SentenceTransformer
+
+        _EMBEDDING_MODEL = SentenceTransformer(DEFAULT_EMBEDDING_MODEL)
+        return _EMBEDDING_MODEL
+    except Exception as exc:  # pragma: no cover - runtime-dependent
+        _EMBEDDING_MODEL_ERROR = str(exc)
+        return None
+
+
+def describe_engines() -> list[dict[str, Any]]:
+    embedding_installed = importlib.util.find_spec("sentence_transformers") is not None
+    return [
+        {
+            "id": "auto",
+            "label": "Auto",
+            "available": True,
+            "details": "Prefer sentence-transformers and fall back to TF-IDF when needed.",
+        },
+        {
+            "id": "tfidf",
+            "label": "TF-IDF",
+            "available": True,
+            "details": "Classic sparse vector baseline with cosine similarity.",
+        },
+        {
+            "id": "sentence-transformers",
+            "label": "Sentence Transformers",
+            "available": embedding_installed,
+            "details": DEFAULT_EMBEDDING_MODEL if embedding_installed else (_EMBEDDING_MODEL_ERROR or "Not installed"),
+        },
+    ]
 
 
 def extract_top_terms(vector_row: Any, feature_names: Any) -> list[str]:
     scores = vector_row.toarray()[0]
     ranked = sorted(
-        (
-            (feature_names[index], score)
-            for index, score in enumerate(scores)
-            if score > 0
-        ),
+        ((feature_names[index], score) for index, score in enumerate(scores) if score > 0),
         key=lambda item: item[1],
         reverse=True,
     )
@@ -374,6 +569,65 @@ def extract_candidate_phrases(text: str) -> list[str]:
     return limit_items(terms, 12)
 
 
+def retrieve_evidence(jd_text: str, cv: dict[str, Any]) -> list[str]:
+    snippets = build_evidence_snippets(cv)
+    if not snippets:
+        return []
+
+    vectorizer = TfidfVectorizer(
+        ngram_range=(1, 2),
+        stop_words="english",
+        lowercase=True,
+        sublinear_tf=True,
+        token_pattern=r"(?u)\b[a-zA-Z][a-zA-Z0-9+#./-]{1,}\b",
+    )
+
+    try:
+        matrix = vectorizer.fit_transform([jd_text, *snippets])
+    except ValueError:
+        return []
+
+    similarities = cosine_similarity(matrix[0:1], matrix[1:]).flatten()
+    ranked = sorted(
+        ((snippets[index], similarities[index]) for index in range(len(snippets)) if similarities[index] > 0.05),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    return [snippet for snippet, _ in ranked[:3]]
+
+
+def build_evidence_snippets(cv: dict[str, Any]) -> list[str]:
+    snippets: list[str] = []
+
+    summary = normalize_text(str(cv.get("summary", "")))
+    if summary:
+        snippets.append(f"Summary evidence: {summary}")
+
+    for item in coerce_list(cv.get("experiences")):
+        if isinstance(item, dict):
+            role = str(item.get("jobTitle", "")).strip()
+            company = str(item.get("company", "")).strip()
+            description = normalize_text(str(item.get("description", "")))
+            context = " - ".join(part for part in [role, company] if part)
+            if description:
+                snippets.append(f"Experience evidence: {context}. {description}".strip())
+
+    for item in coerce_list(cv.get("projects")):
+        if isinstance(item, dict):
+            name = str(item.get("projectName", "")).strip()
+            role = str(item.get("role", "")).strip()
+            description = normalize_text(str(item.get("description", "")))
+            context = " - ".join(part for part in [name, role] if part)
+            if description:
+                snippets.append(f"Project evidence: {context}. {description}".strip())
+
+    skills = ", ".join(coerce_list(cv.get("skills")))
+    if skills:
+        snippets.append(f"Skills evidence: {normalize_text(skills)}")
+
+    return limit_items(snippets, 8)
+
+
 def compute_section_coverage(cv: dict[str, Any]) -> float:
     personal = cv.get("personalInformation") or {}
     checks = [
@@ -402,18 +656,14 @@ def join_structured_items(items: list[Any]) -> str:
     chunks: list[str] = []
     for item in items:
         if isinstance(item, dict):
-            chunks.append(
-                " ".join(str(value) for value in item.values() if value is not None and str(value).strip())
-            )
+            chunks.append(" ".join(str(value) for value in item.values() if value is not None and str(value).strip()))
         else:
             chunks.append(str(item))
     return " ".join(chunks)
 
 
 def coerce_list(value: Any) -> list[Any]:
-    if isinstance(value, list):
-        return value
-    return []
+    return value if isinstance(value, list) else []
 
 
 def normalize_text(value: str) -> str:
@@ -433,6 +683,15 @@ def normalize_token(token: str) -> str:
         return normalized[:-3] + "y"
     if normalized.endswith("s") and len(normalized) > 3 and not normalized.endswith("ss"):
         return normalized[:-1]
+    return normalized
+
+
+def normalize_engine_name(engine: str | None) -> str:
+    normalized = (engine or "auto").strip().lower()
+    if normalized in {"embedding", "embeddings", "sentence-transformer"}:
+        return "sentence-transformers"
+    if normalized not in {"auto", "tfidf", "sentence-transformers"}:
+        return "auto"
     return normalized
 
 
@@ -471,6 +730,42 @@ def merge_terms(primary: list[str], secondary: list[str], max_items: int = 12) -
             if len(merged) >= max_items:
                 return merged
     return merged
+
+
+def write_trace(
+    trace_id: str,
+    mode: str,
+    requested_engine: str,
+    response: AnalyzeResponse,
+    trace_meta: dict[str, Any],
+    request: AnalyzeRequest,
+    duration_ms: float,
+) -> None:
+    trace_payload = {
+        "traceId": trace_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "mode": mode,
+        "requestedEngine": requested_engine,
+        "effectiveEngine": trace_meta.get("effectiveEngine"),
+        "durationMs": duration_ms,
+        "requestSummary": {
+            "jdLength": len((request.jdText or "").strip()),
+            "cvTextLength": len(str(request.cv.get("fullText", "")).strip()),
+            "skillsCount": len(coerce_list(request.cv.get("skills"))),
+            "experienceCount": len(coerce_list(request.cv.get("experiences"))),
+            "projectCount": len(coerce_list(request.cv.get("projects"))),
+        },
+        "metrics": trace_meta.get("metrics", {}),
+        "sectionScores": trace_meta.get("sectionScores", {}),
+        "matchedTerms": trace_meta.get("matchedTerms", []),
+        "missingTerms": trace_meta.get("missingTerms", []),
+        "evidenceHighlights": trace_meta.get("evidenceHighlights", []),
+        "response": response.model_dump(),
+    }
+
+    trace_path = TRACE_DIR / f"{trace_id}.json"
+    trace_path.write_text(json.dumps(trace_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps({"event": "analysis_trace", **trace_payload}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

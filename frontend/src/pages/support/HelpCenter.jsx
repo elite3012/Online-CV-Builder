@@ -5,7 +5,7 @@ import HomeHeader from "../../components/home/HomeHeader";
 
 const FAQS = [
   { q: "How do I export my CV to PDF?", a: "Simply click the 'Export' button in the Editor toolbar. Your CV will be processed and downloaded automatically as a high-quality A4 PDF." },
-  { q: "How accurate is the AI Resume Lab?", a: "The platform combines ATS heuristics with semantic text similarity to estimate resume-to-JD fit. It is more informative than a pure keyword checker, but it should still support rather than replace human review." },
+  { q: "How accurate is the AI Resume Lab?", a: "The platform combines ATS heuristics, semantic text similarity, and grounded evidence retrieval to estimate resume-to-JD fit. It is stronger than a pure keyword checker, but it should still support rather than replace human review." },
   { q: "Can I use my own fonts?", a: "To ensure maximum ATS compatibility, we provide a curated list of standard fonts that are guaranteed to be readable by all major hiring systems." }
 ];
 

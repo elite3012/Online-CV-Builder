@@ -6,7 +6,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,22 +44,26 @@ public class MatchingService {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public MatchingResult checkAtsOnly(Long cvId, String userEmail) {
+    public MatchingResult checkAtsOnly(Long cvId, String userEmail, String engine) {
         CV cv = cvService.getCVByIdAndOwner(cvId, userEmail);
-        return analyzeWithPython("ats", cv, null).orElseGet(() -> buildAtsFallback(cv));
+        MatchingResult result = analyzeWithPython("ats", cv, null, engine).orElseGet(() -> buildAtsFallback(cv));
+        result.setAnalysisEngine(result.getAnalysisEngine() == null ? "java-ats-fallback" : result.getAnalysisEngine());
+        return result;
     }
 
-    public MatchingResult matchCvToJd(Long cvId, String jdText, String userEmail) {
+    public MatchingResult matchCvToJd(Long cvId, String jdText, String userEmail, String engine) {
         CV cv = cvService.getCVByIdAndOwner(cvId, userEmail);
 
         if (jdText == null || jdText.trim().isEmpty()) {
             return buildEmptyResult("Job Description is empty.");
         }
 
-        return analyzeWithPython("match", cv, jdText).orElseGet(() -> buildKeywordFallback(cv, jdText));
+        MatchingResult result = analyzeWithPython("match", cv, jdText, engine).orElseGet(() -> buildKeywordFallback(cv, jdText));
+        result.setAnalysisEngine(result.getAnalysisEngine() == null ? "java-keyword-fallback" : result.getAnalysisEngine());
+        return result;
     }
 
-    private Optional<MatchingResult> analyzeWithPython(String mode, CV cv, String jdText) {
+    private Optional<MatchingResult> analyzeWithPython(String mode, CV cv, String jdText, String engine) {
         if (!aiServiceEnabled) {
             return Optional.empty();
         }
@@ -69,6 +72,7 @@ public class MatchingService {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("mode", mode);
             payload.put("jdText", jdText);
+            payload.put("engine", engine == null || engine.isBlank() ? "auto" : engine);
             payload.put("cv", buildCvPayload(cv));
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -242,6 +246,7 @@ public class MatchingService {
         result.setSuggestions(nonNullList(result.getSuggestions()));
         result.setStrengths(nonNullList(result.getStrengths()));
         result.setFocusAreas(nonNullList(result.getFocusAreas()));
+        result.setEvidenceHighlights(nonNullList(result.getEvidenceHighlights()));
 
         if (isBlank(result.getAnalysisEngine())) {
             result.setAnalysisEngine(fallbackEngine);

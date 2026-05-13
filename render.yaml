@@ -1,0 +1,66 @@
+services:
+  - type: web
+    name: cv-builder-frontend
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: ./frontend
+    dockerfilePath: ./frontend/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: BACKEND_HOSTPORT
+        fromService:
+          name: cv-builder-backend
+          type: web
+          property: hostport
+
+  - type: web
+    name: cv-builder-backend
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_LOG_LEVEL
+        value: INFO
+      - key: AI_SERVICE_ENABLED
+        value: "true"
+      - key: AI_SERVICE_TIMEOUT_MS
+        value: "7000"
+      - key: AI_SERVICE_HOSTPORT
+        fromService:
+          name: cv-builder-ai-service
+          type: web
+          property: hostport
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cv-builder-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+  - type: web
+    name: cv-builder-ai-service
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: ./python-ai-service
+    dockerfilePath: ./python-ai-service/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: EMBEDDING_MODEL_NAME
+        value: sentence-transformers/all-MiniLM-L6-v2
+      - key: HF_HOME
+        value: /app/.hf-cache
+      - key: TRACE_DIR
+        value: /app/traces
+
+databases:
+  - name: cv-builder-db
+    plan: free
+    region: singapore
+    postgresMajorVersion: "17"
+    databaseName: CVBuilder
+    user: cvbuilder

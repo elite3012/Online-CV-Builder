@@ -21,7 +21,7 @@ const FEATURES = [
   {
     icon: <AutoAwesomeIcon sx={{ fontSize: 40, color: "#52b0c3" }} />,
     title: "AI Resume Intelligence",
-    desc: "Combine ATS readiness checks with semantic JD matching so your resume is evaluated on both structure and role alignment, not just raw keyword overlap.",
+    desc: "Combine ATS readiness checks, semantic JD matching, and grounded resume evidence so the analysis is more explainable than a plain keyword checker.",
   },
   {
     icon: <DescriptionIcon sx={{ fontSize: 40, color: "#52b0c3" }} />,

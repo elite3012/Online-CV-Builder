@@ -32,6 +32,7 @@ public class AIController {
         Long cvId = request.containsKey("cvId") ? Long.valueOf(request.get("cvId").toString()) : null;
         String jdText = request.containsKey("jdText") ? request.get("jdText").toString() : null;
         boolean atsOnly = request.containsKey("atsOnly") && Boolean.parseBoolean(request.get("atsOnly").toString());
+        String engine = request.containsKey("engine") ? request.get("engine").toString() : "auto";
 
         if (cvId == null || (!atsOnly && (jdText == null || jdText.trim().isEmpty()))) {
             return ResponseEntity.badRequest().body(Map.of("message", "Please choose a resume and paste a job description."));
@@ -39,8 +40,8 @@ public class AIController {
 
         try {
             MatchingResult result = atsOnly
-                    ? matchingService.checkAtsOnly(cvId, principal.getName())
-                    : matchingService.matchCvToJd(cvId, jdText, principal.getName());
+                    ? matchingService.checkAtsOnly(cvId, principal.getName(), engine)
+                    : matchingService.matchCvToJd(cvId, jdText, principal.getName(), engine);
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
             if (e.getMessage().contains("unauthorized") || e.getMessage().contains("not found")) {

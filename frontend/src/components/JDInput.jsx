@@ -7,6 +7,7 @@ import {
   TextField,
   CircularProgress,
   Chip,
+  MenuItem,
   ToggleButton,
   ToggleButtonGroup,
   Alert,
@@ -73,6 +74,12 @@ const fieldConfig = [
   },
 ];
 
+const engineOptions = [
+  { value: "auto", label: "Auto" },
+  { value: "tfidf", label: "TF-IDF" },
+  { value: "sentence-transformers", label: "Sentence Transformers" },
+];
+
 function normalizeMatchingResult(payload, mode) {
   return {
     mode,
@@ -95,6 +102,10 @@ function normalizeMatchingResult(payload, mode) {
       typeof payload?.sectionCoverage === "number" ? payload.sectionCoverage : null,
     strengths: Array.isArray(payload?.strengths) ? payload.strengths : [],
     focusAreas: Array.isArray(payload?.focusAreas) ? payload.focusAreas : [],
+    evidenceHighlights: Array.isArray(payload?.evidenceHighlights)
+      ? payload.evidenceHighlights
+      : [],
+    traceId: payload?.traceId || "",
   };
 }
 
@@ -131,6 +142,7 @@ function buildStructuredJd(fields) {
 export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
   const [mode, setMode] = useState("match");
   const [jdFields, setJdFields] = useState(emptyJdFields);
+  const [selectedEngine, setSelectedEngine] = useState("auto");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
@@ -169,8 +181,8 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
     try {
       const response =
         mode === "ats"
-          ? await apiService.analyzeJD(selectedCvId, "", { atsOnly: true })
-          : await apiService.analyzeJD(selectedCvId, structuredJd);
+          ? await apiService.analyzeJD(selectedCvId, "", { atsOnly: true, engine: selectedEngine })
+          : await apiService.analyzeJD(selectedCvId, structuredJd, { engine: selectedEngine });
       const normalizedResult = normalizeMatchingResult(response, mode);
 
       setResult(normalizedResult);
@@ -279,6 +291,48 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
             ? "ATS readiness checks structure, completeness, skills visibility, and evidence density without requiring a job description."
             : "Semantic matching compares your resume language, skills, and experience evidence against the target JD for stronger AI-assisted feedback."}
         </Alert>
+
+        {!isAtsOnly && (
+          <Box sx={{ mb: 2, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+            <TextField
+              select
+              size="small"
+              label="Analysis Engine"
+              value={selectedEngine}
+              onChange={(event) => setSelectedEngine(event.target.value)}
+              disabled={loading}
+              sx={{
+                minWidth: { xs: "100%", sm: 250 },
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 3,
+                  color: "white",
+                  bgcolor: "rgba(0,0,0,0.2)",
+                  "& fieldset": {
+                    borderColor: "rgba(255,255,255,0.2)",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "rgba(255,255,255,0.5)",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#52b0c3",
+                  },
+                },
+                "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.68)" },
+                "& .MuiInputLabel-root.Mui-focused": { color: "#52b0c3" },
+                "& .MuiSvgIcon-root": { color: "white" },
+              }}
+            >
+              {engineOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.62)" }}>
+              `Auto` prefers sentence-transformers when available and falls back to TF-IDF.
+            </Typography>
+          </Box>
+        )}
 
         {!isAtsOnly && (
           <Box
@@ -416,6 +470,18 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
                     }}
                     variant="outlined"
                   />
+                  {result.traceId && (
+                    <Chip
+                      label={`trace ${result.traceId.slice(0, 8)}`}
+                      size="small"
+                      sx={{
+                        color: "#fde68a",
+                        borderColor: "rgba(253,230,138,0.45)",
+                        bgcolor: "rgba(253,230,138,0.12)",
+                      }}
+                      variant="outlined"
+                    />
+                  )}
                 </Box>
 
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -521,6 +587,19 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
                       </Typography>
                       {result.focusAreas.map((item, idx) => (
                         <Typography key={idx} variant="body2" sx={{ ml: 4, color: "#fecaca" }}>
+                          - {item}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
+
+                  {result.evidenceHighlights.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}>
+                        Grounded Evidence
+                      </Typography>
+                      {result.evidenceHighlights.map((item, idx) => (
+                        <Typography key={idx} variant="body2" sx={{ ml: 4, color: "#bfdbfe" }}>
                           - {item}
                         </Typography>
                       ))}

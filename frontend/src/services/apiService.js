@@ -1,6 +1,21 @@
 // API Service - handles HTTP requests to backend
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+function resolveApiBaseUrl() {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname, port } = window.location;
+    if (port === '5173') {
+      return 'http://localhost:8081/api';
+    }
+    return `${protocol}//${hostname}${window.location.port ? `:${window.location.port}` : ''}/api`;
+  }
+
+  return 'http://localhost:8081/api';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const TOKEN_KEY = 'token';
 const USER_KEY = 'authUser';
@@ -205,6 +220,7 @@ export const apiService = {
         cvId,
         jdText,
         atsOnly: Boolean(options.atsOnly),
+        engine: options.engine || 'auto',
       }),
     }),
 

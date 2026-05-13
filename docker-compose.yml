@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cvbuilder-db
+    environment:
+      POSTGRES_DB: CVBuilder
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  ai-service:
+    build:
+      context: ./python-ai-service
+    container_name: cvbuilder-ai-service
+    environment:
+      EMBEDDING_MODEL_NAME: sentence-transformers/all-MiniLM-L6-v2
+      TRACE_DIR: /app/traces
+      HF_HOME: /app/.hf-cache
+    ports:
+      - "8000:8000"
+    volumes:
+      - ai-traces:/app/traces
+      - hf-cache:/app/.hf-cache
+
+  backend:
+    build:
+      context: ./backend
+    container_name: cvbuilder-backend
+    depends_on:
+      - db
+      - ai-service
+    environment:
+      SERVER_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/CVBuilder
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      AI_SERVICE_ENABLED: "true"
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_SERVICE_TIMEOUT_MS: 5000
+    ports:
+      - "8081:8081"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    container_name: cvbuilder-frontend
+    depends_on:
+      - backend
+    environment:
+      BACKEND_HOSTPORT: backend:8081
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres-data:
+  ai-traces:
+  hf-cache:
