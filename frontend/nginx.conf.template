@@ -4,9 +4,11 @@ server {
 
   root /usr/share/nginx/html;
   index index.html;
+  include /etc/nginx/conf.d/resolver.conf;
 
   location /api/ {
-    proxy_pass http://${BACKEND_HOSTPORT}/api/;
+    set $backend_upstream http://${BACKEND_HOSTPORT};
+    proxy_pass $backend_upstream/api/;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;

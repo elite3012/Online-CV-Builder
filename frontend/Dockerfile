@@ -13,6 +13,9 @@ RUN npm run build
 FROM nginx:1.27-alpine
 ENV BACKEND_HOSTPORT=backend:8081
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY 40-resolver-from-system.sh /docker-entrypoint.d/40-resolver-from-system.sh
 COPY --from=build /app/dist /usr/share/nginx/html
+
+RUN chmod +x /docker-entrypoint.d/40-resolver-from-system.sh
 
 EXPOSE 80
