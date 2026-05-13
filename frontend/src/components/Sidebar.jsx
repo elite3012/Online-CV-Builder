@@ -83,7 +83,7 @@ export default function Sidebar({ currentView, setCurrentView }) {
         {[
           { text: 'Overview', icon: <DashboardIcon /> },
           { text: 'My Resumes', icon: <ArticleIcon /> },
-          { text: 'ATS Checker', icon: <FactCheckIcon /> },
+          { text: 'AI Resume Lab', icon: <FactCheckIcon /> },
           { text: 'Settings', icon: <SettingsIcon /> },
         ].map((item, index) => (
           <ListItem key={item.text} disablePadding>

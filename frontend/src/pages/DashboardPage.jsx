@@ -148,7 +148,7 @@ export default function Dashboard() {
               />
             </motion.div>
           )}
-          {currentView === "ATS Checker" && (
+          {currentView === "AI Resume Lab" && (
             <motion.div
               key="settings-view"
               initial={{ opacity: 0, y: 20 }}

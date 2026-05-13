@@ -32,6 +32,9 @@ function buildChecklistFromResult(result) {
   const matchedSkills = result?.matchedSkills?.length || 0;
   const missingSkills = result?.missingSkills?.length || 0;
   const score = Number(result?.score || 0);
+  const keywordCoverage = Number(result?.keywordCoverage || 0);
+  const sectionCoverage = Number(result?.sectionCoverage || 0);
+  const semanticScore = Number(result?.semanticScore || 0);
 
   const hasFormattingWarning = warnings.some((warning) =>
     /format|font|table|image|read/.test(warning),
@@ -84,7 +87,7 @@ function buildChecklistFromResult(result) {
     {
       id: 1,
       label: "Use standard section headings",
-      checked: score >= 50 && !hasFormattingWarning,
+      checked: sectionCoverage >= 60 || (score >= 50 && !hasFormattingWarning),
     },
     {
       id: 2,
@@ -94,7 +97,7 @@ function buildChecklistFromResult(result) {
     {
       id: 3,
       label: "Use keywords from the job description",
-      checked: matchedSkills >= missingSkills,
+      checked: keywordCoverage >= 50 || matchedSkills >= missingSkills,
     },
     {
       id: 4,
@@ -104,7 +107,7 @@ function buildChecklistFromResult(result) {
     {
       id: 5,
       label: "Include measurable achievements",
-      checked: score >= 70 || matchedSkills >= 8,
+      checked: score >= 70 || semanticScore >= 60 || matchedSkills >= 8,
     },
     {
       id: 6,
@@ -190,10 +193,10 @@ export default function ATSChecker() {
     <Box sx={{ p: 4, mt: "80px", color: "white", minHeight: "100vh", maxWidth: "1200px", mx: "auto" }}>
       <Box sx={{ mb: 5 }}>
         <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
-          ATS Resume Checker
+          AI Resume Lab
         </Typography>
         <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.7)" }}>
-          Choose one of your saved resumes, then run an ATS-only check or compare it with a structured job description.
+          Choose one of your saved resumes, then run ATS readiness checks or semantic JD matching from one workspace.
         </Typography>
       </Box>
 
@@ -302,7 +305,7 @@ export default function ATSChecker() {
             ATS Checklist
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Does your format meet the standards?
+            Is your resume ready for parsing and ranking?
           </Typography>
 
           <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "space-evenly", my: 2, minHeight: "350px" }}>
@@ -371,7 +374,7 @@ export default function ATSChecker() {
 
           {analysisResult && (
             <Typography variant="caption" sx={{ mt: 2, color: "#64748b" }}>
-              Latest ATS score: {analysisResult.score}%
+              Latest analysis score: {analysisResult.score}%
             </Typography>
           )}
         </Paper>

@@ -86,6 +86,15 @@ function normalizeMatchingResult(payload, mode) {
       : [],
     atsWarnings: Array.isArray(payload?.atsWarnings) ? payload.atsWarnings : [],
     suggestions: Array.isArray(payload?.suggestions) ? payload.suggestions : [],
+    analysisEngine: payload?.analysisEngine || "unknown",
+    semanticScore:
+      typeof payload?.semanticScore === "number" ? payload.semanticScore : null,
+    keywordCoverage:
+      typeof payload?.keywordCoverage === "number" ? payload.keywordCoverage : null,
+    sectionCoverage:
+      typeof payload?.sectionCoverage === "number" ? payload.sectionCoverage : null,
+    strengths: Array.isArray(payload?.strengths) ? payload.strengths : [],
+    focusAreas: Array.isArray(payload?.focusAreas) ? payload.focusAreas : [],
   };
 }
 
@@ -213,10 +222,10 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
         >
           <Box>
             <Typography variant="h5" fontWeight="bold" sx={{ color: "#52b0c3", mb: 1 }}>
-              Job Description Analysis
+              AI Resume Intelligence
             </Typography>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)" }}>
-              Use ATS-only for resume structure, or fill focused JD fields for better matching.
+              Run ATS readiness checks or compare your resume with a job description using semantic matching.
             </Typography>
           </Box>
 
@@ -248,11 +257,11 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
           >
             <ToggleButton value="match">
               <WorkOutlineIcon fontSize="small" sx={{ mr: 1 }} />
-              Match JD
+              Semantic Match
             </ToggleButton>
             <ToggleButton value="ats">
               <FactCheckIcon fontSize="small" sx={{ mr: 1 }} />
-              ATS only
+              ATS Readiness
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
@@ -267,8 +276,8 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
           }}
         >
           {isAtsOnly
-            ? "ATS-only checks resume structure, completeness, and keyword density without requiring a job description."
-            : "For best matching, paste exact wording from the JD: responsibilities, required skills, qualifications, and repeated keywords."}
+            ? "ATS readiness checks structure, completeness, skills visibility, and evidence density without requiring a job description."
+            : "Semantic matching compares your resume language, skills, and experience evidence against the target JD for stronger AI-assisted feedback."}
         </Alert>
 
         {!isAtsOnly && (
@@ -326,10 +335,10 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
         {!isAtsOnly && (
           <Box sx={{ mb: 2, color: "rgba(255,255,255,0.72)" }}>
             <Typography variant="subtitle2" sx={{ color: "#def4c6", mb: 1 }}>
-              How to enter a high-quality JD
+              How to feed the matcher
             </Typography>
             <Typography variant="body2">
-              Keep the original keywords, split must-have skills from nice-to-have skills, include seniority and tools, and avoid rewriting the JD into generic text.
+              Keep the original JD wording, separate must-have skills from nice-to-have skills, include tools and seniority, and avoid rewriting the role into generic text.
             </Typography>
           </Box>
         )}
@@ -353,7 +362,7 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
               "&:hover": { bgcolor: "#3d94a7" },
             }}
           >
-            {loading ? "Analyzing..." : isAtsOnly ? "Check ATS Only" : "Analyze JD Match"}
+            {loading ? "Analyzing..." : isAtsOnly ? "Check ATS Readiness" : "Run Semantic Match"}
           </Button>
 
           {(hasStructuredInput || result) && !isAtsOnly && (
@@ -384,9 +393,10 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
               transition={{ duration: 0.3 }}
             >
               <Box sx={{ mt: 4, pt: 3, borderTop: "1px dashed rgba(255,255,255,0.2)" }}>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 3, flexWrap: "wrap" }}>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Typography variant="h6" fontWeight="bold">
-                    {result.mode === "ats" ? "ATS Structure Score:" : "ATS Match Score:"}
+                    {result.mode === "ats" ? "ATS Readiness Score:" : "AI Match Score:"}
                   </Typography>
                   <Typography
                     variant="h5"
@@ -395,14 +405,68 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
                   >
                     {result.score}%
                   </Typography>
+                  </Box>
+                  <Chip
+                    label={result.analysisEngine}
+                    size="small"
+                    sx={{
+                      color: "#c4f1f9",
+                      borderColor: "rgba(82,176,195,0.45)",
+                      bgcolor: "rgba(82,176,195,0.12)",
+                    }}
+                    variant="outlined"
+                  />
                 </Box>
 
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {(result.semanticScore !== null ||
+                    result.keywordCoverage !== null ||
+                    result.sectionCoverage !== null) && (
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+                        gap: 1.5,
+                      }}
+                    >
+                      {result.semanticScore !== null && (
+                        <Box sx={{ p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.65)" }}>
+                            Semantic Similarity
+                          </Typography>
+                          <Typography variant="h6" fontWeight="bold">
+                            {result.semanticScore}%
+                          </Typography>
+                        </Box>
+                      )}
+                      {result.keywordCoverage !== null && (
+                        <Box sx={{ p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.65)" }}>
+                            Keyword Coverage
+                          </Typography>
+                          <Typography variant="h6" fontWeight="bold">
+                            {result.keywordCoverage}%
+                          </Typography>
+                        </Box>
+                      )}
+                      {result.sectionCoverage !== null && (
+                        <Box sx={{ p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.65)" }}>
+                            Section Coverage
+                          </Typography>
+                          <Typography variant="h6" fontWeight="bold">
+                            {result.sectionCoverage}%
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+
                   {result.mode !== "ats" && (
                     <>
                       <Box>
                         <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
-                          <CheckCircleOutlineIcon color="success" fontSize="small" /> Matched Keywords
+                          <CheckCircleOutlineIcon color="success" fontSize="small" /> Matched Signals
                         </Typography>
                         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                           {result.matchedSkills.map((skill, idx) => (
@@ -413,7 +477,7 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
 
                       <Box>
                         <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
-                          <ErrorOutlineIcon color="error" fontSize="small" /> Missing Keywords
+                          <ErrorOutlineIcon color="error" fontSize="small" /> Missing Signals
                         </Typography>
                         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                           {result.missingSkills.map((skill, idx) => (
@@ -432,6 +496,32 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
                       {result.atsWarnings.map((warn, idx) => (
                         <Typography key={idx} variant="body2" sx={{ ml: 4, color: "#fbbf24" }}>
                           - {warn}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
+
+                  {result.strengths.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}>
+                        Strengths
+                      </Typography>
+                      {result.strengths.map((item, idx) => (
+                        <Typography key={idx} variant="body2" sx={{ ml: 4, color: "#bbf7d0" }}>
+                          - {item}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
+
+                  {result.focusAreas.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}>
+                        Focus Areas
+                      </Typography>
+                      {result.focusAreas.map((item, idx) => (
+                        <Typography key={idx} variant="body2" sx={{ ml: 4, color: "#fecaca" }}>
+                          - {item}
                         </Typography>
                       ))}
                     </Box>

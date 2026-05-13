@@ -20,8 +20,8 @@ import HomeHeader from "../../components/home/HomeHeader";
 const FEATURES = [
   {
     icon: <AutoAwesomeIcon sx={{ fontSize: 40, color: "#52b0c3" }} />,
-    title: "AI ATS Checker",
-    desc: "Simulate how major Applicant Tracking Systems view your resume. Get instant feedback and keyword suggestions to rank higher in recruiter searches.",
+    title: "AI Resume Intelligence",
+    desc: "Combine ATS readiness checks with semantic JD matching so your resume is evaluated on both structure and role alignment, not just raw keyword overlap.",
   },
   {
     icon: <DescriptionIcon sx={{ fontSize: 40, color: "#52b0c3" }} />,
