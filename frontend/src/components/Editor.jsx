@@ -2,7 +2,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  Alert,
   Box,
+  Chip,
   Typography,
   Button,
   Paper,
@@ -64,6 +66,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const location = useLocation();
   const navigate = useNavigate();
   const passedResume = location.state?.resumeToEdit;
+  const importMeta = location.state?.importMeta;
   const componentRef = useRef();
   const autosaveTimerRef = useRef(null);
   const abortRef = useRef(null);
@@ -702,6 +705,46 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
             alignItems: 'center',
           }}
         >
+          {importMeta && (
+            <Alert
+              severity="info"
+              sx={{
+                width: '100%',
+                maxWidth: '800px',
+                mb: 3,
+                borderRadius: 3,
+                bgcolor: 'rgba(82,176,195,0.12)',
+                color: '#102a43',
+                border: '1px solid rgba(82,176,195,0.24)',
+              }}
+            >
+              <Typography fontWeight={800} sx={{ mb: 0.75 }}>
+                AI import is ready for refinement
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1.25 }}>
+                {importMeta.detectedRole
+                  ? `Detected role: ${importMeta.detectedRole}.`
+                  : 'Your uploaded CV has been converted into editable sections.'}
+                {importMeta.suggestedTemplate
+                  ? ` Suggested visual direction: ${importMeta.suggestedTemplate}.`
+                  : ''}
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {(importMeta.insights || []).map((insight) => (
+                  <Chip
+                    key={insight}
+                    label={insight}
+                    size="small"
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.7)',
+                      color: '#102a43',
+                    }}
+                  />
+                ))}
+              </Box>
+            </Alert>
+          )}
+
           {activeSection === 'Personal Info' && (
             <Paper
               elevation={0}

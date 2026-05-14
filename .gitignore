@@ -20,6 +20,8 @@ docs/**/~$*.docx
 Thumbs.db
 *.swp
 *.swo
+__pycache__/
+*.pyc
 
 # IDEs
 .vscode/

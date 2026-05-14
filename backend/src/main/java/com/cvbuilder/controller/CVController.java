@@ -4,6 +4,7 @@ import java.security.Principal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -13,9 +14,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.cvbuilder.dto.ImportedCvResult;
 import com.cvbuilder.model.CV;
 import com.cvbuilder.model.Certificate;
 import com.cvbuilder.model.Education;
@@ -23,6 +27,7 @@ import com.cvbuilder.model.Experience;
 import com.cvbuilder.model.PersonalInformation;
 import com.cvbuilder.model.Project;
 import com.cvbuilder.model.Skill;
+import com.cvbuilder.service.CVImportService;
 import com.cvbuilder.service.CVService;
 import com.cvbuilder.service.ValidationService;
 
@@ -33,6 +38,9 @@ public class CVController {
 
     @Autowired
     private CVService cvService;
+
+    @Autowired
+    private CVImportService cvImportService;
 
     @Autowired
     private ValidationService validationService;
@@ -74,6 +82,20 @@ public class CVController {
 
         CV createdCV = cvService.createCV(request.templateId, request.title, principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdCV);
+    }
+
+    @PostMapping(path = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImportedCvResult> importCV(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("templateId") Long templateId,
+            @RequestParam(value = "title", required = false) String title,
+            Principal principal) {
+        if (templateId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        ImportedCvResult importedCv = cvImportService.importCv(file, templateId, title, principal.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(importedCv);
     }
 
     @PutMapping("/{id}")

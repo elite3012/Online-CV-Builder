@@ -88,6 +88,8 @@ async function request(path, options = {}) {
   let token = getToken();
   const isPublicAuthRequest =
     path === '/auth/login' || path === '/auth/register' || path === '/auth/logout';
+  const isFormDataRequest =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
 
   if (token && isTokenExpired(token)) {
     clearAuthSession();
@@ -100,10 +102,13 @@ async function request(path, options = {}) {
   }
 
   const headers = {
-    'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
+
+  if (!isFormDataRequest && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -200,6 +205,21 @@ export const apiService = {
       body: JSON.stringify(cvData),
       ...options,
     }),
+
+  importCV: ({ file, templateId, title }, options = {}) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('templateId', String(templateId));
+    if (title?.trim()) {
+      formData.append('title', title.trim());
+    }
+
+    return request('/cv/import', {
+      method: 'POST',
+      body: formData,
+      ...options,
+    });
+  },
 
   deleteCV: (cvId) =>
     request(`/cv/${cvId}`, {

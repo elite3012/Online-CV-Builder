@@ -4,79 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Grid, Paper } from '@mui/material';
 import { motion } from 'motion/react';
 import AddIcon from '@mui/icons-material/Add';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 import ResumeCard from './ResumeCard';
 import PreviewModal from './PreviewModal';
+import CVImportDialog from './CVImportDialog';
 import { apiService } from '../services/apiService';
-
-const toDateDisplay = (value) => {
-  const v = String(value ?? '').trim();
-  const match = v.match(/^\d{4}-\d{2}-\d{2}/);
-  return match ? match[0] : v;
-};
-
-const formatDateRange = (startDate, endDate) => {
-  const start = toDateDisplay(startDate);
-  const end = toDateDisplay(endDate);
-  if (start && end) return `${start} - ${end}`;
-  return start || end || '';
-};
-
-const getPreviewData = (cv) => ({
-  name: cv.personalInfo?.fullName,
-  title: cv.personalInfo?.jobTitle,
-  template: {
-    templateName: cv.template.templateName,
-  },
-  contact: {
-    email: cv.personalInfo?.email,
-    phone: cv.personalInfo?.phone,
-    address: cv.personalInfo?.location,
-    linkedIn: cv.personalInfo?.linkedIn,
-    website: cv.personalInfo?.website,
-  },
-  summary: cv.summary,
-  experience:
-    cv.experience
-      ?.filter((e) => e.company)
-      .map((exp) => ({
-        company: exp.company,
-        jobTitle: exp.jobTitle,
-        duration: formatDateRange(exp.startDate, exp.endDate),
-        desc: exp.description,
-      })) || [],
-  skills: cv.skills?.map((s) => s.skillName),
-  education:
-    cv.education
-      ?.filter((e) => e.school)
-      .map((edu) => ({
-        school: edu.school,
-        degree: edu.degree,
-        duration: formatDateRange(edu.startDate, edu.endDate),
-        desc: edu.description,
-      })) || [],
-  projects:
-    cv.projects
-      ?.filter((p) => p.projectName)
-      .map((proj) => ({
-        projectName: proj.projectName,
-        role: proj.role,
-        link: proj.link,
-        desc: proj.description,
-      })) || [],
-  certificates:
-    cv.certificates
-      ?.filter((c) => c.certificateName)
-      .map((cert) => ({
-        certificateName: cert.certificateName,
-        organization: cert.organization,
-        date: toDateDisplay(cert.date ?? cert.issueDate),
-      })) || [],
-});
+import { getPreviewData, mapCvFromApi } from '../utils/cvMappers';
 
 export default function MyResumes({ setCurrentView, searchQuery = '' }) {
   const [resumeList, setResumeList] = useState([]);
   const [previewOpenId, setPreviewOpenId] = useState(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const navigate = useNavigate();
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -104,26 +43,7 @@ export default function MyResumes({ setCurrentView, searchQuery = '' }) {
     apiService
       .getCVList()
       .then((data) => {
-        const mapped = data.map((cv) => {
-          let parsedData = {
-            id: cv.id,
-            title: cv.title,
-            updatedAt: cv.updatedAt ?? '',
-            summary: cv.summary || '',
-            template: cv.template || { templateName: 'Modern' },
-            personalInfo: cv.personalInformation || {},
-            education: cv.educations || [],
-            experience: cv.experiences || [],
-            projects: cv.projects || [],
-            certificates:
-              cv.certificates?.map((cert) => ({
-                ...cert,
-                date: toDateDisplay(cert.date ?? cert.issueDate),
-              })) || [],
-            skills: cv.skills || [],
-          };
-          return parsedData;
-        });
+        const mapped = data.map(mapCvFromApi);
         setResumeList(mapped);
       })
       .catch((err) => console.error(err));
@@ -148,6 +68,13 @@ export default function MyResumes({ setCurrentView, searchQuery = '' }) {
 
   const handleCreateNew = () =>
     setCurrentView ? setCurrentView('Overview') : navigate('/dashboard');
+  const handleImportSuccess = ({ resumeToEdit, importMeta }) => {
+    setResumeList((prev) => [resumeToEdit, ...prev.filter((cv) => cv.id !== resumeToEdit.id)]);
+    setIsImportOpen(false);
+    navigate(`/editor/${resumeToEdit.id}`, {
+      state: { resumeToEdit, importMeta },
+    });
+  };
 
   const activeResume = filteredResumeList.find((cv) => cv.id === previewOpenId)
     || resumeList.find((cv) => cv.id === previewOpenId);
@@ -189,18 +116,36 @@ export default function MyResumes({ setCurrentView, searchQuery = '' }) {
           </Typography>
         </Box>
         {hasAnyResumes && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleCreateNew}
-            sx={{
-              bgcolor: '#52b0c3',
-              textTransform: 'none',
-              '&:hover': { bgcolor: '#3d94a7' },
-            }}
-          >
-            Create New
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button
+              variant="outlined"
+              startIcon={<CloudUploadIcon />}
+              onClick={() => setIsImportOpen(true)}
+              sx={{
+                color: 'white',
+                borderColor: 'rgba(255,255,255,0.28)',
+                textTransform: 'none',
+                '&:hover': {
+                  borderColor: '#52b0c3',
+                  bgcolor: 'rgba(82,176,195,0.08)',
+                },
+              }}
+            >
+              Import CV
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCreateNew}
+              sx={{
+                bgcolor: '#52b0c3',
+                textTransform: 'none',
+                '&:hover': { bgcolor: '#3d94a7' },
+              }}
+            >
+              Create New
+            </Button>
+          </Box>
         )}
       </Box>
 
@@ -262,13 +207,37 @@ export default function MyResumes({ setCurrentView, searchQuery = '' }) {
                   : 'Start building your professional profile today.'}
               </Typography>
               {hasAnyResumes ? null : (
-                <Button
-                  variant="contained"
-                  onClick={handleCreateNew}
-                  sx={{ bgcolor: '#52b0c3', '&:hover': { bgcolor: '#3d94a7' } }}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: 1.5,
+                    flexWrap: 'wrap',
+                  }}
                 >
-                  Create New Resume
-                </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<CloudUploadIcon />}
+                    onClick={() => setIsImportOpen(true)}
+                    sx={{
+                      color: 'white',
+                      borderColor: 'rgba(255,255,255,0.28)',
+                      '&:hover': {
+                        borderColor: '#52b0c3',
+                        bgcolor: 'rgba(82,176,195,0.08)',
+                      },
+                    }}
+                  >
+                    Import Existing CV
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleCreateNew}
+                    sx={{ bgcolor: '#52b0c3', '&:hover': { bgcolor: '#3d94a7' } }}
+                  >
+                    Create New Resume
+                  </Button>
+                </Box>
               )}
             </Paper>
           </Box>
@@ -281,6 +250,11 @@ export default function MyResumes({ setCurrentView, searchQuery = '' }) {
         onClose={() => setPreviewOpenId(null)}
         templateName={activeResume?.template.templateName || 'Modern'}
         previewData={activePreviewData}
+      />
+      <CVImportDialog
+        open={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImported={handleImportSuccess}
       />
     </Box>
   );

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import importlib.util
 import os
@@ -10,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -70,6 +71,116 @@ ACHIEVEMENT_HINTS = (
     "%",
 )
 
+SECTION_ALIASES = {
+    "summary": ["summary", "professional summary", "profile", "about", "objective"],
+    "skills": ["skills", "technical skills", "core skills", "competencies", "toolkit", "tech stack"],
+    "experience": ["experience", "work experience", "employment", "professional experience", "career history"],
+    "education": ["education", "academic background", "academics", "qualifications"],
+    "projects": ["projects", "personal projects", "selected projects", "project experience"],
+    "certificates": ["certifications", "certificates", "licenses", "awards"],
+}
+
+ROLE_HINTS = (
+    "engineer",
+    "developer",
+    "scientist",
+    "analyst",
+    "manager",
+    "architect",
+    "researcher",
+    "consultant",
+    "intern",
+    "lead",
+    "specialist",
+)
+
+COMPANY_HINTS = (
+    "inc",
+    "llc",
+    "ltd",
+    "corp",
+    "company",
+    "technologies",
+    "technology",
+    "solutions",
+    "labs",
+    "studio",
+    "group",
+    "bank",
+    "university",
+)
+
+SCHOOL_HINTS = (
+    "university",
+    "college",
+    "institute",
+    "school",
+    "academy",
+    "faculty",
+)
+
+SKILL_LEXICON = [
+    "python",
+    "java",
+    "javascript",
+    "typescript",
+    "react",
+    "node.js",
+    "spring boot",
+    "sql",
+    "postgresql",
+    "mongodb",
+    "docker",
+    "kubernetes",
+    "aws",
+    "azure",
+    "gcp",
+    "git",
+    "linux",
+    "tensorflow",
+    "pytorch",
+    "keras",
+    "scikit-learn",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "seaborn",
+    "xgboost",
+    "lightgbm",
+    "opencv",
+    "langchain",
+    "hugging face",
+    "transformers",
+    "llm",
+    "rag",
+    "nlp",
+    "computer vision",
+    "machine learning",
+    "deep learning",
+    "data analysis",
+    "data science",
+    "power bi",
+    "tableau",
+    "airflow",
+    "spark",
+    "hadoop",
+    "fastapi",
+    "flask",
+    "django",
+    "rest api",
+    "microservices",
+]
+
+EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+PHONE_RE = re.compile(r"(?:(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{2,4}\)?[\s.-]?){2,4}\d{2,4})")
+URL_RE = re.compile(r"(https?://[^\s]+|www\.[^\s]+)", re.IGNORECASE)
+DATE_RANGE_RE = re.compile(
+    r"(?P<start>(?:\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[\s./-]+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b))"
+    r"\s*(?:-|–|—|to)\s*"
+    r"(?P<end>(?:present|current|now|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[\s./-]+\d{4}\b|\b\d{1,2}[/-]\d{4}\b|\b\d{4}\b))",
+    re.IGNORECASE,
+)
+
 DEFAULT_EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL_NAME", "sentence-transformers/all-MiniLM-L6-v2")
 TRACE_DIR = Path(os.getenv("TRACE_DIR", Path(__file__).resolve().parents[1] / "traces"))
 TRACE_DIR.mkdir(parents=True, exist_ok=True)
@@ -110,7 +221,7 @@ def root() -> dict[str, Any]:
     return {
         "service": "CV Builder AI Service",
         "status": "ok",
-        "endpoints": ["/health", "/engines", "/analyze", "/traces/{trace_id}"],
+        "endpoints": ["/health", "/engines", "/analyze", "/import-cv", "/traces/{trace_id}"],
         "defaultEmbeddingModel": DEFAULT_EMBEDDING_MODEL,
     }
 
@@ -161,6 +272,694 @@ def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
         duration_ms=round_metric((time.perf_counter() - started_at) * 1000.0),
     )
     return response
+
+
+@app.post("/import-cv")
+async def import_cv(file: UploadFile = File(...)) -> dict[str, Any]:
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in {".pdf", ".docx", ".txt", ".md"}:
+        raise HTTPException(status_code=400, detail="Supported formats are PDF, DOCX, TXT, and MD.")
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="The uploaded file is empty.")
+
+    raw_text = extract_text_from_upload(file_bytes, suffix)
+    if len(normalize_text(raw_text)) < 80:
+        raise HTTPException(status_code=400, detail="The uploaded CV did not contain enough readable text.")
+
+    return parse_resume_document(raw_text, file.filename or "Imported CV")
+
+
+def extract_text_from_upload(file_bytes: bytes, suffix: str) -> str:
+    if suffix == ".pdf":
+        return extract_pdf_text(file_bytes)
+    if suffix == ".docx":
+        return extract_docx_text(file_bytes)
+
+    for encoding in ("utf-8", "utf-8-sig", "latin-1"):
+        try:
+            return file_bytes.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    raise HTTPException(status_code=400, detail="The uploaded text file could not be decoded.")
+
+
+def extract_pdf_text(file_bytes: bytes) -> str:
+    try:
+        from pypdf import PdfReader
+    except ImportError as exc:  # pragma: no cover - dependency is runtime-installed
+        raise HTTPException(status_code=503, detail="PDF import support is not installed.") from exc
+
+    reader = PdfReader(io.BytesIO(file_bytes))
+    pages = [page.extract_text() or "" for page in reader.pages]
+    return "\n".join(pages)
+
+
+def extract_docx_text(file_bytes: bytes) -> str:
+    try:
+        from docx import Document
+    except ImportError as exc:  # pragma: no cover - dependency is runtime-installed
+        raise HTTPException(status_code=503, detail="DOCX import support is not installed.") from exc
+
+    document = Document(io.BytesIO(file_bytes))
+    paragraphs = [paragraph.text for paragraph in document.paragraphs if paragraph.text.strip()]
+    table_cells = [
+        cell.text
+        for table in document.tables
+        for row in table.rows
+        for cell in row.cells
+        if cell.text.strip()
+    ]
+    return "\n".join(paragraphs + table_cells)
+
+
+def parse_resume_document(text: str, filename: str) -> dict[str, Any]:
+    lines = clean_resume_lines(text)
+    sections = split_resume_sections(lines)
+    header_lines = limit_items(sections.get("header", []), 8)
+    personal = parse_personal_information(header_lines, text)
+    summary = parse_summary(sections, header_lines)
+    skills = parse_skills(sections.get("skills", []), text)
+    experiences = parse_experiences(sections.get("experience", []))
+    educations = parse_educations(sections.get("education", []))
+    projects = parse_projects(sections.get("projects", []))
+    certificates = parse_certificates(sections.get("certificates", []))
+    detected_role = (
+        personal.get("jobTitle")
+        or infer_role(summary, experiences, skills)
+        or infer_role(text[:400], experiences, skills)
+    )
+
+    if not personal.get("jobTitle") and detected_role:
+        personal["jobTitle"] = detected_role
+
+    confidence = estimate_import_confidence(personal, summary, skills, experiences, educations, projects)
+    suggested_template = suggest_template(detected_role, skills, text)
+    title = build_import_title(personal.get("fullName", ""), detected_role, filename)
+    insights = build_import_insights(skills, experiences, educations, projects, certificates, confidence)
+
+    return {
+        "title": title,
+        "summary": summary,
+        "detectedRole": detected_role,
+        "suggestedTemplate": suggested_template,
+        "confidence": confidence,
+        "personalInformation": personal,
+        "skills": skills,
+        "experiences": experiences,
+        "educations": educations,
+        "projects": projects,
+        "certificates": certificates,
+        "insights": insights,
+    }
+
+
+def clean_resume_lines(text: str) -> list[str]:
+    lines: list[str] = []
+    for raw_line in text.splitlines():
+        line = re.sub(r"\s+", " ", raw_line).strip()
+        line = line.strip("•*- \t")
+        if len(line) < 2:
+            continue
+        lines.append(line)
+    return lines
+
+
+def split_resume_sections(lines: list[str]) -> dict[str, list[str]]:
+    sections: dict[str, list[str]] = {"header": []}
+    current_section = "header"
+
+    for line in lines:
+        heading = identify_section_heading(line)
+        if heading:
+            current_section = heading
+            sections.setdefault(current_section, [])
+            continue
+
+        sections.setdefault(current_section, []).append(line)
+
+    return sections
+
+
+def identify_section_heading(line: str) -> str | None:
+    normalized = normalize_heading(line)
+    if not normalized:
+        return None
+
+    if len(normalized.split()) > 4 and not line.endswith(":"):
+        return None
+
+    best_match = None
+    best_score = 0.0
+    for section, aliases in SECTION_ALIASES.items():
+        for alias in aliases:
+            score = heading_similarity(normalized, alias)
+            if score > best_score:
+                best_match = section
+                best_score = score
+
+    if best_score >= 88:
+        return best_match
+
+    if line.endswith(":") and best_score >= 78:
+        return best_match
+
+    return None
+
+
+def normalize_heading(line: str) -> str:
+    return re.sub(r"[^a-z ]", "", line.lower()).strip()
+
+
+def heading_similarity(left: str, right: str) -> float:
+    try:
+        from rapidfuzz import fuzz
+
+        return float(fuzz.token_sort_ratio(left, right))
+    except ImportError:  # pragma: no cover - optional dependency
+        from difflib import SequenceMatcher
+
+        return SequenceMatcher(None, left, right).ratio() * 100.0
+
+
+def parse_personal_information(header_lines: list[str], full_text: str) -> dict[str, str]:
+    header_blob = " | ".join(header_lines)
+    email_match = EMAIL_RE.search(header_blob) or EMAIL_RE.search(full_text[:1200])
+    phone_match = PHONE_RE.search(header_blob) or PHONE_RE.search(full_text[:1200])
+    urls = URL_RE.findall(header_blob)
+
+    linked_in = ""
+    website = ""
+    for url in urls:
+        normalized_url = ensure_url_scheme(url)
+        if "linkedin" in normalized_url.lower() and not linked_in:
+            linked_in = normalized_url
+        elif not website:
+            website = normalized_url
+
+    full_name = ""
+    job_title = ""
+    location = ""
+
+    for line in header_lines[:6]:
+        if not full_name and looks_like_name(line):
+            full_name = line
+            continue
+        if not job_title and looks_like_job_title(line):
+            job_title = line
+            continue
+        if not location and looks_like_location(line):
+            location = line
+
+    return {
+        "fullName": full_name,
+        "jobTitle": job_title,
+        "email": email_match.group(0) if email_match else "",
+        "phone": normalize_phone(phone_match.group(0)) if phone_match else "",
+        "location": location,
+        "linkedIn": linked_in,
+        "website": website,
+    }
+
+
+def parse_summary(sections: dict[str, list[str]], header_lines: list[str]) -> str:
+    summary_lines = sections.get("summary", [])
+    if summary_lines:
+        return trim_to_length(" ".join(summary_lines), 700)
+
+    fallback_lines = [
+        line
+        for line in header_lines[1:]
+        if not EMAIL_RE.search(line)
+        and not PHONE_RE.search(line)
+        and not URL_RE.search(line)
+        and not looks_like_location(line)
+        and not looks_like_job_title(line)
+    ]
+    return trim_to_length(" ".join(fallback_lines[:3]), 500)
+
+
+def parse_skills(skill_lines: list[str], full_text: str) -> list[str]:
+    extracted: list[str] = []
+    for line in skill_lines:
+        parts = re.split(r"[|,/;]", line)
+        for part in parts:
+            candidate = normalize_skill_label(part)
+            if is_viable_skill(candidate) and candidate not in extracted:
+                extracted.append(candidate)
+
+    for candidate in extract_lexicon_skills(full_text):
+        if candidate not in extracted:
+            extracted.append(candidate)
+
+    return extracted[:18]
+
+
+def parse_experiences(lines: list[str]) -> list[dict[str, str]]:
+    experiences: list[dict[str, str]] = []
+    for block in group_section_lines(lines):
+        parsed = parse_experience_block(block)
+        if parsed:
+            experiences.append(parsed)
+    return experiences[:8]
+
+
+def parse_experience_block(block: list[str]) -> dict[str, str] | None:
+    if not block:
+        return None
+
+    header = block[0]
+    secondary = block[1] if len(block) > 1 and not contains_date_range(block[1]) else ""
+    date_source = next((line for line in block[:3] if contains_date_range(line)), header)
+    start_date, end_date = extract_date_range(date_source, include_time=False)
+    job_title, company = split_role_and_company(header, secondary)
+    description_lines = [line for line in block if line not in {header, secondary, date_source}]
+    description = trim_to_length(" ".join(description_lines), 900)
+
+    if not any([job_title, company, description]):
+        return None
+
+    return {
+        "company": company,
+        "jobTitle": job_title,
+        "startDate": start_date,
+        "endDate": end_date,
+        "description": description,
+    }
+
+
+def parse_educations(lines: list[str]) -> list[dict[str, str]]:
+    educations: list[dict[str, str]] = []
+    for block in group_section_lines(lines):
+        parsed = parse_education_block(block)
+        if parsed:
+            educations.append(parsed)
+    return educations[:6]
+
+
+def parse_education_block(block: list[str]) -> dict[str, str] | None:
+    if not block:
+        return None
+
+    date_source = next((line for line in block[:3] if contains_date_range(line)), " ".join(block[:2]))
+    start_date, end_date = extract_date_range(date_source, include_time=True)
+    school = next((line for line in block[:2] if looks_like_school(line)), "")
+    degree = next((line for line in block[:3] if looks_like_degree(line) and line != school), "")
+
+    if not school and block:
+        school = block[0]
+    if not degree and len(block) > 1 and block[1] != school:
+        degree = block[1]
+
+    description = trim_to_length(
+        " ".join(line for line in block if line not in {school, degree, date_source}),
+        700,
+    )
+
+    if not school and not degree:
+        return None
+
+    return {
+        "school": school,
+        "degree": degree,
+        "startDate": start_date,
+        "endDate": end_date,
+        "description": description,
+    }
+
+
+def parse_projects(lines: list[str]) -> list[dict[str, str]]:
+    projects: list[dict[str, str]] = []
+    for block in group_section_lines(lines):
+        parsed = parse_project_block(block)
+        if parsed:
+            projects.append(parsed)
+    return projects[:6]
+
+
+def parse_project_block(block: list[str]) -> dict[str, str] | None:
+    if not block:
+        return None
+
+    link = next((ensure_url_scheme(match) for line in block for match in URL_RE.findall(line)), "")
+    project_name = block[0]
+    role = next((line for line in block[1:3] if not URL_RE.search(line) and len(line.split()) <= 8), "")
+    description = trim_to_length(
+        " ".join(line for line in block[1:] if line not in {role} and not URL_RE.search(line)),
+        800,
+    )
+
+    if not any([project_name, role, description]):
+        return None
+
+    return {
+        "projectName": project_name,
+        "role": role,
+        "link": link,
+        "description": description,
+    }
+
+
+def parse_certificates(lines: list[str]) -> list[dict[str, str]]:
+    certificates: list[dict[str, str]] = []
+    for block in group_section_lines(lines):
+        if not block:
+            continue
+
+        date_source = next((line for line in block[:3] if contains_date_range(line)), " ".join(block[:2]))
+        issue_date, _ = extract_date_range(date_source, include_time=True)
+        certificate_name = block[0]
+        organization = next((line for line in block[1:3] if line != date_source), "")
+
+        certificates.append(
+            {
+                "certificateName": certificate_name,
+                "organization": organization,
+                "issueDate": issue_date,
+            }
+        )
+
+    return certificates[:6]
+
+
+def group_section_lines(lines: list[str]) -> list[list[str]]:
+    blocks: list[list[str]] = []
+    current: list[str] = []
+
+    for line in lines:
+        if current and starts_new_entry(line, current):
+            blocks.append(current)
+            current = [line]
+            continue
+        current.append(line)
+
+    if current:
+        blocks.append(current)
+
+    return [block for block in blocks if any(item.strip() for item in block)]
+
+
+def starts_new_entry(line: str, current: list[str]) -> bool:
+    if contains_date_range(line) and any(contains_date_range(item) for item in current[:2]):
+        return True
+
+    if len(current) >= 2 and is_probable_entry_heading(line):
+        previous = current[-1]
+        return contains_date_range(previous) or len(" ".join(current)) > 140
+
+    return False
+
+
+def is_probable_entry_heading(line: str) -> bool:
+    lowered = line.lower()
+    if identify_section_heading(line):
+        return False
+    if len(line.split()) > 12:
+        return False
+    if contains_date_range(line):
+        return True
+    if any(token in lowered for token in (" at ", " @ ", " | ")):
+        return True
+    return any(hint in lowered for hint in ROLE_HINTS)
+
+
+def extract_date_range(text: str, include_time: bool) -> tuple[str | None, str | None]:
+    match = DATE_RANGE_RE.search(text)
+    if not match:
+        single = normalize_date_value(text, include_time=include_time)
+        if include_time:
+            return single, None
+        return single or "", ""
+
+    start = normalize_date_value(match.group("start"), include_time=include_time)
+    end = normalize_date_value(match.group("end"), include_time=include_time)
+    return start, end
+
+
+def normalize_date_value(value: str, include_time: bool) -> str | None:
+    lowered = (value or "").strip().lower()
+    if not lowered or lowered in {"present", "current", "now"}:
+        return None if include_time else ""
+
+    parsed = try_parse_date(value)
+    if parsed is None:
+        return None if include_time else ""
+
+    iso_date = parsed.strftime("%Y-%m-%d")
+    if include_time:
+        return f"{iso_date}T00:00:00"
+    return iso_date
+
+
+def try_parse_date(value: str):
+    try:
+        import dateparser
+    except ImportError:  # pragma: no cover - optional dependency
+        dateparser = None
+
+    if dateparser is not None:
+        parsed = dateparser.parse(
+            value,
+            settings={
+                "PREFER_DAY_OF_MONTH": "first",
+                "PREFER_DATES_FROM": "past",
+                "RELATIVE_BASE": datetime(2026, 1, 1),
+            },
+        )
+        if parsed is not None:
+            return parsed
+
+    normalized = value.strip()
+    for fmt in ("%b %Y", "%B %Y", "%m/%Y", "%m-%Y", "%Y-%m", "%Y"):
+        try:
+            parsed = datetime.strptime(normalized, fmt)
+            if fmt == "%Y":
+                return parsed.replace(month=1, day=1)
+            return parsed
+        except ValueError:
+            continue
+
+    return None
+
+
+def split_role_and_company(header: str, secondary: str = "") -> tuple[str, str]:
+    normalized_header = header.replace("—", " - ").replace("–", " - ")
+    for separator in (" at ", " @ ", " | ", " - ", ", "):
+        if separator in normalized_header:
+            left, right = [part.strip() for part in normalized_header.split(separator, 1)]
+            if looks_like_company(right):
+                return left, right
+            if looks_like_company(left):
+                return right, left
+
+    if secondary:
+        if looks_like_company(secondary):
+            return header, secondary
+        if looks_like_company(header):
+            return secondary, header
+
+    return header, secondary
+
+
+def infer_role(summary: str, experiences: list[dict[str, str]], skills: list[str]) -> str:
+    role_sources = [summary] + [item.get("jobTitle", "") for item in experiences[:3]]
+    for source in role_sources:
+        for fragment in re.split(r"[|,/;-]", source):
+            candidate = fragment.strip()
+            if looks_like_job_title(candidate):
+                return candidate
+
+    lowered_skills = {skill.lower() for skill in skills}
+    if {"tensorflow", "pytorch", "machine learning", "deep learning"} & lowered_skills:
+        return "Machine Learning Engineer"
+    if {"react", "typescript", "javascript"} & lowered_skills:
+        return "Frontend Engineer"
+    if {"spring boot", "java", "microservices"} & lowered_skills:
+        return "Backend Engineer"
+    if {"power bi", "tableau", "sql"} & lowered_skills:
+        return "Data Analyst"
+
+    return ""
+
+
+def suggest_template(detected_role: str, skills: list[str], full_text: str) -> str:
+    role_text = f"{detected_role} {' '.join(skills)} {full_text[:400]}".lower()
+    if contains_keyword(role_text, "designer") or contains_keyword(role_text, "ux") or contains_keyword(
+        role_text, "ui"
+    ) or contains_keyword(role_text, "creative") or contains_keyword(role_text, "branding"):
+        return "Creative"
+    if any(contains_keyword(role_text, token) for token in ("finance", "bank", "accounting", "audit")):
+        return "Classic"
+    if any(contains_keyword(role_text, token) for token in ("director", "head of", "leadership", "executive")):
+        return "Elegant"
+    if any(
+        contains_keyword(role_text, token)
+        for token in ("machine learning", "ai", "data", "software", "cloud", "developer")
+    ):
+        return "Modern 2"
+    return "Professional"
+
+
+def estimate_import_confidence(
+    personal: dict[str, str],
+    summary: str,
+    skills: list[str],
+    experiences: list[dict[str, str]],
+    educations: list[dict[str, str]],
+    projects: list[dict[str, str]],
+) -> float:
+    score = 0.25
+    if personal.get("fullName"):
+        score += 0.1
+    if personal.get("email"):
+        score += 0.1
+    if summary:
+        score += 0.15
+    if skills:
+        score += 0.15
+    if experiences:
+        score += 0.15
+    if educations:
+        score += 0.05
+    if projects:
+        score += 0.05
+    return round(min(score, 0.95), 2)
+
+
+def build_import_title(full_name: str, detected_role: str, filename: str) -> str:
+    name = full_name.strip()
+    role = detected_role.strip()
+    if name and role:
+        return f"{name} - {role}"
+    if name:
+        return f"{name} Resume"
+
+    fallback = re.sub(r"\.[^.]+$", "", Path(filename).name).replace("_", " ").replace("-", " ").strip()
+    return fallback.title() if fallback else "Imported CV"
+
+
+def build_import_insights(
+    skills: list[str],
+    experiences: list[dict[str, str]],
+    educations: list[dict[str, str]],
+    projects: list[dict[str, str]],
+    certificates: list[dict[str, str]],
+    confidence: float,
+) -> list[str]:
+    insights = [
+        f"Import confidence: {int(confidence * 100)}%",
+        f"Recovered {len(skills)} skills and {len(experiences)} experience entries.",
+    ]
+
+    if projects:
+        insights.append(f"Detected {len(projects)} project blocks that you can tailor per role.")
+    if educations:
+        insights.append(f"Pulled {len(educations)} education entries into editable sections.")
+    if certificates:
+        insights.append(f"Recovered {len(certificates)} certificates or awards from the source CV.")
+
+    return insights[:4]
+
+
+def extract_lexicon_skills(full_text: str) -> list[str]:
+    lowered = normalize_text(full_text)
+    detected: list[str] = []
+    for skill in SKILL_LEXICON:
+        pattern = r"\b" + r"\s+".join(re.escape(token) for token in skill.lower().split()) + r"\b"
+        if re.search(pattern, lowered):
+            detected.append(skill.title() if skill.islower() else skill)
+    return detected
+
+
+def normalize_skill_label(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().strip(".")
+
+
+def is_viable_skill(value: str) -> bool:
+    if not value:
+        return False
+    if len(value) < 2 or len(value) > 32:
+        return False
+    if len(value.split()) > 4:
+        return False
+    return any(character.isalpha() for character in value)
+
+
+def looks_like_name(value: str) -> bool:
+    if any(token in value.lower() for token in ("resume", "curriculum", "linkedin", "github")):
+        return False
+    if EMAIL_RE.search(value) or PHONE_RE.search(value) or URL_RE.search(value):
+        return False
+    words = value.split()
+    if len(words) < 2 or len(words) > 5:
+        return False
+    return all(word[:1].isupper() for word in words if word)
+
+
+def looks_like_job_title(value: str) -> bool:
+    lowered = value.lower()
+    if EMAIL_RE.search(value) or PHONE_RE.search(value) or URL_RE.search(value):
+        return False
+    if len(value.split()) > 8:
+        return False
+    return any(hint in lowered for hint in ROLE_HINTS)
+
+
+def looks_like_location(value: str) -> bool:
+    if EMAIL_RE.search(value) or PHONE_RE.search(value) or URL_RE.search(value):
+        return False
+    return "," in value or bool(re.search(r"\b(?:city|district|remote|vietnam|singapore|usa|uk|canada)\b", value, re.I))
+
+
+def looks_like_company(value: str) -> bool:
+    lowered = value.lower()
+    return any(hint in lowered for hint in COMPANY_HINTS) or (
+        value.count(" ") >= 1 and not looks_like_job_title(value)
+    )
+
+
+def looks_like_school(value: str) -> bool:
+    lowered = value.lower()
+    return any(hint in lowered for hint in SCHOOL_HINTS)
+
+
+def looks_like_degree(value: str) -> bool:
+    lowered = value.lower()
+    return any(
+        token in lowered
+        for token in ("bachelor", "master", "phd", "msc", "bs", "ba", "engineer", "diploma", "major")
+    )
+
+
+def contains_date_range(value: str) -> bool:
+    return bool(DATE_RANGE_RE.search(value))
+
+
+def contains_keyword(text: str, keyword: str) -> bool:
+    normalized = keyword.lower().strip()
+    if not normalized:
+        return False
+    pattern = r"\b" + r"\s+".join(re.escape(token) for token in normalized.split()) + r"\b"
+    return bool(re.search(pattern, text))
+
+
+def ensure_url_scheme(value: str) -> str:
+    stripped = value.strip()
+    if stripped.startswith(("http://", "https://")):
+        return stripped
+    return f"https://{stripped}"
+
+
+def normalize_phone(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def trim_to_length(value: str, max_length: int) -> str:
+    cleaned = re.sub(r"\s+", " ", value).strip()
+    if len(cleaned) <= max_length:
+        return cleaned
+    return cleaned[: max_length - 3].rstrip() + "..."
 
 
 def analyze_ats(cv: dict[str, Any], requested_engine: str = "auto") -> tuple[AnalyzeResponse, dict[str, Any]]:
