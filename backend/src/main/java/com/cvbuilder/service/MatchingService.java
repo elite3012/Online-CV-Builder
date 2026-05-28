@@ -177,48 +177,47 @@ public class MatchingService {
     }
 
     private MatchingResult buildKeywordFallback(CV cv, String jdText) {
-        NLPResult jdNlp = nlpService.preprocessJD(jdText);
-        Set<String> jdTokens = new HashSet<>(jdNlp.getTokens());
+        String cvContent = buildCvContent(cv);
+        List<String> jdSignals = nlpService.extractMatchSignals(jdText);
 
-        if (jdTokens.isEmpty()) {
-            return buildEmptyResult("Job Description does not contain recognizable keywords.");
+        if (jdSignals.isEmpty()) {
+            return buildEmptyResult("Job Description does not contain clear skill or phrase signals yet.");
         }
 
-        String cvContent = buildCvContent(cv);
-        NLPResult cvNlp = nlpService.preprocessCV(cvContent);
-        Set<String> cvTokens = new HashSet<>(cvNlp.getTokens());
+        String normalizedCvText = nlpService.normalizeForMatching(cvContent);
+        Set<String> cvTokens = nlpService.buildTokenSet(cvContent);
 
-        if (cvTokens.isEmpty()) {
+        if (cvTokens.isEmpty() || normalizedCvText.isBlank()) {
             return buildEmptyResult("CV appears to be empty or lacks processable text.");
         }
 
         List<String> matchedSkills = new ArrayList<>();
         List<String> missingSkills = new ArrayList<>();
 
-        for (String jdToken : jdTokens) {
-            if (cvTokens.contains(jdToken)) {
-                matchedSkills.add(jdToken);
+        for (String jdSignal : jdSignals) {
+            if (nlpService.matchesSignal(jdSignal, normalizedCvText, cvTokens)) {
+                matchedSkills.add(jdSignal);
             } else {
-                missingSkills.add(jdToken);
+                missingSkills.add(jdSignal);
             }
         }
 
-        int score = (int) Math.round(((double) matchedSkills.size() / jdTokens.size()) * 100);
+        int score = (int) Math.round(((double) matchedSkills.size() / jdSignals.size()) * 100);
         boolean atsPassed = score >= 60;
         List<String> atsWarnings = new ArrayList<>();
         List<String> suggestions = new ArrayList<>();
 
         if (score < 40) {
-            atsWarnings.add("Low overlap with Job Description keywords. Your CV may be screened out early.");
-            suggestions.add("Align your summary, skills, and project bullets with the target role terminology.");
+            atsWarnings.add("Low overlap with the job's core skill and phrase signals. Your CV may be screened out early.");
+            suggestions.add("Align your summary, skills, and project bullets with the role's exact tools, phrases, and responsibilities.");
         } else if (score < 70) {
-            suggestions.add("Add more exact keywords from the JD to improve alignment.");
+            suggestions.add("Add more exact multi-word skills and responsibility phrases from the JD to improve alignment.");
         } else {
-            suggestions.add("Keyword alignment is strong. Tighten metrics and achievements to strengthen recruiter impact.");
+            suggestions.add("Signal alignment is strong. Tighten metrics and achievements to strengthen recruiter impact.");
         }
 
-        if (missingSkills.size() > 10) {
-            atsWarnings.add("Many JD terms are missing. Consider whether the resume is targeting the right role.");
+        if (missingSkills.size() > 6) {
+            atsWarnings.add("Many important JD signals are missing. Consider whether the resume is targeting the right role.");
         }
 
         if (cvContent.length() < 200) {
@@ -231,10 +230,10 @@ public class MatchingService {
         result.setKeywordCoverage((double) score);
         result.setSectionCoverage(calculateSectionCoverage(cv));
         result.setStrengths(limitList(matchedSkills, 3).stream()
-                .map(skill -> "Matched JD term: " + skill)
+                .map(skill -> "Matched signal: " + skill)
                 .collect(Collectors.toList()));
         result.setFocusAreas(limitList(missingSkills, 3).stream()
-                .map(skill -> "Missing JD term: " + skill)
+                .map(skill -> "Missing signal: " + skill)
                 .collect(Collectors.toList()));
         return normalizeResult(result, "java-keyword-fallback");
     }

@@ -19,6 +19,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 GENERIC_TERMS = {
     "ability",
+    "background",
     "candidate",
     "communication",
     "company",
@@ -45,13 +46,75 @@ GENERIC_TERMS = {
     "responsibilities",
     "responsibility",
     "role",
+    "profile",
     "skills",
     "strong",
+    "student",
+    "support",
+    "task",
+    "tasks",
     "team",
+    "understand",
+    "understanding",
     "using",
+    "willingness",
     "work",
     "working",
     "years",
+    "join",
+    "basic",
+    "good",
+    "minimal",
+    "guidance",
+    "interest",
+    "majoring",
+}
+
+STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "but",
+    "by",
+    "for",
+    "if",
+    "in",
+    "into",
+    "is",
+    "it",
+    "no",
+    "not",
+    "of",
+    "on",
+    "or",
+    "our",
+    "such",
+    "than",
+    "that",
+    "the",
+    "their",
+    "then",
+    "there",
+    "these",
+    "they",
+    "this",
+    "to",
+    "under",
+    "using",
+    "was",
+    "we",
+    "while",
+    "will",
+    "with",
+    "who",
+    "which",
+    "where",
+    "you",
+    "your",
 }
 
 ACHIEVEMENT_HINTS = (
@@ -170,6 +233,132 @@ SKILL_LEXICON = [
     "rest api",
     "microservices",
 ]
+
+STRUCTURED_FIELD_ORDER = (
+    "job title",
+    "responsibilities",
+    "required skills",
+    "qualifications",
+    "nice-to-have",
+    "company / industry",
+)
+
+SINGLE_TERM_ALLOWLIST = {
+    normalize
+    for normalize in (
+        "python",
+        "java",
+        "react",
+        "spring",
+        "sql",
+        "postgresql",
+        "docker",
+        "kubernetes",
+        "aws",
+        "azure",
+        "gcp",
+        "git",
+        "linux",
+        "tensorflow",
+        "pytorch",
+        "langchain",
+        "sharepoint",
+        "devops",
+        "nlp",
+        "llm",
+        "rag",
+        "fastapi",
+        "django",
+        "flask",
+        "transformers",
+        "retrieval",
+        "summarization",
+        "evaluation",
+        "accuracy",
+        "latency",
+        "analytics",
+        "english",
+        "chatbot",
+    )
+}
+
+SIGNAL_PHRASES = [
+    "microsoft copilot studio",
+    "langchain framework",
+    "ai agent architecture",
+    "engineering use cases",
+    "data ingestion pipelines",
+    "data ingestion pipeline",
+    "enterprise data sources",
+    "enterprise data source",
+    "intelligent retrieval",
+    "test report summarization",
+    "problem solving support",
+    "power platform",
+    "software engineering",
+    "computer science",
+    "data engineering",
+    "machine learning",
+    "deep learning",
+    "rest apis",
+    "rest api",
+    "agent development",
+    "chatbot development",
+    "document analysis",
+    "agent workflows",
+    "prompt design",
+    "tool integration",
+    "memory management",
+    "problem solving",
+    "international team",
+    "english communication",
+    "product owners",
+    "data experts",
+    "ai agents",
+    "ai agent",
+    "copilot studio",
+]
+
+SIGNAL_KEYWORDS = {
+    "ai",
+    "agent",
+    "agents",
+    "architecture",
+    "copilot",
+    "studio",
+    "langchain",
+    "python",
+    "azure",
+    "devops",
+    "sharepoint",
+    "database",
+    "databases",
+    "api",
+    "apis",
+    "retrieval",
+    "summarization",
+    "document",
+    "analysis",
+    "engineering",
+    "platform",
+    "power",
+    "evaluation",
+    "accuracy",
+    "latency",
+    "chatbot",
+    "machine",
+    "learning",
+    "deep",
+    "english",
+    "communication",
+    "workflow",
+    "workflows",
+    "prompt",
+    "integration",
+    "memory",
+    "testing",
+    "enterprise",
+}
 
 EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 PHONE_RE = re.compile(r"(?:(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{2,4}\)?[\s.-]?){2,4}\d{2,4})")
@@ -1127,7 +1316,7 @@ def analyze_match(
         extract_top_terms(tfidf_matrix[0], feature_names),
     )
     cv_token_set = build_token_set(cv_text)
-    matched_terms = [term for term in jd_terms if phrase_tokens_present(term, cv_token_set)]
+    matched_terms = [term for term in jd_terms if phrase_tokens_present(term, cv_text, cv_token_set)]
     missing_terms = [term for term in jd_terms if term not in matched_terms]
     keyword_coverage = (len(matched_terms) / len(jd_terms) * 100.0) if jd_terms else 0.0
     section_coverage = compute_section_coverage(cv)
@@ -1321,9 +1510,13 @@ def extract_top_terms(vector_row: Any, feature_names: Any) -> list[str]:
         tokens = [normalize_token(token) for token in cleaned.split() if token]
         if len(cleaned) < 3 or not tokens:
             continue
-        if len(tokens) > 2:
+        if len(tokens) > 3:
             continue
-        if any(token in GENERIC_TERMS for token in tokens):
+        if any(token in GENERIC_TERMS or token in STOPWORDS for token in tokens):
+            continue
+        if len(tokens) == 1 and tokens[0] not in SINGLE_TERM_ALLOWLIST:
+            continue
+        if len(tokens) > 1 and not any(token in SIGNAL_KEYWORDS for token in tokens):
             continue
         if cleaned.isdigit():
             continue
@@ -1336,36 +1529,149 @@ def extract_top_terms(vector_row: Any, feature_names: Any) -> list[str]:
 
 
 def extract_candidate_phrases(text: str) -> list[str]:
-    cleaned = re.sub(
-        r"(job title|company / industry|responsibilities|required skills|qualifications|nice-to-have)\s*:",
-        " ",
-        text,
-        flags=re.IGNORECASE,
-    )
-    segments = re.split(r"[,;\n]|(?:\band\b)|(?:\bwith\b)", cleaned)
+    sections = parse_structured_jd_sections(text)
     terms: list[str] = []
 
-    for segment in segments:
-        normalized_segment = normalize_text(segment)
-        tokens = [
-            normalize_token(token)
-            for token in normalized_segment.split()
-            if token and normalize_token(token) not in GENERIC_TERMS
-        ]
-        if not tokens:
+    for field in STRUCTURED_FIELD_ORDER:
+        value = sections.get(field, "")
+        if not value:
             continue
-        if len(tokens) <= 2:
-            terms.append(" ".join(tokens))
+        if field == "job title":
+            phrase = normalize_signal_phrase(value, max_words=6, allow_single=False)
+            if phrase:
+                terms.append(phrase)
+            terms = merge_terms(terms, extract_known_signal_terms(value), max_items=12)
             continue
-        for index in range(len(tokens) - 1):
-            pair = f"{tokens[index]} {tokens[index + 1]}"
-            if pair not in terms:
-                terms.append(pair)
-        for token in tokens:
-            if token not in terms:
-                terms.append(token)
+        if field == "company / industry":
+            phrase = normalize_signal_phrase(value, max_words=4, allow_single=True)
+            if phrase:
+                terms.append(phrase)
+            continue
+        terms.extend(extract_section_terms(value))
+
+    terms = merge_terms(terms, extract_known_signal_terms(text), max_items=12)
+    if terms:
+        return terms
+
+    return merge_terms(extract_section_terms(text), extract_known_signal_terms(text), max_items=12)
+
+
+def parse_structured_jd_sections(text: str) -> dict[str, str]:
+    matches = list(
+        re.finditer(
+            r"(?im)^(job title|company / industry|responsibilities|required skills|qualifications|nice-to-have)\s*:\s*",
+            text or "",
+        )
+    )
+    if not matches:
+        return {}
+
+    sections: dict[str, str] = {}
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        sections[match.group(1).lower()] = text[start:end].strip()
+    return sections
+
+
+def extract_section_terms(text: str) -> list[str]:
+    terms: list[str] = []
+    chunks = re.split(r"[\n,;|]", text or "")
+
+    for chunk in chunks:
+        cleaned_chunk = cleanup_signal_text(chunk)
+        if not cleaned_chunk:
+            continue
+
+        known_terms = extract_known_signal_terms(cleaned_chunk)
+        if known_terms:
+            terms = merge_terms(terms, known_terms, max_items=12)
+            continue
+
+        phrase = normalize_signal_phrase(cleaned_chunk, max_words=3, allow_single=False)
+        if phrase:
+            terms.append(phrase)
+            continue
+
+        terms = merge_terms(terms, build_ngram_terms(cleaned_chunk), max_items=12)
 
     return limit_items(terms, 12)
+
+
+def extract_known_signal_terms(text: str) -> list[str]:
+    normalized = normalize_text(cleanup_signal_text(text))
+    if not normalized:
+        return []
+
+    found: list[str] = []
+    for phrase in SIGNAL_PHRASES:
+        pattern = r"\b" + r"\s+".join(re.escape(token) for token in phrase.split()) + r"\b"
+        if re.search(pattern, normalized):
+            found.append(phrase)
+
+    for token in SINGLE_TERM_ALLOWLIST:
+        if re.search(r"\b" + re.escape(token) + r"\b", normalized):
+            found.append(token)
+
+    return limit_items(found, 12)
+
+
+def build_ngram_terms(text: str) -> list[str]:
+    tokens = [
+        normalize_token(token)
+        for token in re.findall(r"[a-zA-Z0-9+#./-]+", normalize_text(cleanup_signal_text(text)))
+        if token
+    ]
+    terms: list[str] = []
+
+    for size in (3, 2):
+        for index in range(len(tokens) - size + 1):
+            window = tokens[index:index + size]
+            if not is_useful_signal_window(window):
+                continue
+            terms.append(" ".join(window))
+
+    return limit_items(terms, 12)
+
+
+def is_useful_signal_window(window: list[str]) -> bool:
+    if not window:
+        return False
+    if any(len(token) <= 1 for token in window):
+        return False
+    if window[0] in STOPWORDS or window[-1] in STOPWORDS:
+        return False
+    if window[0] in GENERIC_TERMS or window[-1] in GENERIC_TERMS:
+        return False
+    if all(token in GENERIC_TERMS for token in window):
+        return False
+    return any(token in SIGNAL_KEYWORDS or token in SINGLE_TERM_ALLOWLIST for token in window)
+
+
+def cleanup_signal_text(text: str) -> str:
+    cleaned = re.sub(r"(?i)^(your\s+tasks?|your\s+profile|join\s+as)\s*:?\s*", "", text or "")
+    cleaned = re.sub(r"(?i)\b(?:e\.?g\.?|i\.?e\.?)\b", " ", cleaned)
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+def normalize_signal_phrase(text: str, max_words: int = 4, allow_single: bool = False) -> str:
+    normalized = normalize_text(cleanup_signal_text(text))
+    tokens = [normalize_token(token) for token in normalized.split() if token]
+
+    while tokens and (tokens[0] in STOPWORDS or tokens[0] in GENERIC_TERMS):
+        tokens.pop(0)
+    while tokens and (tokens[-1] in STOPWORDS or tokens[-1] in GENERIC_TERMS):
+        tokens.pop()
+
+    if not tokens or len(tokens) > max_words:
+        return ""
+    if len(tokens) == 1:
+        return tokens[0] if allow_single and tokens[0] in SINGLE_TERM_ALLOWLIST else ""
+    if all(token in GENERIC_TERMS for token in tokens):
+        return ""
+    if not any(token in SIGNAL_KEYWORDS or token in SINGLE_TERM_ALLOWLIST for token in tokens):
+        return ""
+    return " ".join(tokens)
 
 
 def retrieve_evidence(jd_text: str, cv: dict[str, Any]) -> list[str]:
@@ -1446,9 +1752,16 @@ def count_achievement_signals(text: str) -> int:
     return score
 
 
-def phrase_tokens_present(phrase: str, text_tokens: set[str]) -> bool:
+def phrase_tokens_present(phrase: str, normalized_text: str, text_tokens: set[str]) -> bool:
     phrase_tokens = [normalize_token(token) for token in phrase.split() if token]
-    return bool(phrase_tokens) and all(token in text_tokens for token in phrase_tokens)
+    if not phrase_tokens:
+        return False
+    normalized_phrase = " ".join(phrase_tokens)
+    if len(phrase_tokens) > 1:
+        pattern = r"\b" + r"\s+".join(re.escape(token) for token in phrase_tokens) + r"\b"
+        if re.search(pattern, normalized_text):
+            return True
+    return all(token in text_tokens for token in phrase_tokens)
 
 
 def join_structured_items(items: list[Any]) -> str:
