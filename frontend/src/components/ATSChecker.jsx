@@ -12,7 +12,6 @@ import {
   CircularProgress,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { motion } from "motion/react";
 import { apiService } from "../services/apiService";
 import JDInput from "./JDInput";
 

@@ -23,7 +23,8 @@ export default function EditorToolbar({
   templateName,
   saveStatus,
   onPreview,
-  onExport,
+  onExportPdf,
+  onExportDocx,
   onChangeTemplate,
 }) {
   return (
@@ -115,14 +116,30 @@ export default function EditorToolbar({
         <Button
           variant="contained"
           size="small"
-          onClick={onExport}
+          onClick={onExportPdf}
           sx={{
             bgcolor: "#52b0c3",
             "&:hover": { bgcolor: "#3d94a7" },
             textTransform: "none",
           }}
         >
-          Export
+          Export PDF
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={onExportDocx}
+          sx={{
+            color: "#102a43",
+            borderColor: "#52b0c3",
+            textTransform: "none",
+            "&:hover": {
+              borderColor: "#3d94a7",
+              bgcolor: "rgba(82, 176, 195, 0.08)",
+            },
+          }}
+        >
+          Export DOCX
         </Button>
       </Box>
     </Paper>

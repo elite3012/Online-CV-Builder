@@ -1,9 +1,26 @@
-// src/components/ResumeCard.jsx
 import { Box, Typography, Button, IconButton, Chip } from '@mui/material';
-import { motion } from 'motion/react';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { motion } from 'motion/react';
+
 import BorderGlow from './reactbits/BorderGlow';
 import CVRenderer from './template/CVRenderer';
+
+function formatLastEdited(value) {
+  if (!value) {
+    return 'Recently';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
+
+  return new Intl.DateTimeFormat('en', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(parsed);
+}
 
 export default function ResumeCard({
   cv,
@@ -41,7 +58,6 @@ export default function ResumeCard({
             position: 'relative',
           }}
         >
-          {/* NÚT XÓA */}
           <IconButton
             onClick={() => onDelete(cv.id)}
             sx={{
@@ -57,7 +73,6 @@ export default function ResumeCard({
             <DeleteIcon color="error" fontSize="small" />
           </IconButton>
 
-          {/* LIVE THUMBNAIL */}
           <Box
             sx={{
               width: '100%',
@@ -83,7 +98,6 @@ export default function ResumeCard({
             </Box>
           </Box>
 
-          {/* THÔNG TIN */}
           <Box
             sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}
           >
@@ -107,7 +121,7 @@ export default function ResumeCard({
                 fontStyle: 'italic',
               }}
             >
-              Last edited: {cv.updatedAt}
+              Last edited: {formatLastEdited(cv.updatedAt)}
             </Typography>
 
             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
@@ -123,7 +137,6 @@ export default function ResumeCard({
               />
             </Box>
 
-            {/* ACTION BUTTONS */}
             <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
               <Button
                 variant="outlined"
@@ -154,22 +167,6 @@ export default function ResumeCard({
               >
                 Edit
               </Button>
-              {/* <Link
-                to={'/editor'}
-                state={{ resumeToEdit: cv }}
-                variant="contained"
-                size="small"
-                sx={{
-                  flex: 1,
-                  textTransform: 'none',
-                  bgcolor: '#52b0c3',
-                  color: 'white',
-                  boxShadow: 'none',
-                  '&:hover': { bgcolor: '#3d94a7', boxShadow: 'none' },
-                }}
-              >
-                Edit
-              </Link> */}
             </Box>
           </Box>
         </Box>

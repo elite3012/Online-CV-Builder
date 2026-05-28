@@ -46,7 +46,9 @@ export default function MyResumes({ setCurrentView, searchQuery = '' }) {
         const mapped = data.map(mapCvFromApi);
         setResumeList(mapped);
       })
-      .catch((err) => console.error(err));
+      .catch(() => {
+        console.error('Failed to load resumes.');
+      });
   }, []);
 
   const hasAnyResumes = resumeList.length > 0;
@@ -59,7 +61,7 @@ export default function MyResumes({ setCurrentView, searchQuery = '' }) {
         .then(() => {
           setResumeList(resumeList.filter((cv) => cv.id !== idToDelete));
         })
-        .catch((err) => alert('Failed to delete'));
+        .catch(() => alert('Failed to delete'));
     }
   };
 

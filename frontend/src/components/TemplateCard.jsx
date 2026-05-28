@@ -1,15 +1,13 @@
-// src/components/TemplateCard.jsx
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Box, Typography, Chip, Button } from "@mui/material";
-import BorderGlow from "./reactbits/BorderGlow";
 import { AnimatePresence, motion } from "motion/react";
 
-import CVRenderer from "./template/CVRenderer"; 
+import BorderGlow from "./reactbits/BorderGlow";
+import CVRenderer from "./template/CVRenderer";
 import { mockResumesData } from "../data/mockResumes";
 
-export const TemplateCard = ({ item, onPreview, onUse }) => { 
-
+export const TemplateCard = ({ item, onUse }) => {
   const resumeData = mockResumesData[item.id];
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -40,26 +38,25 @@ export const TemplateCard = ({ item, onPreview, onUse }) => {
             borderRadius: "12px",
           }}
         >
-          
           <Box
             sx={{
               width: "100%",
-              height: 220, 
-              overflow: "hidden", 
+              height: 220,
+              overflow: "hidden",
               position: "relative",
               borderRadius: "12px 12px 0 0",
               zIndex: 0,
               bgcolor: "#f0f4f8",
-              borderBottom: "1px solid #e0e0e0"
+              borderBottom: "1px solid #e0e0e0",
             }}
           >
             <Box
               sx={{
-                width: 794, 
-                height: 1122, 
-                transform: "scale(0.315)", // 250px / 794px ≈ 0.315 (Thu nhỏ vừa y thẻ)
-                transformOrigin: "top left", // Bắt đầu thu nhỏ từ góc trái trên cùng
-                pointerEvents: "none", // Ngăn chặn việc hover/click vào CV lúc nó đang thu nhỏ
+                width: 794,
+                height: 1122,
+                transform: "scale(0.315)",
+                transformOrigin: "top left",
+                pointerEvents: "none",
               }}
             >
               <CVRenderer templateName={item.name} data={resumeData} />
@@ -69,16 +66,30 @@ export const TemplateCard = ({ item, onPreview, onUse }) => {
           <Box
             sx={{ p: 2, flexGrow: 1, display: "flex", flexDirection: "column" }}
           >
-            <Typography variant="subtitle1" fontWeight="bold" color="#102a43" sx={{ fontFamily: "'Helvetica', sans-serif" }}>
+            <Typography
+              variant="subtitle1"
+              fontWeight="bold"
+              color="#102a43"
+              sx={{ fontFamily: "'Helvetica', sans-serif" }}
+            >
               {item.name}
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5, mb: 1.5, flexGrow: 1, fontSize: "0.5rem", lineHeight: 1.4 }}>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mt: 0.5, mb: 1.5, flexGrow: 1, fontSize: "0.5rem", lineHeight: 1.4 }}
+            >
               {item.desc}
             </Typography>
 
             <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 1.5 }}>
               {item.tags.map((tag) => (
-                <Chip key={tag} label={tag} size="small" sx={{ fontSize: "0.65rem", height: 20, bgcolor: "#f0f4f8", color: "#102a43" }} />
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  sx={{ fontSize: "0.65rem", height: 20, bgcolor: "#f0f4f8", color: "#102a43" }}
+                />
               ))}
             </Box>
 
@@ -87,7 +98,13 @@ export const TemplateCard = ({ item, onPreview, onUse }) => {
                 variant="outlined"
                 size="small"
                 onClick={() => setIsPreviewOpen(true)}
-                sx={{ flex: 1, textTransform: "none", color: "#607d8b", borderColor: "#e0e0e0", "&:hover": { bgcolor: "#f5f5f5", borderColor: "#cfd8dc" } }}
+                sx={{
+                  flex: 1,
+                  textTransform: "none",
+                  color: "#607d8b",
+                  borderColor: "#e0e0e0",
+                  "&:hover": { bgcolor: "#f5f5f5", borderColor: "#cfd8dc" },
+                }}
               >
                 Preview
               </Button>
@@ -95,7 +112,14 @@ export const TemplateCard = ({ item, onPreview, onUse }) => {
                 variant="contained"
                 size="small"
                 onClick={onUse}
-                sx={{ flex: 1, textTransform: "none", bgcolor: "#52b0c3", color: "white", boxShadow: "none", "&:hover": { bgcolor: "#3d94a7", boxShadow: "none" } }}
+                sx={{
+                  flex: 1,
+                  textTransform: "none",
+                  bgcolor: "#52b0c3",
+                  color: "white",
+                  boxShadow: "none",
+                  "&:hover": { bgcolor: "#3d94a7", boxShadow: "none" },
+                }}
               >
                 Use
               </Button>
@@ -104,27 +128,46 @@ export const TemplateCard = ({ item, onPreview, onUse }) => {
         </Box>
       </BorderGlow>
 
-      
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>
             {isPreviewOpen && (
               <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
                 onClick={() => setIsPreviewOpen(false)}
                 style={{
-                  position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-                  backgroundColor: "rgba(30, 30, 30, 0.85)", backdropFilter: "blur(5px)", zIndex: 99999,
-                  display: "flex", justifyContent: "center", alignItems: "center", padding: "20px", cursor: "zoom-out",
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  backgroundColor: "rgba(30, 30, 30, 0.85)",
+                  backdropFilter: "blur(5px)",
+                  zIndex: 99999,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: "20px",
+                  cursor: "zoom-out",
                 }}
               >
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(event) => event.stopPropagation()}
                   style={{
-                    maxHeight: "90vh", maxWidth: "95vw", overflow: "auto",
-                    borderRadius: "12px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)", cursor: "default", backgroundColor: "white",
+                    maxHeight: "90vh",
+                    maxWidth: "95vw",
+                    overflow: "auto",
+                    borderRadius: "12px",
+                    boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+                    cursor: "default",
+                    backgroundColor: "white",
                   }}
                 >
                   <CVRenderer templateName={item.name} data={resumeData} />
@@ -132,7 +175,7 @@ export const TemplateCard = ({ item, onPreview, onUse }) => {
               </motion.div>
             )}
           </AnimatePresence>,
-          document.body
+          document.body,
         )}
     </>
   );

@@ -84,6 +84,62 @@ function handleAuthFailure() {
   redirectToLogin();
 }
 
+function extractFilename(disposition, fallbackName) {
+  const match = disposition?.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+  if (!match?.[1]) {
+    return fallbackName;
+  }
+
+  return decodeURIComponent(match[1]).replace(/"/g, '').trim() || fallbackName;
+}
+
+async function downloadFile(path, fallbackName) {
+  let token = getToken();
+  const isPublicAuthRequest =
+    path === '/auth/login' || path === '/auth/register' || path === '/auth/logout';
+
+  if (token && isTokenExpired(token)) {
+    clearAuthSession();
+    token = null;
+
+    if (!isPublicAuthRequest) {
+      redirectToLogin();
+      throw new Error(JSON.stringify({ message: 'Your session has expired. Please log in again.' }));
+    }
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'GET',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+
+    if (response.status === 401) {
+      handleAuthFailure();
+    }
+
+    throw new Error(errorText || JSON.stringify({ message: `HTTP error ${response.status}` }));
+  }
+
+  const blob = await response.blob();
+  const fileName = extractFilename(
+    response.headers.get('content-disposition'),
+    fallbackName,
+  );
+  const objectUrl = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(objectUrl);
+
+  return { fileName };
+}
+
 async function request(path, options = {}) {
   let token = getToken();
   const isPublicAuthRequest =
@@ -246,12 +302,8 @@ export const apiService = {
 
   // Export endpoints
   exportPDF: (cvId) =>
-    request(`/export/pdf/${cvId}`, {
-      method: 'GET',
-    }),
+    downloadFile(`/export/pdf/${cvId}`, `cv-${cvId}.pdf`),
 
   exportDOCX: (cvId) =>
-    request(`/export/docx/${cvId}`, {
-      method: 'GET',
-    }),
+    downloadFile(`/export/docx/${cvId}`, `cv-${cvId}.docx`),
 };

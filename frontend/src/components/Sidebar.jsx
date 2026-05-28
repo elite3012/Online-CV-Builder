@@ -1,7 +1,3 @@
-{
-  /*  SIDEBAR MENU */
-}
-import React from 'react';
 import {
   Box,
   Typography,
@@ -15,7 +11,6 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ArticleIcon from '@mui/icons-material/Article';
-import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
@@ -27,15 +22,14 @@ export default function Sidebar({ currentView, setCurrentView }) {
 
   const handleLogout = async (e) => {
     e.preventDefault();
-    console.log('Logging out');
 
     try {
-      const message = await apiService.logout();
-      navigate('/login');
-    } catch (err) {
-      console.log(err);
+      await apiService.logout();
+    } finally {
+      navigate('/login', { replace: true });
     }
   };
+
   return (
     <Box
       sx={{
@@ -65,7 +59,7 @@ export default function Sidebar({ currentView, setCurrentView }) {
           variant="h6"
           fontWeight="bold"
           sx={{
-            fontFamily: 'Helvetica1c7c54, sans-serif',
+            fontFamily: 'Helvetica, sans-serif',
             letterSpacing: '-0.5px',
           }}
         >

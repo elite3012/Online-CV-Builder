@@ -13,10 +13,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  Grid,
-  Card,
-  CardActionArea,
-  CardContent,
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
@@ -324,6 +320,11 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   formDataRef.current = formData;
   cvTitleRef.current = cvTitle;
   currentTemplateRef.current = currentTemplate;
+  const restoreSaveStatus = () => {
+    setSaveStatus(
+      changeSeqRef.current === lastSavedSeqRef.current ? 'Saved' : 'Unsaved',
+    );
+  };
 
   const handleDownloadPDF = async () => {
     const element = componentRef.current;
@@ -334,12 +335,11 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
 
     const tempContainer = document.createElement('div');
     tempContainer.style.position = 'absolute';
-    tempContainer.style.left = '-9999px'; // Đẩy ra xa màn hình
+    tempContainer.style.left = '-9999px';
     tempContainer.style.top = '0';
-
     tempContainer.style.width = '794px';
     tempContainer.style.height = '1123px';
-    tempContainer.style.overflow = 'hidden'; // Cắt bớt phần thừa nếu có
+    tempContainer.style.overflow = 'hidden';
     document.body.appendChild(tempContainer);
 
     hiddenBox.style.display = 'block';
@@ -347,25 +347,21 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
 
     try {
       const canvas = await html2canvas(element, {
-        scale: 2, // retina quality
+        scale: 2,
         useCORS: true,
         logging: false,
-        width: 794, // Chụp đúng chiều rộng A4
-        height: 1123, // Chụp đúng chiều cao A4
+        width: 794,
+        height: 1123,
       });
 
       const imgData = canvas.toDataURL('image/png');
-
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${cvTitle.replace(/\s+/g, '_')}.pdf`);
-
-      setSaveStatus(
-        changeSeqRef.current === lastSavedSeqRef.current ? 'Saved' : 'Unsaved',
-      );
+      restoreSaveStatus();
     } catch (err) {
       console.error('Export error:', err);
       setSaveStatus('Error');
@@ -373,6 +369,38 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       hiddenBox.appendChild(element);
       hiddenBox.style.display = 'none';
       document.body.removeChild(tempContainer);
+    }
+  };
+
+  const handleDownloadDocx = async () => {
+    if (isSavingRef.current) {
+      window.alert('Please wait for autosave to finish, then try exporting again.');
+      return;
+    }
+
+    const validationMessage = getAutosaveValidationMessage();
+    if (validationMessage) {
+      setSaveStatus('Invalid');
+      window.alert(validationMessage);
+      return;
+    }
+
+    setSaveStatus('Exporting...');
+
+    try {
+      if (!cvIdRef.current || changeSeqRef.current !== lastSavedSeqRef.current) {
+        await doAutosave();
+      }
+
+      if (!cvIdRef.current) {
+        throw new Error('The resume must be saved before DOCX export is available.');
+      }
+
+      await apiService.exportDOCX(cvIdRef.current);
+      restoreSaveStatus();
+    } catch (err) {
+      console.error('DOCX export error:', err);
+      setSaveStatus('Error');
     }
   };
 
@@ -420,6 +448,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
 
     const saveSeq = changeSeqRef.current;
     let saveSucceeded = false;
+    let shouldReschedule = false;
     const controller = new AbortController();
     abortRef.current = controller;
     isSavingRef.current = true;
@@ -463,17 +492,19 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       isSavingRef.current = false;
       if (abortRef.current === controller) abortRef.current = null;
 
-      if (!saveSucceeded) return;
-
-      if (pendingAutosaveRef.current || changeSeqRef.current !== saveSeq) {
+      if (saveSucceeded
+        && (pendingAutosaveRef.current || changeSeqRef.current !== saveSeq)) {
         pendingAutosaveRef.current = false;
         setSaveStatus('Unsaved');
-        scheduleAutosave();
-        return;
+        shouldReschedule = true;
+      } else if (saveSucceeded) {
+        lastSavedSeqRef.current = saveSeq;
+        setSaveStatus('Saved');
       }
+    }
 
-      lastSavedSeqRef.current = saveSeq;
-      setSaveStatus('Saved');
+    if (shouldReschedule) {
+      scheduleAutosave();
     }
   };
   const handleBack = () => (propOnBack ? propOnBack() : navigate(-1));
@@ -683,7 +714,8 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
         templateName={currentTemplate?.name}
         saveStatus={saveStatus}
         onPreview={() => setIsPreviewOpen(true)}
-        onExport={handleDownloadPDF}
+        onExportPdf={handleDownloadPDF}
+        onExportDocx={handleDownloadDocx}
         onChangeTemplate={() => setIsTemplateModalOpen(true)}
       />
 
@@ -1203,7 +1235,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       <Dialog
         open={isTemplateModalOpen}
         onClose={() => setIsTemplateModalOpen(false)}
-        maxWidth="lg" // Chỉnh to ra một chút để chứa được các thẻ
+        maxWidth="lg"
         fullWidth
       >
         <DialogTitle
@@ -1220,7 +1252,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, 250px)', // Tự động căn chỉnh bằng kích thước TemplateCard
+              gridTemplateColumns: 'repeat(auto-fit, 250px)',
               gap: 4,
               justifyContent: 'center',
               mx: 'auto',
@@ -1229,15 +1261,12 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
           >
             {templates.map((item) => (
               <Box key={item.id} sx={{ height: '450px' }}>
-                {' '}
-                
                 <TemplateCard
                   item={item}
-                  onPreview={() => {}} // Preview đã được xử lý ngầm bên trong TemplateCard rồi
                   onUse={() => {
-                    setCurrentTemplate({ name: item.name }); // Cập nhật template mới
-                    markDirty(); // Kích hoạt trạng thái chưa lưu
-                    setIsTemplateModalOpen(false); // Đóng Modal
+                    setCurrentTemplate({ name: item.name });
+                    markDirty();
+                    setIsTemplateModalOpen(false);
                   }}
                 />
               </Box>
