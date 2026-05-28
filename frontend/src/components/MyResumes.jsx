@@ -46,7 +46,11 @@ export default function MyResumes({ setCurrentView, searchQuery = '' }) {
         const mapped = data.map(mapCvFromApi);
         setResumeList(mapped);
       })
-      .catch(() => {
+      .catch((error) => {
+        if (apiService.isUnauthorizedError(error)) {
+          return;
+        }
+
         console.error('Failed to load resumes.');
       });
   }, []);

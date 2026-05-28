@@ -20,6 +20,10 @@ const API_BASE_URL = resolveApiBaseUrl();
 const TOKEN_KEY = 'token';
 const USER_KEY = 'authUser';
 
+function createUnauthorizedError(message = 'Please log in to continue.') {
+  return new Error(JSON.stringify({ status: 401, message }));
+}
+
 function decodeJwtPayload(token) {
   try {
     const payload = token.split('.')[1];
@@ -84,6 +88,24 @@ function handleAuthFailure() {
   redirectToLogin();
 }
 
+function parseErrorPayload(error) {
+  if (!error) return {};
+
+  if (typeof error === 'string') {
+    try {
+      return JSON.parse(error);
+    } catch {
+      return { message: error };
+    }
+  }
+
+  try {
+    return JSON.parse(error.message);
+  } catch {
+    return { message: error.message || 'Request failed.' };
+  }
+}
+
 function extractFilename(disposition, fallbackName) {
   const match = disposition?.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
   if (!match?.[1]) {
@@ -98,13 +120,18 @@ async function downloadFile(path, fallbackName) {
   const isPublicAuthRequest =
     path === '/auth/login' || path === '/auth/register' || path === '/auth/logout';
 
+  if (!token && !isPublicAuthRequest) {
+    redirectToLogin();
+    throw createUnauthorizedError();
+  }
+
   if (token && isTokenExpired(token)) {
     clearAuthSession();
     token = null;
 
     if (!isPublicAuthRequest) {
       redirectToLogin();
-      throw new Error(JSON.stringify({ message: 'Your session has expired. Please log in again.' }));
+      throw createUnauthorizedError('Your session has expired. Please log in again.');
     }
   }
 
@@ -118,6 +145,7 @@ async function downloadFile(path, fallbackName) {
 
     if (response.status === 401) {
       handleAuthFailure();
+      throw createUnauthorizedError('Your session is no longer valid. Please log in again.');
     }
 
     throw new Error(errorText || JSON.stringify({ message: `HTTP error ${response.status}` }));
@@ -147,13 +175,18 @@ async function request(path, options = {}) {
   const isFormDataRequest =
     typeof FormData !== 'undefined' && options.body instanceof FormData;
 
+  if (!token && !isPublicAuthRequest) {
+    redirectToLogin();
+    throw createUnauthorizedError();
+  }
+
   if (token && isTokenExpired(token)) {
     clearAuthSession();
     token = null;
 
     if (!isPublicAuthRequest) {
       redirectToLogin();
-      throw new Error(JSON.stringify({ message: 'Your session has expired. Please log in again.' }));
+      throw createUnauthorizedError('Your session has expired. Please log in again.');
     }
   }
 
@@ -176,6 +209,7 @@ async function request(path, options = {}) {
 
     if (response.status === 401) {
       handleAuthFailure();
+      throw createUnauthorizedError('Your session is no longer valid. Please log in again.');
     }
 
     throw new Error(errorText || JSON.stringify({ message: `HTTP error ${response.status}` }));
@@ -191,6 +225,8 @@ async function request(path, options = {}) {
 
 export const apiService = {
   isTokenExpired,
+  isUnauthorizedError: (error) => Number(parseErrorPayload(error).status) === 401,
+  parseErrorPayload,
   getStoredUser,
   saveAuthSession,
   clearAuthSession,

@@ -145,7 +145,7 @@ export default function ATSChecker() {
           setSelectedCvId(String(mapped[0].id));
         }
       } catch (err) {
-        if (active) {
+        if (active && !apiService.isUnauthorizedError(err)) {
           setCvListError("Unable to load your resumes. Please try again.");
         }
       } finally {

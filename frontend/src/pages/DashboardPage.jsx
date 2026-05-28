@@ -51,8 +51,14 @@ export default function Dashboard() {
         localStorage.setItem("authUser", JSON.stringify(nextUser));
         setAuthUser(nextUser);
       })
-      .catch(() => {
-        if (active) setAuthUser(apiService.getStoredUser());
+      .catch((error) => {
+        if (!active) return;
+        if (apiService.isUnauthorizedError(error)) {
+          setAuthUser(null);
+          return;
+        }
+
+        setAuthUser(apiService.getStoredUser());
       });
 
     return () => {

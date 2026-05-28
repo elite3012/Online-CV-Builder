@@ -69,7 +69,7 @@ export default function Settings({ user, onUserChange }) {
         }));
         if (onUserChange) onUserChange(nextUser);
       } catch (err) {
-        if (active) {
+        if (active && !apiService.isUnauthorizedError(err)) {
           showStatus(getApiErrorMessage(err, 'Unable to load profile.'), 'error');
         }
       } finally {
