@@ -1,22 +1,24 @@
 package com.cvbuilder.service;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -49,7 +51,6 @@ public class CVImportService {
     @Value("${ai.service.importTimeoutMs:20000}")
     private int importTimeoutMs;
 
-    private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ImportedCvResult importCv(MultipartFile file, Long templateId, String title, String userEmail) {
@@ -79,22 +80,38 @@ public class CVImportService {
 
     private ParsedImportPayload requestParsedCv(MultipartFile file) {
         try {
-            String boundary = "----cvbuilder-import-" + UUID.randomUUID();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(aiServiceUrl + "/import-cv"))
-                    .timeout(Duration.ofMillis(importTimeoutMs))
-                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                    .POST(buildMultipartBody(file, boundary))
-                    .build();
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, extractErrorMessage(response.body()));
+            HttpHeaders fileHeaders = new HttpHeaders();
+            fileHeaders.setContentType(resolveMediaType(file.getContentType()));
+
+            ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return sanitizeFilename(file.getOriginalFilename());
+                }
+            };
+
+            MultiValueMap<String, Object> requestBody = new LinkedMultiValueMap<>();
+            requestBody.add("file", new HttpEntity<>(fileResource, fileHeaders));
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(requestBody, requestHeaders);
+            ResponseEntity<String> response = buildImportRestTemplate()
+                    .postForEntity(aiServiceUrl + "/import-cv", requestEntity, String.class);
+
+            int statusCode = response.getStatusCode().value();
+            if (statusCode < 200 || statusCode >= 300) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, extractErrorMessage(response.getBody()));
             }
 
-            return objectMapper.readValue(response.body(), ParsedImportPayload.class);
+            return objectMapper.readValue(response.getBody(), ParsedImportPayload.class);
         } catch (ResponseStatusException exception) {
             throw exception;
+        } catch (RestClientException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "The AI import service could not be reached right now.");
         } catch (Exception exception) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
@@ -102,21 +119,23 @@ public class CVImportService {
         }
     }
 
-    private HttpRequest.BodyPublisher buildMultipartBody(MultipartFile file, String boundary) throws IOException {
-        String filename = sanitizeFilename(file.getOriginalFilename());
-        String contentType = file.getContentType() == null || file.getContentType().isBlank()
-                ? "application/octet-stream"
-                : file.getContentType();
+    private RestTemplate buildImportRestTemplate() {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(importTimeoutMs);
+        requestFactory.setReadTimeout(importTimeoutMs);
+        return new RestTemplate(requestFactory);
+    }
 
-        List<byte[]> bodyParts = new ArrayList<>();
-        bodyParts.add(("--" + boundary + "\r\n").getBytes(StandardCharsets.UTF_8));
-        bodyParts.add(("Content-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\n")
-                .getBytes(StandardCharsets.UTF_8));
-        bodyParts.add(("Content-Type: " + contentType + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
-        bodyParts.add(file.getBytes());
-        bodyParts.add("\r\n".getBytes(StandardCharsets.UTF_8));
-        bodyParts.add(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
-        return HttpRequest.BodyPublishers.ofByteArrays(bodyParts);
+    private MediaType resolveMediaType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+
+        try {
+            return MediaType.parseMediaType(contentType);
+        } catch (Exception ignored) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
     }
 
     private UpdateCVRequest buildUpdateRequest(String title, ParsedImportPayload parsedPayload) {
