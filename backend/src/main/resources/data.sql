@@ -1,3 +1,9 @@
+-- Keep long-form resume text in TEXT columns so AI imports and editor content do not fail at 255 characters.
+ALTER TABLE "cv" ALTER COLUMN "summary" TYPE TEXT;
+ALTER TABLE "education" ALTER COLUMN "description" TYPE TEXT;
+ALTER TABLE "experience" ALTER COLUMN "description" TYPE TEXT;
+ALTER TABLE "project" ALTER COLUMN "description" TYPE TEXT;
+
 -- Seed templates on every application startup.
 -- IDs must match frontend/src/data/templates.js because the frontend sends these IDs when creating a CV.
 INSERT INTO "template" ("template_id", "template_name") VALUES

@@ -75,11 +75,16 @@ class CVControllerSerializationTests {
     void updateCvKeepsNestedSectionsSerializable() throws Exception {
         TestContext context = seedUserAndTemplate("update-user@example.com");
         CV createdCv = cvService.createCV(context.templateId(), "Imported Draft", context.email());
+        String longSummary = "Built semantic matching workflows. ".repeat(12).trim();
+        String longEducationDescription = "Designed AI-powered resume import and review flows with clear documentation. "
+                .repeat(8).trim();
+        String longProjectDescription = "Integrated frontend, backend, and ML services into a recruiter-facing product experience. "
+                .repeat(6).trim();
 
         String requestBody = """
                 {
                   "title": "Imported Draft",
-                  "summary": "Built an AI-assisted resume workflow.",
+                  "summary": "%s",
                   "personalInformation": {
                     "fullName": "Update User",
                     "jobTitle": "ML Engineer",
@@ -93,7 +98,7 @@ class CVControllerSerializationTests {
                       "degree": "Bachelor",
                       "startDate": "2026-05-13T00:00:00",
                       "endDate": "2026-05-20T00:00:00",
-                      "description": "Goat"
+                      "description": "%s"
                     }
                   ],
                   "experiences": [],
@@ -102,7 +107,7 @@ class CVControllerSerializationTests {
                       "projectName": "ATS Builder",
                       "role": "Lead Developer",
                       "link": "https://example.com",
-                      "description": "Built semantic CV tooling."
+                      "description": "%s"
                     }
                   ],
                   "certificates": [],
@@ -112,7 +117,7 @@ class CVControllerSerializationTests {
                     }
                   ]
                 }
-                """;
+                """.formatted(longSummary, longEducationDescription, longProjectDescription);
 
         mockMvc.perform(put("/api/cv/{id}", createdCv.getId())
                         .with(csrf())
@@ -120,8 +125,10 @@ class CVControllerSerializationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary").value(longSummary))
                 .andExpect(jsonPath("$.personalInformation.fullName").value("Update User"))
-                .andExpect(jsonPath("$.educations[0].school").value("HCMIU"))
+                .andExpect(jsonPath("$.educations[0].description").value(longEducationDescription))
+                .andExpect(jsonPath("$.projects[0].description").value(longProjectDescription))
                 .andExpect(jsonPath("$.skills[0].skillName").value("Python"))
                 .andExpect(jsonPath("$.user").doesNotExist());
     }
