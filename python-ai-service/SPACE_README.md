@@ -5,7 +5,7 @@ colorFrom: blue
 colorTo: indigo
 sdk: docker
 app_port: 8000
-short_description: Resume JD matching with embeddings, evidence, and traces.
+short_description: Resume JD matching with embeddings, evidence, import parsing, and traces.
 license: mit
 models:
   - sentence-transformers/all-MiniLM-L6-v2
@@ -22,9 +22,11 @@ This Docker Space exposes the AI analysis layer of the Online CV Builder project
 - `GET /health`
 - `GET /engines`
 - `POST /analyze`
+- `POST /import-cv`
 - `GET /traces/{trace_id}`
 
 ## Notes
 
-- The Space is intended for the AI service only, not the full multi-container product stack.
-- Sentence-transformers is used when available; TF-IDF remains available as a lightweight fallback.
+- This Space is meant for the AI service only, not the full multi-container product stack.
+- Sentence-transformers is used when available, while TF-IDF remains available as a lightweight fallback.
+- The import endpoint parses text-based resume files into structured resume sections for the main application.
