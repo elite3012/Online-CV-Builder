@@ -13,6 +13,37 @@ The goal was not only to let users type a resume and export a PDF. I wanted one 
 
 At a technical level, this project combines a React frontend, a Spring Boot backend, PostgreSQL, and a separate Python AI service. The result is a system that feels much closer to applied AI product engineering than a classroom demo.
 
+## Deploy on Render
+
+The primary deployment target for this project is Render.
+
+This repository already includes a ready-to-use [`render.yaml`](render.yaml) blueprint for the full stack:
+
+- `cv-builder-frontend` as a static site
+- `cv-builder-backend` as a Docker web service
+- `cv-builder-ai-service` as a Docker web service
+- `cv-builder-db` as a managed Postgres database
+
+### Quick deploy
+
+1. Push this repository to GitHub.
+2. Open the [Render Dashboard](https://dashboard.render.com/).
+3. Choose `New` -> `Blueprint`.
+4. Connect this repository.
+5. Confirm Render detects [`render.yaml`](render.yaml).
+6. Apply the blueprint and wait for the services to finish deploying.
+
+After deploy, verify:
+
+- frontend loads successfully
+- backend health is available at `/api/health`
+- AI service health is available at `/health`
+- register/login works
+- create or import a CV works
+- ATS analysis and JD matching both run
+
+The detailed deployment guide lives in [`DEPLOY_TO_RENDER.md`](DEPLOY_TO_RENDER.md).
+
 ## Why I built it this way
 
 I care about AI projects that are useful, inspectable, and deployable.
@@ -182,9 +213,8 @@ If someone is reviewing this project to understand how I work, these are the ski
 
 ### Tooling and deployment
 
-- Docker Compose
 - Render blueprint via [`render.yaml`](render.yaml)
-- Hugging Face Space support for the AI service via [`python-ai-service/DEPLOY_TO_HF.md`](python-ai-service/DEPLOY_TO_HF.md)
+- Docker Compose for local development
 - H2 test profile for backend tests
 
 ## Repository structure
@@ -220,9 +250,11 @@ If someone is reviewing this project to understand how I work, these are the ski
 |-- render.yaml
 ```
 
-## Quick start with Docker
+## Local development
 
-If you want the fastest path to a working stack, use Docker Compose:
+Render is the main deployment path for this project.
+
+If you want to run the full stack locally for development, use Docker Compose:
 
 ```bash
 docker compose up --build
@@ -235,7 +267,7 @@ Services:
 - AI service: `http://localhost:8000`
 - PostgreSQL: `localhost:5432`
 
-This is the easiest way to run the full product as intended.
+This is the easiest local way to run the full product as intended.
 
 ## Manual local setup
 
@@ -313,25 +345,15 @@ python evals/run_eval.py
 
 The eval harness is intentionally lightweight, but it still helps prevent regressions in ATS and matching behavior.
 
-## Deployment
+## Render notes
 
-### Full stack on Render
+- The frontend is deployed as a static site, not a web service.
+- The backend reads its database connection from Render Postgres.
+- The backend talks to the AI service through the AI service public URL.
+- Free instances may cold-start, so the first AI request can be slower.
+- The first embedding-based semantic request can take longer because the model may need to warm up.
 
-Use the root [`render.yaml`](render.yaml) blueprint and follow [`DEPLOY_TO_RENDER.md`](DEPLOY_TO_RENDER.md).
-
-This deploys:
-
-- frontend static site
-- Spring Boot backend
-- Python AI service
-- managed Postgres database
-
-### AI service only on Hugging Face Spaces
-
-If you only want to showcase the AI layer, the `python-ai-service/` folder can be deployed separately:
-
-- [`python-ai-service/SPACE_README.md`](python-ai-service/SPACE_README.md)
-- [`python-ai-service/DEPLOY_TO_HF.md`](python-ai-service/DEPLOY_TO_HF.md)
+If you need the exact step-by-step deployment flow, use [`DEPLOY_TO_RENDER.md`](DEPLOY_TO_RENDER.md).
 
 ## Honest limitations
 
