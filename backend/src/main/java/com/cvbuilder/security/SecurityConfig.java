@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
                         // Keep health and auth endpoints public for platform checks and login flows.
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .anyRequest().authenticated())

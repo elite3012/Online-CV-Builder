@@ -43,21 +43,27 @@ public class CVService {
         cv.setCreatedAt(LocalDateTime.now());
         cv.setUpdatedAt(LocalDateTime.now());
 
-        return cvRepository.save(cv);
+        return prepareForResponse(cvRepository.save(cv));
     }
 
+    @Transactional(readOnly = true)
     public List<CV> getAllCVsForUser(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return cvRepository.findByUserId(user.getId());
+        return cvRepository.findByUserId(user.getId()).stream()
+                .map(this::prepareForResponse)
+                .toList();
     }
 
+    @Transactional(readOnly = true)
     public CV getCVByIdAndOwner(Long cvId, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return cvRepository.findByIdAndUserId(cvId, user.getId())
+        CV cv = cvRepository.findByIdAndUserId(cvId, user.getId())
                 .orElseThrow(() -> new RuntimeException("CV not found or unauthorized access"));
+
+        return prepareForResponse(cv);
     }
 
     @Transactional
@@ -126,7 +132,7 @@ public class CVService {
         }
 
         cv.setUpdatedAt(LocalDateTime.now());
-        return cvRepository.save(cv);
+        return prepareForResponse(cvRepository.save(cv));
     }
 
     private void updatePersonalInformation(CV cv, PersonalInformation requestInfo) {
@@ -152,5 +158,23 @@ public class CVService {
     public void deleteCV(Long cvId, String userEmail) {
         CV cv = getCVByIdAndOwner(cvId, userEmail);
         cvRepository.delete(cv);
+    }
+
+    private CV prepareForResponse(CV cv) {
+        if (cv.getTemplate() != null) {
+            cv.getTemplate().getTemplateName();
+        }
+
+        if (cv.getPersonalInformation() != null) {
+            cv.getPersonalInformation().getFullName();
+        }
+
+        cv.getEducations().size();
+        cv.getExperiences().size();
+        cv.getProjects().size();
+        cv.getCertificates().size();
+        cv.getSkills().size();
+
+        return cv;
     }
 }
