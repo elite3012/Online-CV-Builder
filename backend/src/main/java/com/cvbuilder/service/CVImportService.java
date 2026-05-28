@@ -133,14 +133,22 @@ public class CVImportService {
     }
 
     private PersonalInformation buildPersonalInformation(ParsedImportPayload parsedPayload) {
-        PersonalInformation info = new PersonalInformation();
         ParsedPersonalInformation source = parsedPayload.personalInformation == null
                 ? new ParsedPersonalInformation()
                 : parsedPayload.personalInformation;
 
-        info.setFullName(sanitize(source.fullName));
-        info.setJobTitle(resolveJobTitle(source.jobTitle, parsedPayload.detectedRole));
-        info.setEmail(sanitize(source.email));
+        String fullName = sanitize(source.fullName);
+        String jobTitle = resolveJobTitle(source.jobTitle, parsedPayload.detectedRole);
+        String email = sanitize(source.email);
+
+        if (fullName.isBlank() || jobTitle.isBlank() || email.isBlank()) {
+            return null;
+        }
+
+        PersonalInformation info = new PersonalInformation();
+        info.setFullName(fullName);
+        info.setJobTitle(jobTitle);
+        info.setEmail(email);
         info.setPhone(sanitize(source.phone));
         info.setLocation(sanitize(source.location));
         info.setLinkedIn(sanitize(source.linkedIn));
