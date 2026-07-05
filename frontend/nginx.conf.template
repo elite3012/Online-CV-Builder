@@ -8,7 +8,7 @@ server {
 
   location /api/ {
     set $backend_upstream http://${BACKEND_HOSTPORT};
-    proxy_pass $backend_upstream/api/;
+    proxy_pass $backend_upstream$request_uri;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
