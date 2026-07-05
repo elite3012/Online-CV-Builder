@@ -9,29 +9,31 @@ import ElegantTemplate from "./ElegantTemplate";
 import Classic2Template from "./Classic2Template";
 import Professional2Template from "./Professional2Template";
 import Modern2Template from "./Modern2Template";
+import { normalizeTemplateData } from "./templateData";
 
 export default function CVRenderer({ templateName, data }) {
   if (!data) return null;
+  const normalizedData = normalizeTemplateData(data);
 
   switch (templateName) {
     case "Modern":
-      return <ModernTemplate data={data} />;
+      return <ModernTemplate data={normalizedData} />;
     case "Modern 2":
-      return <Modern2Template data={data} />;
+      return <Modern2Template data={normalizedData} />;
     case "Minimal":
-      return <MinimalTemplate data={data} />;
+      return <MinimalTemplate data={normalizedData} />;
     case "Classic":
-      return <ClassicTemplate data={data} />;
+      return <ClassicTemplate data={normalizedData} />;
     case "Classic 2":
-      return <Classic2Template data={data} />;
+      return <Classic2Template data={normalizedData} />;
     case "Creative":
-      return <CreativeTemplate data={data} />;
+      return <CreativeTemplate data={normalizedData} />;
     case "Professional":
-      return <ProfessionalTemplate data={data} />;
+      return <ProfessionalTemplate data={normalizedData} />;
     case "Professional 2":
-      return <Professional2Template data={data} />;
+      return <Professional2Template data={normalizedData} />;
     case "Elegant":
-      return <ElegantTemplate data={data} />;
+      return <ElegantTemplate data={normalizedData} />;
     default:
       return (
         <Box
