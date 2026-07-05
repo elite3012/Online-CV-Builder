@@ -135,7 +135,7 @@ ACHIEVEMENT_HINTS = (
 )
 
 SECTION_ALIASES = {
-    "summary": ["summary", "professional summary", "profile", "about", "objective", "additional readiness"],
+    "summary": ["summary", "professional summary", "profile", "about", "objective"],
     "skills": [
         "skills",
         "technical skills",
@@ -155,6 +155,7 @@ SECTION_ALIASES = {
         "relevant project experience",
     ],
     "certificates": ["certifications", "certificates", "licenses", "awards"],
+    "additional": ["additional readiness", "readiness", "additional information"],
 }
 
 ROLE_HINTS = (
@@ -707,10 +708,26 @@ def extract_target_role(text: str) -> str:
     return trim_to_length(match.group(1).strip(" -:/"), 120)
 
 
+def compact_profile_summary(lines: list[str], max_sentences: int = 3, max_length: int = 430) -> str:
+    text = re.sub(r"\s+", " ", " ".join(lines)).strip()
+    if not text:
+        return ""
+
+    sentences = [
+        sentence.strip()
+        for sentence in re.findall(r"[^.!?]+[.!?]+|[^.!?]+$", text)
+        if sentence.strip()
+    ]
+    if len(sentences) > 1:
+        text = " ".join(sentences[:max_sentences])
+
+    return trim_to_length(text, max_length)
+
+
 def parse_summary(sections: dict[str, list[str]], header_lines: list[str]) -> str:
     summary_lines = sections.get("summary", [])
     if summary_lines:
-        return trim_to_length(" ".join(summary_lines), 700)
+        return compact_profile_summary(summary_lines)
 
     fallback_lines = [
         line
@@ -721,7 +738,7 @@ def parse_summary(sections: dict[str, list[str]], header_lines: list[str]) -> st
         and not looks_like_location(line)
         and not looks_like_job_title(line)
     ]
-    return trim_to_length(" ".join(fallback_lines[:3]), 500)
+    return compact_profile_summary(fallback_lines[:3], max_sentences=2, max_length=360)
 
 
 def parse_skills(skill_lines: list[str], full_text: str) -> list[str]:
