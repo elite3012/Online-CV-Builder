@@ -135,11 +135,25 @@ ACHIEVEMENT_HINTS = (
 )
 
 SECTION_ALIASES = {
-    "summary": ["summary", "professional summary", "profile", "about", "objective"],
-    "skills": ["skills", "technical skills", "core skills", "competencies", "toolkit", "tech stack"],
+    "summary": ["summary", "professional summary", "profile", "about", "objective", "additional readiness"],
+    "skills": [
+        "skills",
+        "technical skills",
+        "technical fit",
+        "core skills",
+        "competencies",
+        "toolkit",
+        "tech stack",
+    ],
     "experience": ["experience", "work experience", "employment", "professional experience", "career history"],
     "education": ["education", "academic background", "academics", "qualifications"],
-    "projects": ["projects", "personal projects", "selected projects", "project experience"],
+    "projects": [
+        "projects",
+        "personal projects",
+        "selected projects",
+        "project experience",
+        "relevant project experience",
+    ],
     "certificates": ["certifications", "certificates", "licenses", "awards"],
 }
 
@@ -220,6 +234,13 @@ SKILL_LEXICON = [
     "computer vision",
     "machine learning",
     "deep learning",
+    "semantic matching",
+    "semantic search",
+    "embeddings",
+    "vector search",
+    "prompt engineering",
+    "api integration",
+    "docker compose",
     "data analysis",
     "data science",
     "power bi",
@@ -231,6 +252,10 @@ SKILL_LEXICON = [
     "flask",
     "django",
     "rest api",
+    "sqlalchemy",
+    "sqlite",
+    "streamlit",
+    "plotly",
     "microservices",
 ]
 
@@ -531,9 +556,11 @@ def parse_resume_document(text: str, filename: str) -> dict[str, Any]:
     summary = parse_summary(sections, header_lines)
     skills = parse_skills(sections.get("skills", []), text)
     experiences = parse_experiences(sections.get("experience", []))
-    educations = parse_educations(sections.get("education", []))
+    education_lines = sections.get("education", [])
+    educations = parse_educations([line for line in education_lines if not looks_like_certificate(line)])
     projects = parse_projects(sections.get("projects", []))
     certificates = parse_certificates(sections.get("certificates", []))
+    certificates = merge_certificate_items(certificates, parse_loose_certificates(education_lines))
     detected_role = (
         personal.get("jobTitle")
         or infer_role(summary, experiences, skills)
@@ -637,6 +664,7 @@ def parse_personal_information(header_lines: list[str], full_text: str) -> dict[
     email_match = EMAIL_RE.search(header_blob) or EMAIL_RE.search(full_text[:1200])
     phone_match = PHONE_RE.search(header_blob) or PHONE_RE.search(full_text[:1200])
     urls = URL_RE.findall(header_blob)
+    target_role = extract_target_role(header_blob) or extract_target_role(full_text[:1200])
 
     linked_in = ""
     website = ""
@@ -648,7 +676,7 @@ def parse_personal_information(header_lines: list[str], full_text: str) -> dict[
             website = normalized_url
 
     full_name = ""
-    job_title = ""
+    job_title = target_role
     location = ""
 
     for line in header_lines[:6]:
@@ -670,6 +698,13 @@ def parse_personal_information(header_lines: list[str], full_text: str) -> dict[
         "linkedIn": linked_in,
         "website": website,
     }
+
+
+def extract_target_role(text: str) -> str:
+    match = re.search(r"\btarget\s+role\s*:\s*([^|\n\r]+)", text or "", flags=re.IGNORECASE)
+    if not match:
+        return ""
+    return trim_to_length(match.group(1).strip(" -:/"), 120)
 
 
 def parse_summary(sections: dict[str, list[str]], header_lines: list[str]) -> str:
@@ -792,8 +827,8 @@ def parse_project_block(block: list[str]) -> dict[str, str] | None:
         return None
 
     link = next((ensure_url_scheme(match) for line in block for match in URL_RE.findall(line)), "")
-    project_name = block[0]
-    role = next((line for line in block[1:3] if not URL_RE.search(line) and len(line.split()) <= 8), "")
+    project_name, header_stack = split_project_header(block[0])
+    role = header_stack or next((line for line in block[1:3] if not URL_RE.search(line) and len(line.split()) <= 8), "")
     description = trim_to_length(
         " ".join(line for line in block[1:] if line not in {role} and not URL_RE.search(line)),
         800,
@@ -808,6 +843,16 @@ def parse_project_block(block: list[str]) -> dict[str, str] | None:
         "link": link,
         "description": description,
     }
+
+
+def split_project_header(header: str) -> tuple[str, str]:
+    cleaned_header = re.sub(r"\bgithub\b", "", header or "", flags=re.IGNORECASE).strip(" |-\t")
+    parts = [part.strip(" |-\t") for part in re.split(r"\s+\|\s+", cleaned_header) if part.strip(" |-\t")]
+    if not parts:
+        return cleaned_header, ""
+    if len(parts) == 1:
+        return parts[0], ""
+    return parts[0], trim_to_length(", ".join(parts[1:]), 180)
 
 
 def parse_certificates(lines: list[str]) -> list[dict[str, str]]:
@@ -832,6 +877,38 @@ def parse_certificates(lines: list[str]) -> list[dict[str, str]]:
     return certificates[:6]
 
 
+def parse_loose_certificates(lines: list[str]) -> list[dict[str, str]]:
+    certificates: list[dict[str, str]] = []
+    for line in lines:
+        if not looks_like_certificate(line):
+            continue
+        issue_date, _ = extract_date_range(line, include_time=True)
+        certificate_name = re.sub(r"\s+\d{4}\b.*$", "", line).strip(" -")
+        organization = ""
+        if " - " in certificate_name:
+            certificate_name, organization = [part.strip() for part in certificate_name.split(" - ", 1)]
+        certificates.append(
+            {
+                "certificateName": certificate_name,
+                "organization": organization,
+                "issueDate": issue_date,
+            }
+        )
+    return certificates[:6]
+
+
+def merge_certificate_items(left: list[dict[str, str]], right: list[dict[str, str]]) -> list[dict[str, str]]:
+    merged: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for item in [*left, *right]:
+        key = normalize_text(f"{item.get('certificateName', '')} {item.get('organization', '')}")
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        merged.append(item)
+    return merged[:6]
+
+
 def group_section_lines(lines: list[str]) -> list[list[str]]:
     blocks: list[list[str]] = []
     current: list[str] = []
@@ -853,6 +930,9 @@ def starts_new_entry(line: str, current: list[str]) -> bool:
     if contains_date_range(line) and any(contains_date_range(item) for item in current[:2]):
         return True
 
+    if current and looks_like_project_heading(line):
+        return True
+
     if len(current) >= 2 and is_probable_entry_heading(line):
         previous = current[-1]
         return contains_date_range(previous) or len(" ".join(current)) > 140
@@ -864,6 +944,8 @@ def is_probable_entry_heading(line: str) -> bool:
     lowered = line.lower()
     if identify_section_heading(line):
         return False
+    if looks_like_project_heading(line):
+        return True
     if len(line.split()) > 12:
         return False
     if contains_date_range(line):
@@ -871,6 +953,30 @@ def is_probable_entry_heading(line: str) -> bool:
     if any(token in lowered for token in (" at ", " @ ", " | ")):
         return True
     return any(hint in lowered for hint in ROLE_HINTS)
+
+
+def looks_like_project_heading(line: str) -> bool:
+    lowered = line.lower()
+    if identify_section_heading(line):
+        return False
+    if " | " not in line:
+        return False
+    if "github" in lowered:
+        return True
+    return any(
+        token in lowered
+        for token in (
+            "react",
+            "fastapi",
+            "spring",
+            "docker",
+            "pytorch",
+            "streamlit",
+            "postgresql",
+            "sqlalchemy",
+            "transformers",
+        )
+    )
 
 
 def extract_date_range(text: str, include_time: bool) -> tuple[str | None, str | None]:
@@ -1062,7 +1168,14 @@ def extract_lexicon_skills(full_text: str) -> list[str]:
 
 
 def normalize_skill_label(value: str) -> str:
-    return re.sub(r"\s+", " ", value).strip().strip(".")
+    cleaned = re.sub(r"\s+", " ", value).strip().strip(".")
+    if ":" in cleaned:
+        prefix, remainder = [part.strip() for part in cleaned.split(":", 1)]
+        if len(prefix.split()) <= 3 and remainder:
+            cleaned = remainder
+    cleaned = re.sub(r"^(?:and|or)\s+", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\b(?:foundations|concepts|basics|design)\b$", "", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip(" -/")
 
 
 def is_viable_skill(value: str) -> bool:
@@ -1071,6 +1184,8 @@ def is_viable_skill(value: str) -> bool:
     if len(value) < 2 or len(value) > 32:
         return False
     if len(value.split()) > 4:
+        return False
+    if value.lower() in {"backend", "frontend", "infra", "infrastructure", "core cs foundations"}:
         return False
     return any(character.isalpha() for character in value)
 
@@ -1118,6 +1233,14 @@ def looks_like_degree(value: str) -> bool:
     return any(
         token in lowered
         for token in ("bachelor", "master", "phd", "msc", "bs", "ba", "engineer", "diploma", "major")
+    )
+
+
+def looks_like_certificate(value: str) -> bool:
+    lowered = value.lower()
+    return any(
+        token in lowered
+        for token in ("ielts", "toefl", "toeic", "certification", "certificate", "license", "award")
     )
 
 
