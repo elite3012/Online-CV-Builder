@@ -28,6 +28,7 @@ __pycache__/
 .idea/
 *.iws
 *.log
-frontend/package-lock.json
-*.json
-*.lock
+
+# Local tool artifacts
+.github/modernize/
+.github/java-upgrade/

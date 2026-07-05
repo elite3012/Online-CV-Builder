@@ -13,36 +13,22 @@ The goal was not only to let users type a resume and export a PDF. I wanted one 
 
 At a technical level, this project combines a React frontend, a Spring Boot backend, PostgreSQL, and a separate Python AI service. The result is a system that feels much closer to applied AI product engineering than a classroom demo.
 
-## Deploy on Render
+## Run the full stack
 
-The primary deployment target for this project is Render.
+The primary way to run this project now is the provider-neutral Docker Compose setup.
 
-This repository already includes a ready-to-use [`render.yaml`](render.yaml) blueprint for the full stack:
+```bash
+docker compose up --build
+```
 
-- `cv-builder-frontend` as a static site
-- `cv-builder-backend` as a Docker web service
-- `cv-builder-ai-service` as a Docker web service
-- `cv-builder-db` as a managed Postgres database
+That starts the complete product locally:
 
-### Quick deploy
+- React frontend at `http://localhost:5173`
+- Spring Boot API at `http://localhost:8081`
+- FastAPI AI service at `http://localhost:8000`
+- PostgreSQL at `localhost:5432`
 
-1. Push this repository to GitHub.
-2. Open the [Render Dashboard](https://dashboard.render.com/).
-3. Choose `New` -> `Blueprint`.
-4. Connect this repository.
-5. Confirm Render detects [`render.yaml`](render.yaml).
-6. Apply the blueprint and wait for the services to finish deploying.
-
-After deploy, verify:
-
-- frontend loads successfully
-- backend health is available at `/api/health`
-- AI service health is available at `/health`
-- register/login works
-- create or import a CV works
-- ATS analysis and JD matching both run
-
-The detailed deployment guide lives in [`DEPLOY_TO_RENDER.md`](DEPLOY_TO_RENDER.md).
+This path is intentionally boring in the best way: every service is explicit, the network is local, and the app does not depend on a specific hosting vendor to be understandable.
 
 ## Why I built it this way
 
@@ -213,8 +199,9 @@ If someone is reviewing this project to understand how I work, these are the ski
 
 ### Tooling and deployment
 
-- Render blueprint via [`render.yaml`](render.yaml)
-- Docker Compose for local development
+- Docker Compose for the full local stack
+- Dockerfiles for provider-neutral container deployment
+- Optional Hugging Face Space packaging for the AI service demo
 - H2 test profile for backend tests
 
 ## Repository structure
@@ -247,14 +234,11 @@ If someone is reviewing this project to understand how I work, these are the ski
 |   |-- requirements.txt
 |
 |-- docker-compose.yml
-|-- render.yaml
 ```
 
 ## Local development
 
-Render is the main deployment path for this project.
-
-If you want to run the full stack locally for development, use Docker Compose:
+Use Docker Compose when you want the whole system running together:
 
 ```bash
 docker compose up --build
@@ -345,15 +329,13 @@ python evals/run_eval.py
 
 The eval harness is intentionally lightweight, but it still helps prevent regressions in ATS and matching behavior.
 
-## Render notes
+## Deployment notes
 
-- The frontend is deployed as a static site, not a web service.
-- The backend reads its database connection from Render Postgres.
-- The backend talks to the AI service through the AI service public URL.
-- Free instances may cold-start, so the first AI request can be slower.
-- The first embedding-based semantic request can take longer because the model may need to warm up.
-
-If you need the exact step-by-step deployment flow, use [`DEPLOY_TO_RENDER.md`](DEPLOY_TO_RENDER.md).
+- The Docker Compose setup is the reference environment for the full stack.
+- The backend reads database settings from `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`.
+- The backend talks to the AI service through `AI_SERVICE_URL`.
+- The frontend Docker image uses Nginx to proxy `/api` requests to the backend.
+- The AI service can also be packaged as a Hugging Face Docker Space using [`python-ai-service/DEPLOY_TO_HF.md`](python-ai-service/DEPLOY_TO_HF.md).
 
 ## Honest limitations
 
@@ -361,7 +343,7 @@ I think it is better to be clear about tradeoffs than to oversell them.
 
 - CV import is text-based and works best when the PDF or DOCX contains extractable text. It is not a full OCR pipeline for scanned resumes.
 - The frontend PDF export is template-faithful because it renders from the visual preview, while backend document exports focus more on reliable structured output than perfect visual parity.
-- The semantic layer is intentionally lightweight enough to run locally or on free-tier infrastructure. That makes it practical, but it is not pretending to be a large proprietary hiring model.
+- The semantic layer is intentionally lightweight enough to run locally or on modest infrastructure. That makes it practical, but it is not pretending to be a large proprietary hiring model.
 - The current AI evaluation harness is useful for regression checks, but it is still small and should grow over time.
 
 ## Final note

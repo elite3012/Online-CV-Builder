@@ -26,4 +26,4 @@ Upload the contents of `python-ai-service/` to a new Hugging Face Space configur
 
 ## Important limitation
 
-The free Hugging Face path is best for the AI service demo only. The full product stack depends on multiple services and a database, so the one-command local `docker-compose.yml` setup is the better way to run the whole system.
+The Hugging Face path is best for the AI service demo only. The full product stack depends on multiple services and a database, so the one-command local `docker-compose.yml` setup is the better way to run the whole system.

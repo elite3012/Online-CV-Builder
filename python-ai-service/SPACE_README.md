@@ -1,6 +1,6 @@
 ---
 title: CV Builder AI Service
-emoji: "🧠"
+emoji: AI
 colorFrom: blue
 colorTo: indigo
 sdk: docker
