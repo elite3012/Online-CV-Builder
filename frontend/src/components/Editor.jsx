@@ -1,6 +1,6 @@
 // src/components/Editor.jsx
 import { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -30,6 +30,7 @@ import {
   validateDateRange,
   validateEmail,
 } from '../utils/validation';
+import { mapCvFromApi } from '../utils/cvMappers';
 
 import { templates } from '../data/templates';
 import { TemplateCard } from './TemplateCard';
@@ -61,6 +62,7 @@ const dateInputProps = {
 export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { id: routeCvId } = useParams();
   const passedResume = location.state?.resumeToEdit;
   const importMeta = location.state?.importMeta;
   const componentRef = useRef();
@@ -71,7 +73,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const pendingAutosaveRef = useRef(false);
   const changeSeqRef = useRef(0);
   const lastSavedSeqRef = useRef(0);
-  const cvIdRef = useRef(passedResume?.id ?? null);
+  const cvIdRef = useRef(passedResume?.id ?? (routeCvId ? Number(routeCvId) : null));
   const formDataRef = useRef(null);
   const cvTitleRef = useRef(null);
   const currentTemplateRef = useRef(null);
@@ -231,6 +233,7 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [saveStatus, setSaveStatus] = useState('Saved');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   const [currentTemplate, setCurrentTemplate] = useState({
     name: passedResume?.template.templateName || propTemplate?.name || 'Modern',
@@ -280,42 +283,81 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
       date: toDateInputValue(certificate.date ?? certificate.issueDate),
     }));
 
-  const [formData, setFormData] = useState(() => {
-    if (passedResume)
+  const buildFormDataFromResume = (resume) => {
+    if (resume)
       return {
         ...defaultFormData,
-        summary: passedResume.summary ?? '',
-        skills: passedResume.skills
-          ? passedResume.skills.map((s) => s.skillName).join(', ')
+        summary: resume.summary ?? '',
+        skills: resume.skills
+          ? resume.skills.map((s) => s.skillName).join(', ')
           : defaultFormData.skills,
-        personalInfo: passedResume.personalInfo
-          ? passedResume.personalInfo
+        personalInfo: resume.personalInfo
+          ? resume.personalInfo
           : defaultFormData.personalInfo,
         education:
-          passedResume.education.length > 0
-            ? normalizeRowsForDateInputs(passedResume.education, [
+          resume.education.length > 0
+            ? normalizeRowsForDateInputs(resume.education, [
                 'startDate',
                 'endDate',
               ])
             : defaultFormData.education,
         projects:
-          passedResume.projects.length > 0
-            ? passedResume.projects
+          resume.projects.length > 0
+            ? resume.projects
             : defaultFormData.projects,
         certificates:
-          passedResume.certificates.length > 0
-            ? normalizeCertificatesForForm(passedResume.certificates)
+          resume.certificates.length > 0
+            ? normalizeCertificatesForForm(resume.certificates)
             : defaultFormData.certificates,
         experience:
-          passedResume.experience.length > 0
-            ? normalizeRowsForDateInputs(passedResume.experience, [
+          resume.experience.length > 0
+            ? normalizeRowsForDateInputs(resume.experience, [
                 'startDate',
                 'endDate',
               ])
             : defaultFormData.experience,
       };
+
     return defaultFormData;
-  });
+  };
+
+  const [formData, setFormData] = useState(() => buildFormDataFromResume(passedResume));
+
+  useEffect(() => {
+    if (passedResume || !routeCvId) return undefined;
+
+    let active = true;
+    setSaveStatus('Loading...');
+    setLoadError('');
+
+    apiService
+      .getCV(routeCvId)
+      .then((cv) => {
+        if (!active) return;
+
+        const mappedResume = mapCvFromApi(cv);
+        cvIdRef.current = mappedResume.id;
+        changeSeqRef.current = 0;
+        lastSavedSeqRef.current = 0;
+        setCvTitle(mappedResume.title || 'Untitled CV');
+        setCurrentTemplate({ name: mappedResume.templateName || 'Modern' });
+        setFormData(buildFormDataFromResume(mappedResume));
+        setSaveStatus('Saved');
+      })
+      .catch((error) => {
+        if (!active) return;
+        setSaveStatus('Error');
+        setLoadError(
+          apiService.isUnauthorizedError(error)
+            ? 'Your session expired. Please log in again.'
+            : 'Unable to load this resume. Please go back and try again.',
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [passedResume, routeCvId]);
 
   formDataRef.current = formData;
   cvTitleRef.current = cvTitle;
@@ -737,6 +779,15 @@ export default function Editor({ template: propTemplate, onBack: propOnBack }) {
             alignItems: 'center',
           }}
         >
+          {loadError && (
+            <Alert
+              severity="error"
+              sx={{ width: '100%', maxWidth: '800px', mb: 3, borderRadius: 3 }}
+            >
+              {loadError}
+            </Alert>
+          )}
+
           {importMeta && (
             <Alert
               severity="info"

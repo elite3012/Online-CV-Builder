@@ -137,7 +137,7 @@ export default function ProfessionalTemplate({ data }) {
               </Box>
               {proj.role && (
                 <Typography variant="body2" color="#333" sx={{ fontStyle: "italic", mb: 0.5, wordBreak: "break-word" }}>
-                  Role: {proj.role}
+                  {proj.role}
                 </Typography>
               )}
               {proj.desc && (

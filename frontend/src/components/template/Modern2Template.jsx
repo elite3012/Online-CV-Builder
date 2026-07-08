@@ -125,7 +125,7 @@ export default function Modern2Template({ data }) {
                       <Typography variant="subtitle1" fontWeight="bold" color="#0f172a" sx={{ wordBreak: "break-word" }}>{proj.name}</Typography>
                       {proj.link && <Typography variant="caption" sx={{ color: "#10b981", textDecoration: "underline", wordBreak: "break-word" }}>{proj.link}</Typography>}
                     </Box>
-                    {proj.role && <Typography variant="subtitle2" color="#64748b" sx={{ mb: 0.5, wordBreak: "break-word" }}>Role: {proj.role}</Typography>}
+                    {proj.role && <Typography variant="subtitle2" color="#64748b" sx={{ mb: 0.5, wordBreak: "break-word" }}>{proj.role}</Typography>}
                     {proj.desc && <Typography variant="body2" color="#475569" sx={{ lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>{proj.desc}</Typography>}
                   </Box>
                 ))}

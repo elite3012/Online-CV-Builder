@@ -110,7 +110,7 @@ export default function CreativeTemplate({ data }) {
                       )}
                     </Box>
 
-                    {proj.role && <Typography variant="subtitle2" color="#64748b" sx={{ mb: 1 }}>Role: {proj.role}</Typography>}
+                    {proj.role && <Typography variant="subtitle2" color="#64748b" sx={{ mb: 1 }}>{proj.role}</Typography>}
                     {proj.desc && <Typography variant="body2" color="#475569" sx={{ lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>{proj.desc}</Typography>}
                   </Box>
                 ))}

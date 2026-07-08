@@ -121,7 +121,7 @@ export default function ClassicTemplate({ data }) {
                   <Typography variant="subtitle1" fontWeight="bold" sx={{ wordBreak: "break-word", pr: 2 }}>{proj.name}</Typography>
                   {proj.link && <Typography variant="caption" sx={{ fontStyle: "italic", color: "#7f8c8d", wordBreak: "break-word", flexShrink: 0 }}>{proj.link}</Typography>}
                 </Box>
-                {proj.role && <Typography variant="subtitle2" sx={{ fontStyle: "italic", mb: 1, wordBreak: "break-word" }}>Role: {proj.role}</Typography>}
+                {proj.role && <Typography variant="subtitle2" sx={{ fontStyle: "italic", mb: 1, wordBreak: "break-word" }}>{proj.role}</Typography>}
                 {proj.desc && <Typography variant="body2" sx={{ lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>{proj.desc}</Typography>}
               </Box>
             ))}

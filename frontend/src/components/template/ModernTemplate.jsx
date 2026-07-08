@@ -46,11 +46,11 @@ export default function ModernTemplate({ data }) {
         {/* CONTACT */}
         <Box>
           <Typography variant="subtitle2" fontWeight="bold" sx={{ color: "#38bdf8", mb: 1, textTransform: "uppercase" }}>Contact</Typography>
-          {data.contact?.email && <Typography variant="body2" sx={{ mb: 0.5, wordBreak: "break-word" }}>📧 {data.contact.email}</Typography>}
-          {data.contact?.phone && <Typography variant="body2" sx={{ mb: 0.5 }}>📱 {data.contact.phone}</Typography>}
-          {data.contact?.address && <Typography variant="body2" sx={{ mb: 0.5, wordBreak: "break-word" }}>📍 {data.contact.address}</Typography>}
-          {data.contact?.linkedin && <Typography variant="body2" sx={{ mb: 0.5, wordBreak: "break-word" }}>🔗 {data.contact.linkedin}</Typography>}
-          {data.contact?.website && <Typography variant="body2" sx={{ wordBreak: "break-word" }}>🌐 {data.contact.website}</Typography>}
+          {data.contact?.email && <Typography variant="body2" sx={{ mb: 0.5, wordBreak: "break-word" }}>Email: {data.contact.email}</Typography>}
+          {data.contact?.phone && <Typography variant="body2" sx={{ mb: 0.5 }}>Phone: {data.contact.phone}</Typography>}
+          {data.contact?.address && <Typography variant="body2" sx={{ mb: 0.5, wordBreak: "break-word" }}>Location: {data.contact.address}</Typography>}
+          {data.contact?.linkedin && <Typography variant="body2" sx={{ mb: 0.5, wordBreak: "break-word" }}>LinkedIn: {data.contact.linkedin}</Typography>}
+          {data.contact?.website && <Typography variant="body2" sx={{ wordBreak: "break-word" }}>Website: {data.contact.website}</Typography>}
         </Box>
 
         <Divider sx={{ bgcolor: "rgba(255,255,255,0.2)" }} />
@@ -127,7 +127,7 @@ export default function ModernTemplate({ data }) {
                   <Typography variant="subtitle1" fontWeight="bold" color="#1e293b" sx={{ wordBreak: "break-word", pr: 2 }}>{proj.name}</Typography>
                   {proj.link && <Typography variant="caption" fontWeight="bold" color="#38bdf8" sx={{ textDecoration: "underline", wordBreak: "break-word", ml: 2, textAlign: 'right' }}>{proj.link}</Typography>}
                 </Box>
-                {proj.role && <Typography variant="subtitle2" color="text.primary" sx={{ mb: 1, fontStyle: "italic", wordBreak: "break-word" }}>Role: {proj.role}</Typography>}
+                {proj.role && <Typography variant="subtitle2" color="text.primary" sx={{ mb: 1, fontStyle: "italic", wordBreak: "break-word" }}>{proj.role}</Typography>}
                 {proj.desc && <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>{proj.desc}</Typography>}
               </Box>
             ))}

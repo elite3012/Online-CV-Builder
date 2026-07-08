@@ -84,7 +84,7 @@ export default function Professional2Template({ data }) {
                   <Typography variant="subtitle1" fontWeight="bold" sx={{ color: "#0A2540", wordBreak: "break-word", pr: 2 }}>{proj.name}</Typography>
                   {proj.link && <Typography variant="caption" sx={{ color: "#636B74", textDecoration: "underline", wordBreak: "break-word", flexShrink: 0 }}>{proj.link}</Typography>}
                 </Box>
-                {proj.role && <Typography variant="subtitle2" sx={{ color: "#636B74", mb: 0.5, wordBreak: "break-word" }}>Role: {proj.role}</Typography>}
+                {proj.role && <Typography variant="subtitle2" sx={{ color: "#636B74", mb: 0.5, wordBreak: "break-word" }}>{proj.role}</Typography>}
                 {proj.desc && <Typography variant="body2" sx={{ color: "#3C4257", lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>{proj.desc}</Typography>}
               </Box>
             ))}
@@ -103,11 +103,11 @@ export default function Professional2Template({ data }) {
           CONTACT INFO
         </Typography>
         <Box sx={{ mb: 4, display: "flex", flexDirection: "column", gap: 1.5 }}>
-          {data.contact?.email && <Typography variant="body2" color="#3C4257" sx={{ wordBreak: "break-word" }}>✉️ {data.contact.email}</Typography>}
-          {data.contact?.phone && <Typography variant="body2" color="#3C4257">📞 {data.contact.phone}</Typography>}
-          {data.contact?.address && <Typography variant="body2" color="#3C4257" sx={{ wordBreak: "break-word" }}>🏢 {data.contact.address}</Typography>}
-          {data.contact?.linkedin && <Typography variant="body2" color="#3C4257" sx={{ wordBreak: "break-word" }}>🔗 {data.contact.linkedin}</Typography>}
-          {data.contact?.website && <Typography variant="body2" color="#3C4257" sx={{ wordBreak: "break-word" }}>🌐 {data.contact.website}</Typography>}
+          {data.contact?.email && <Typography variant="body2" color="#3C4257" sx={{ wordBreak: "break-word" }}>Email: {data.contact.email}</Typography>}
+          {data.contact?.phone && <Typography variant="body2" color="#3C4257">Phone: {data.contact.phone}</Typography>}
+          {data.contact?.address && <Typography variant="body2" color="#3C4257" sx={{ wordBreak: "break-word" }}>Location: {data.contact.address}</Typography>}
+          {data.contact?.linkedin && <Typography variant="body2" color="#3C4257" sx={{ wordBreak: "break-word" }}>LinkedIn: {data.contact.linkedin}</Typography>}
+          {data.contact?.website && <Typography variant="body2" color="#3C4257" sx={{ wordBreak: "break-word" }}>Website: {data.contact.website}</Typography>}
         </Box>
 
         {/* EXPERTISE (SKILLS) */}

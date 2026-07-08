@@ -4,7 +4,6 @@ import { Box, Typography, Divider } from "@mui/material";
 export default function MinimalTemplate({ data }) {
   if (!data) return null;
 
-  // Lọc và gộp thông tin liên lạc, cách nhau bởi dấu " | "
   const contactItems = [
     data.contact?.email,
     data.contact?.phone,
@@ -13,12 +12,19 @@ export default function MinimalTemplate({ data }) {
     data.contact?.website
   ].filter(Boolean).join("  |  ");
 
-  // Component hỗ trợ render tiêu đề cho từng mục để code gọn và đồng nhất
   const SectionHeader = ({ title }) => (
     <Typography
-      variant="subtitle1"
       fontWeight="bold"
-      sx={{ color: "#111827", textTransform: "uppercase", letterSpacing: "1px", mb: 2 }}
+      sx={{
+        color: "#111827",
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        fontSize: "13px",
+        mb: 1.4,
+        pb: 0.45,
+        borderBottom: "1px solid #111827",
+        fontFamily: '"Times New Roman", Georgia, serif',
+      }}
     >
       {title}
     </Typography>
@@ -32,36 +38,30 @@ export default function MinimalTemplate({ data }) {
         bgcolor: "white",
         boxShadow: 3,
         mx: "auto",
-        p: 6,
-        fontFamily: "'Inter', sans-serif",
+        px: "54px",
+        py: "44px",
+        fontFamily: '"Times New Roman", Georgia, serif',
       }}
     >
-      {/* ========================================================= */}
-      {/* HEADER TẬP TRUNG                                          */}
-      {/* ========================================================= */}
-      <Box sx={{ textAlign: "center", mb: 4 }}>
-        <Typography variant="h3" fontWeight="900" sx={{ color: "#111827", letterSpacing: "-1px", mb: 1, wordBreak: "break-word" }}>
+      <Box sx={{ textAlign: "center", mb: 2.5 }}>
+        <Typography sx={{ color: "#111827", fontSize: "30px", lineHeight: 1.05, letterSpacing: "0.04em", fontWeight: 700, mb: 0.9, wordBreak: "break-word" }}>
           {data.name?.toUpperCase()}
         </Typography>
-        <Typography variant="h6" sx={{ color: "#6b7280", fontWeight: 400, mb: 2, wordBreak: "break-word" }}>
+        <Typography sx={{ color: "#4b5563", fontSize: "15px", fontWeight: 400, mb: 1, wordBreak: "break-word" }}>
           {data.title}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ display: "flex", justifyContent: "center", flexWrap: "wrap", wordBreak: "break-word" }}>
+        <Typography sx={{ color: "#4b5563", fontSize: "12px", display: "flex", justifyContent: "center", flexWrap: "wrap", wordBreak: "break-word" }}>
           {contactItems}
         </Typography>
       </Box>
 
-      <Divider sx={{ mb: 4, borderColor: "#000", borderWidth: 1 }} />
-
-      {/* ========================================================= */}
-      {/* BODY CHÍNH                                                */}
-      {/* ========================================================= */}
+      <Divider sx={{ mb: 3, borderColor: "#000", borderWidth: 1 }} />
 
       {/* SUMMARY */}
       {data.summary && (
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 3 }}>
           <SectionHeader title="Summary" />
-          <Typography variant="body2" sx={{ color: "#374151", lineHeight: 1.8, whiteSpace: "pre-line", wordBreak: "break-word", textAlign: "justify" }}>
+          <Typography sx={{ color: "#1f2937", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre-line", wordBreak: "break-word" }}>
             {data.summary}
           </Typography>
         </Box>
@@ -69,20 +69,20 @@ export default function MinimalTemplate({ data }) {
 
       {/* EXPERIENCE */}
       {data.experience && data.experience.length > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <SectionHeader title="Professional Experience" />
+        <Box sx={{ mb: 3 }}>
+          <SectionHeader title="Experience" />
           {data.experience.map((exp, idx) => (
-            <Box key={idx} sx={{ mb: 3 }}>
+            <Box key={idx} sx={{ mb: 1.8 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", mb: 0.5 }}>
-                <Typography variant="subtitle2" fontWeight="bold" color="#111827" sx={{ wordBreak: "break-word", pr: 2 }}>
-                  {exp.role} {exp.company && `@ ${exp.company}`}
+                <Typography fontWeight="bold" color="#111827" sx={{ fontSize: "13px", wordBreak: "break-word", pr: 2 }}>
+                  {[exp.role, exp.company].filter(Boolean).join(", ")}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+                <Typography color="text.secondary" sx={{ fontSize: "13px", flexShrink: 0 }}>
                   {exp.duration}
                 </Typography>
               </Box>
               {exp.desc && (
-                <Typography variant="body2" sx={{ color: "#374151", lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>
+                <Typography sx={{ color: "#1f2937", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre-line", wordBreak: "break-word" }}>
                   {exp.desc}
                 </Typography>
               )}
@@ -93,20 +93,25 @@ export default function MinimalTemplate({ data }) {
 
       {/* EDUCATION */}
       {data.education && data.education.length > 0 && (
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 3 }}>
           <SectionHeader title="Education" />
           {data.education.map((edu, idx) => (
-            <Box key={idx} sx={{ mb: 3 }}>
+            <Box key={idx} sx={{ mb: 1.8 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", mb: 0.5 }}>
-                <Typography variant="subtitle2" fontWeight="bold" color="#111827" sx={{ wordBreak: "break-word", pr: 2 }}>
-                  {edu.degree} {edu.school && `@ ${edu.school}`}
+                <Typography fontWeight="bold" color="#111827" sx={{ fontSize: "13px", wordBreak: "break-word", pr: 2 }}>
+                  {edu.school || edu.degree}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+                <Typography color="text.secondary" sx={{ fontSize: "13px", flexShrink: 0 }}>
                   {edu.duration}
                 </Typography>
               </Box>
+              {edu.school && edu.degree && (
+                <Typography sx={{ color: "#374151", fontSize: "13px", fontStyle: "italic", mb: 0.4, wordBreak: "break-word" }}>
+                  {edu.degree}
+                </Typography>
+              )}
               {edu.desc && (
-                <Typography variant="body2" sx={{ color: "#374151", lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>
+                <Typography sx={{ color: "#1f2937", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre-line", wordBreak: "break-word" }}>
                   {edu.desc}
                 </Typography>
               )}
@@ -117,22 +122,22 @@ export default function MinimalTemplate({ data }) {
 
       {/* PROJECTS */}
       {data.projects && data.projects.length > 0 && (
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 3 }}>
           <SectionHeader title="Selected Projects" />
           {data.projects.map((proj, idx) => (
-            <Box key={idx} sx={{ mb: 3 }}>
+            <Box key={idx} sx={{ mb: 1.8 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", mb: 0.5 }}>
-                <Typography variant="subtitle2" fontWeight="bold" color="#111827" sx={{ wordBreak: "break-word", pr: 2 }}>
+                <Typography fontWeight="bold" color="#111827" sx={{ fontSize: "13px", wordBreak: "break-word", pr: 2 }}>
                   {proj.name} {proj.role && `— ${proj.role}`}
                 </Typography>
                 {proj.link && (
-                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic", wordBreak: "break-word", ml: 2, textAlign: 'right' }}>
+                  <Typography color="text.secondary" sx={{ fontSize: "12px", fontStyle: "italic", wordBreak: "break-word", ml: 2, textAlign: 'right' }}>
                     {proj.link}
                   </Typography>
                 )}
               </Box>
               {proj.desc && (
-                <Typography variant="body2" sx={{ color: "#374151", lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "break-word" }}>
+                <Typography sx={{ color: "#1f2937", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre-line", wordBreak: "break-word" }}>
                   {proj.desc}
                 </Typography>
               )}
@@ -143,16 +148,16 @@ export default function MinimalTemplate({ data }) {
 
       {/* CERTIFICATES */}
       {data.certificates && data.certificates.length > 0 && (
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 3 }}>
           <SectionHeader title="Certifications" />
           {data.certificates.map((cert, idx) => (
-            <Box key={idx} sx={{ mb: 2 }}>
+            <Box key={idx} sx={{ mb: 1.2 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", mb: 0.5 }}>
-                <Typography variant="subtitle2" fontWeight="bold" color="#111827" sx={{ wordBreak: "break-word", pr: 2 }}>{cert.name}</Typography>
-                {cert.date && <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>{cert.date}</Typography>}
+                <Typography fontWeight="bold" color="#111827" sx={{ fontSize: "13px", wordBreak: "break-word", pr: 2 }}>{cert.name}</Typography>
+                {cert.date && <Typography color="text.secondary" sx={{ fontSize: "13px", flexShrink: 0 }}>{cert.date}</Typography>}
               </Box>
               {cert.organization && (
-                <Typography variant="body2" sx={{ color: "#374151", wordBreak: "break-word" }}>{cert.organization}</Typography>
+                <Typography sx={{ color: "#374151", fontSize: "13px", fontStyle: "italic", wordBreak: "break-word" }}>{cert.organization}</Typography>
               )}
             </Box>
           ))}
@@ -163,7 +168,7 @@ export default function MinimalTemplate({ data }) {
       {data.skills && data.skills.length > 0 && (
         <Box>
           <SectionHeader title="Core Competencies" />
-          <Typography variant="body2" sx={{ color: "#374151", lineHeight: 1.8, wordBreak: "break-word" }}>
+          <Typography sx={{ color: "#1f2937", fontSize: "13px", lineHeight: 1.55, wordBreak: "break-word" }}>
             {data.skills.join(" • ")}
           </Typography>
         </Box>
