@@ -1,6 +1,5 @@
 // src/App.jsx
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { GlobalStyles } from '@mui/material';
 
 // Pages
@@ -16,27 +15,6 @@ import FeaturesPage from './pages/marketing/FeaturesPage';
 // Components
 import Editor from './components/Editor';
 import ProtectedRoute from './components/ProtectedRoute';
-import { apiService } from './services/apiService';
-
-function AuthSessionWatcher() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkSession = () => {
-      const token = localStorage.getItem('token');
-      if (token && apiService.isTokenExpired(token)) {
-        apiService.clearAuthSession();
-        navigate('/login', { replace: true });
-      }
-    };
-
-    checkSession();
-    const intervalId = window.setInterval(checkSession, 15000);
-    return () => window.clearInterval(intervalId);
-  }, [navigate]);
-
-  return null;
-}
 
 export default function App() {
   return (
@@ -57,7 +35,6 @@ export default function App() {
         }}
       />
       <BrowserRouter>
-        <AuthSessionWatcher />
         <Routes>
           {/* Marketing & Support Routes */}
           <Route path="/" element={<HomePage />} />

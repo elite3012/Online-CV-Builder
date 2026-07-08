@@ -1,8 +1,13 @@
 package com.cvbuilder.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
- * Auth Response DTO - contains JWT token
+ * Auth Response DTO.
+ * The JWT is used internally to set an HttpOnly cookie and is not serialized
+ * back to the browser.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthResponse {
     private String token;
     private Long id;

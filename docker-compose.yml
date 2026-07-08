@@ -4,8 +4,8 @@ services:
     container_name: cvbuilder-db
     environment:
       POSTGRES_DB: CVBuilder
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
       - "5432:5432"
     volumes:
@@ -20,7 +20,7 @@ services:
       TRACE_DIR: /app/traces
       HF_HOME: /app/.hf-cache
     ports:
-      - "8000:8000"
+      - "${AI_SERVICE_HOST_PORT:-8001}:8000"
     volumes:
       - ai-traces:/app/traces
       - hf-cache:/app/.hf-cache
@@ -35,11 +35,16 @@ services:
     environment:
       SERVER_PORT: 8081
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/CVBuilder
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      AUTH_COOKIE_SAME_SITE: ${AUTH_COOKIE_SAME_SITE:-Strict}
       AI_SERVICE_ENABLED: "true"
       AI_SERVICE_URL: http://ai-service:8000
-      AI_SERVICE_TIMEOUT_MS: 5000
+      AI_SERVICE_TIMEOUT_MS: ${AI_SERVICE_TIMEOUT_MS:-60000}
+      AI_SERVICE_IMPORT_TIMEOUT_MS: ${AI_SERVICE_IMPORT_TIMEOUT_MS:-60000}
     ports:
       - "8081:8081"
 

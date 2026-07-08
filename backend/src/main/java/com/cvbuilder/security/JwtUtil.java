@@ -15,7 +15,10 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret:thisisasecretkeyfortestpurposesonlysochangeitinprod123456789}")
+    public static final String AUTH_COOKIE_NAME = "cvb_auth";
+    private static final String TOKEN_VERSION_CLAIM = "tokenVersion";
+
+    @Value("${jwt.secret}")
     private String secret;
 
     @Value("${jwt.expirationMs:1800000}") // Default 30 minutes
@@ -27,10 +30,11 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateToken(String email) {
+    public String generateToken(String email, int tokenVersion) {
         long now = System.currentTimeMillis();
         return Jwts.builder()
                 .setSubject(email)
+                .claim(TOKEN_VERSION_CLAIM, tokenVersion)
                 .setIssuedAt(new Date(now))
                 .setExpiration(new Date(now + jwtExpirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -59,5 +63,22 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    public int getTokenVersionFromToken(String token) {
+        Object version = Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get(TOKEN_VERSION_CLAIM);
+
+        if (version instanceof Number number) {
+            return number.intValue();
+        }
+        if (version instanceof String text) {
+            return Integer.parseInt(text);
+        }
+        return 0;
     }
 }

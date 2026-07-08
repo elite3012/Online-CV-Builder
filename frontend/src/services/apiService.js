@@ -24,32 +24,6 @@ function createUnauthorizedError(message = 'Please log in to continue.') {
   return new Error(JSON.stringify({ status: 401, message }));
 }
 
-function decodeJwtPayload(token) {
-  try {
-    const payload = token.split('.')[1];
-    const normalizedPayload = payload
-      .replace(/-/g, '+')
-      .replace(/_/g, '/')
-      .padEnd(Math.ceil(payload.length / 4) * 4, '=');
-    return JSON.parse(atob(normalizedPayload));
-  } catch {
-    return null;
-  }
-}
-
-function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-function isTokenExpired(token = getToken()) {
-  if (!token) return true;
-
-  const payload = decodeJwtPayload(token);
-  if (!payload?.exp) return false;
-
-  return payload.exp * 1000 <= Date.now();
-}
-
 function getStoredUser() {
   try {
     return JSON.parse(localStorage.getItem(USER_KEY) || 'null');
@@ -59,9 +33,9 @@ function getStoredUser() {
 }
 
 function saveAuthSession(authData) {
-  if (!authData?.token) return;
+  if (!authData) return;
 
-  localStorage.setItem(TOKEN_KEY, authData.token);
+  localStorage.removeItem(TOKEN_KEY);
   localStorage.setItem(
     USER_KEY,
     JSON.stringify({
@@ -116,28 +90,9 @@ function extractFilename(disposition, fallbackName) {
 }
 
 async function downloadFile(path, fallbackName) {
-  let token = getToken();
-  const isPublicAuthRequest =
-    path === '/auth/login' || path === '/auth/register' || path === '/auth/logout';
-
-  if (!token && !isPublicAuthRequest) {
-    redirectToLogin();
-    throw createUnauthorizedError();
-  }
-
-  if (token && isTokenExpired(token)) {
-    clearAuthSession();
-    token = null;
-
-    if (!isPublicAuthRequest) {
-      redirectToLogin();
-      throw createUnauthorizedError('Your session has expired. Please log in again.');
-    }
-  }
-
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'GET',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -169,30 +124,12 @@ async function downloadFile(path, fallbackName) {
 }
 
 async function request(path, options = {}) {
-  let token = getToken();
-  const isPublicAuthRequest =
-    path === '/auth/login' || path === '/auth/register' || path === '/auth/logout';
+  const { skipAuthRedirect = false, ...fetchOptions } = options;
   const isFormDataRequest =
-    typeof FormData !== 'undefined' && options.body instanceof FormData;
-
-  if (!token && !isPublicAuthRequest) {
-    redirectToLogin();
-    throw createUnauthorizedError();
-  }
-
-  if (token && isTokenExpired(token)) {
-    clearAuthSession();
-    token = null;
-
-    if (!isPublicAuthRequest) {
-      redirectToLogin();
-      throw createUnauthorizedError('Your session has expired. Please log in again.');
-    }
-  }
+    typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData;
 
   const headers = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers || {}),
+    ...(fetchOptions.headers || {}),
   };
 
   if (!isFormDataRequest && !headers['Content-Type']) {
@@ -200,14 +137,19 @@ async function request(path, options = {}) {
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers,
+    credentials: 'include',
   });
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '');
 
     if (response.status === 401) {
+      if (skipAuthRedirect) {
+        throw new Error(errorText || JSON.stringify({ message: 'Invalid credentials' }));
+      }
+
       handleAuthFailure();
       throw createUnauthorizedError('Your session is no longer valid. Please log in again.');
     }
@@ -224,7 +166,6 @@ async function request(path, options = {}) {
 }
 
 export const apiService = {
-  isTokenExpired,
   isUnauthorizedError: (error) => Number(parseErrorPayload(error).status) === 401,
   parseErrorPayload,
   getStoredUser,
@@ -236,12 +177,14 @@ export const apiService = {
     request('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+      skipAuthRedirect: true,
     }),
 
   register: (userData) =>
     request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
+      skipAuthRedirect: true,
     }),
 
   getCurrentUser: () =>

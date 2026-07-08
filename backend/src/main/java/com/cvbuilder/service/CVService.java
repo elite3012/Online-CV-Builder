@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cvbuilder.controller.CVController.UpdateCVRequest;
+import com.cvbuilder.exception.CvAccessDeniedException;
 import com.cvbuilder.model.CV;
 import com.cvbuilder.model.PersonalInformation;
 import com.cvbuilder.model.Template;
@@ -61,7 +62,7 @@ public class CVService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         CV cv = cvRepository.findByIdAndUserId(cvId, user.getId())
-                .orElseThrow(() -> new RuntimeException("CV not found or unauthorized access"));
+                .orElseThrow(() -> new CvAccessDeniedException("CV not found or you do not have access."));
 
         return prepareForResponse(cv);
     }

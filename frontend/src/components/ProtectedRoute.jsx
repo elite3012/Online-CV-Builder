@@ -27,15 +27,7 @@ function FullScreenAuthCheck() {
 }
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  const [authState, setAuthState] = useState(() => {
-    if (!token || apiService.isTokenExpired(token)) {
-      apiService.clearAuthSession();
-      return "unauthorized";
-    }
-
-    return "checking";
-  });
+  const [authState, setAuthState] = useState("checking");
 
   useEffect(() => {
     if (authState !== "checking") {

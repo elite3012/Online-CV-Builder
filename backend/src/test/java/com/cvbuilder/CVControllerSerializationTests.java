@@ -2,6 +2,7 @@ package com.cvbuilder;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -133,6 +134,27 @@ class CVControllerSerializationTests {
                 .andExpect(jsonPath("$.user").doesNotExist());
     }
 
+    @Test
+    void analyzeJdRejectsMissingCvIdWithoutServerError() throws Exception {
+        TestContext context = seedUserAndTemplate("ai-null-cv@example.com");
+
+        String requestBody = """
+                {
+                  "cvId": null,
+                  "jdText": "Python backend role with NLP and Docker",
+                  "engine": "auto"
+                }
+                """;
+
+        mockMvc.perform(post("/api/ai/analyze-jd")
+                        .with(csrf())
+                        .header("Authorization", bearer(context.token()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Please choose a resume and paste a job description."));
+    }
+
     private TestContext seedUserAndTemplate(String email) {
         User user = new User();
         user.setEmail(email);
@@ -144,7 +166,7 @@ class CVControllerSerializationTests {
         template.setTemplateName("Modern");
         templateRepository.save(template);
 
-        String token = jwtUtil.generateToken(email);
+        String token = jwtUtil.generateToken(email, user.getTokenVersion());
         return new TestContext(email, token, template.getId());
     }
 

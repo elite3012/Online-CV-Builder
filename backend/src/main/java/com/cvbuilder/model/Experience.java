@@ -8,7 +8,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
@@ -37,7 +36,7 @@ public class Experience {
     @Column(name = "end_date")
     private String endDate;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     public Long getId() {
