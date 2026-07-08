@@ -1,296 +1,193 @@
 # Online CV Builder
 
-Online CV Builder is a full-stack resume platform that I built to go beyond a normal CRUD portfolio app.
+Online CV Builder is a full-stack resume workspace for building, importing, editing, checking, and exporting CVs.
 
-The goal was not only to let users type a resume and export a PDF. I wanted one product that covers the whole workflow:
+I built this project as a real product flow, not as a static CRUD demo. A user can start from a blank template or upload an existing CV, turn it into structured editable data, switch templates, preview the result, run ATS or JD matching checks, and export the final resume again.
 
-- build a CV from scratch
-- import an existing resume from PDF or DOCX
-- switch templates without rewriting content
-- run ATS checks and semantic matching against a job description
-- return grounded feedback instead of vague AI scores
-- export polished resume files again when the editing is done
+The interesting part is the integration work: React for the product interface, Spring Boot for the secure business API, PostgreSQL for persistence, and a separate FastAPI service for CV parsing and NLP-style resume intelligence.
 
-At a technical level, this project combines a React frontend, a Spring Boot backend, PostgreSQL, and a separate Python AI service. The result is a system that feels much closer to applied AI product engineering than a classroom demo.
+## Real App Screenshots
 
-## Run the full stack
+These screenshots are captured from the running local app at `http://127.0.0.1:5173`. They are not mockups.
 
-The primary way to run this project now is the provider-neutral Docker Compose setup.
+### Landing Page
 
-```bash
-docker compose up --build
-```
+![Online CV Builder landing page](docs/screenshots/home-real.png)
 
-That starts the complete product locally:
+### Template Dashboard
 
-- React frontend at `http://localhost:5173`
-- Spring Boot API at `http://localhost:8081`
-- FastAPI AI service at `http://localhost:8000`
-- PostgreSQL at `localhost:5432`
+![Template dashboard](docs/screenshots/dashboard-templates-real.png)
 
-This path is intentionally boring in the best way: every service is explicit, the network is local, and the app does not depend on a specific hosting vendor to be understandable.
+### Imported Resume Collection
 
-## Why I built it this way
+![Imported resume collection](docs/screenshots/my-resumes-real.png)
 
-I care about AI projects that are useful, inspectable, and deployable.
+### Resume Preview
 
-This repository reflects that mindset:
+![Resume preview modal](docs/screenshots/preview-modal-real.png)
 
-- the product layer stays stable in Java with authentication, ownership checks, CRUD, validation, and exports
-- the AI layer lives in Python where NLP and model experimentation are faster
-- the frontend is not an afterthought; it supports editing, import, preview, template switching, and analysis in one flow
-- the analysis is traceable, with evidence snippets and trace logs instead of a magic number with no explanation
+### Editor With Imported CV Data
 
-I wanted the repo to show system thinking, not just model usage.
+![Editor with imported CV data](docs/screenshots/editor-imported-real.png)
 
-## What the product can do
+### Editor Preview
 
-### Resume workflow
+![Editor preview](docs/screenshots/editor-preview-real.png)
 
-- JWT-based registration, login, logout, profile update, and password change
-- Create resumes with structured sections:
-  - personal information
-  - summary
-  - education
-  - experience
-  - projects
-  - certificates
-  - skills
-- Live editor with autosave
-- Multiple resume templates with instant switching
-- Preview before export
-- Import CV files from `.pdf`, `.docx`, `.txt`, and `.md`
-- Export resumes to PDF and DOCX
+### Semantic JD Matching
 
-### AI workflow
+![AI semantic JD matching result](docs/screenshots/ai-match-real.png)
 
-- ATS-only mode for structure and readiness checks
-- Job-description matching mode for semantic comparison
-- Switchable engines:
-  - TF-IDF
-  - sentence-transformers
-  - auto mode
-- Keyword coverage and missing-signal detection
-- Section-level scoring and content checks
-- Grounded evidence snippets pulled from the resume
-- Actionable suggestions instead of only a final score
-- Trace logging for each analysis
-- Rule-based backend fallback if the Python AI service is unavailable
+### ATS Readiness Mode
 
-## What makes this project stronger than a typical student CV builder
+![ATS readiness check result](docs/screenshots/ats-readiness-real.png)
 
-- It is a real multi-service system, not one monolith with AI buzzwords sprinkled on top.
-- The AI feature is part of an actual user workflow: import, edit, evaluate, improve, export.
-- The system separates concerns cleanly between product backend engineering and ML/NLP iteration.
-- The analysis tries to be explainable through evidence and trace output.
-- The repository includes deployment and verification paths instead of stopping at "it works on my machine."
+## What The App Does
+
+- Register, log in, log out, update profile, and change password with HttpOnly-cookie authentication.
+- Create CVs from templates and edit structured resume sections.
+- Import an existing PDF, DOCX, TXT, or Markdown resume into editable CV data.
+- Switch templates without rewriting resume content.
+- Preview a CV before exporting.
+- Export PDF from the frontend visual template and DOCX from backend structured data.
+- Run ATS-only readiness checks.
+- Paste one full job description and let the AI pipeline extract matching signals automatically.
+- Compare a CV to a JD with sentence-transformers or TF-IDF fallback.
+- Return matched signals, missing signals, semantic score, section coverage, keyword coverage, grounded evidence, and suggestions.
+
+## Why This Project Exists
+
+I wanted a portfolio project that shows the parts of AI engineering that are easy to underestimate:
+
+- connecting AI output to a real user workflow
+- keeping the product usable when the AI service is slow or unavailable
+- preserving ownership checks and auth boundaries
+- making import/export practical instead of decorative
+- treating deployment, config, testing, and cleanup as part of the work
+
+The result is not a giant model. It is a working applied-AI product system.
 
 ## Architecture
 
 ```text
-React + Vite
-    |
-    v
-Spring Boot API
-  - auth
-  - CV CRUD
-  - validation
-  - ownership checks
+React + Vite frontend
+  - dashboard
+  - editor
+  - template previews
+  - CV import dialog
+  - AI Resume Lab
+  - browser-based PDF export
+
+Spring Boot backend
+  - auth and session invalidation
+  - CV CRUD with owner checks
   - import orchestration
-  - export
-  - AI gateway + fallback logic
-    |
-    +--> FastAPI AI service
-    |     - ATS scoring
-    |     - semantic matching
-    |     - evidence retrieval
-    |     - trace logging
-    |     - CV import parsing
-    |
-    v
+  - DOCX/PDF export endpoints
+  - AI gateway and Java fallback scoring
+  - Flyway-managed schema
+
+FastAPI AI service
+  - CV text extraction and section parsing
+  - ATS readiness analysis
+  - semantic JD matching
+  - trace logging
+  - sentence-transformers or TF-IDF engines
+
 PostgreSQL
+  - users
+  - templates
+  - CVs and nested resume sections
 ```
 
-### Why the split matters
+## Tech Stack
 
-- Spring Boot is the system of record. It handles accounts, persistence, security, business rules, and export workflows.
-- Python handles the parts where iteration speed matters most: parsing documents, NLP, vector scoring, and analysis logic.
-- This separation makes the codebase easier to reason about and closer to how AI features are often integrated into real products.
+| Layer | Tools |
+| --- | --- |
+| Frontend | React, Vite, Material UI, Framer Motion / Motion, html2canvas, jsPDF |
+| Backend | Java 17, Spring Boot, Spring Security, Spring Data JPA, Flyway |
+| Database | PostgreSQL 16 |
+| AI service | FastAPI, scikit-learn, sentence-transformers, python-docx, pypdf |
+| Local runtime | Docker Compose |
+| Tests | JUnit, MockMvc, Maven, ESLint, Vite build, Python eval scripts |
 
-## Applied AI flow
+## Run Locally With Docker
 
-When a user checks a resume against a job description, the system follows this path:
-
-1. The frontend sends the selected CV id, job description text, and analysis mode.
-2. Spring Boot validates ownership and loads the CV data.
-3. The backend converts the CV into a normalized payload for the AI service.
-4. The Python service runs one of two paths:
-   - ATS analysis for structure and completeness
-   - semantic matching for JD comparison
-5. The AI service returns:
-   - overall score
-   - ATS warnings
-   - matched skills
-   - missing skills
-   - strengths
-   - focus areas
-   - grounded evidence highlights
-   - trace id
-6. If the AI service is down or times out, Spring Boot falls back to a simpler built-in analysis so the feature still works.
-
-That fallback path matters. I did not want an "AI feature" that makes the whole product brittle.
-
-## CV import flow
-
-One of the most practical features in this repo is CV import.
-
-Instead of forcing users to rebuild everything manually, they can upload an existing resume and let the system:
-
-- extract text from PDF or DOCX
-- detect sections
-- infer likely skills and role direction
-- map content into the editable resume structure
-- suggest a starting template
-
-This turns the app from "just another editor" into a migration tool that can actually fit how people already work.
-
-## What this repository demonstrates
-
-If someone is reviewing this project to understand how I work, these are the skills I wanted to make visible:
-
-- designing end-to-end product flows, not isolated scripts
-- connecting Java backend engineering with Python AI services cleanly
-- building usable UX around AI features
-- preferring explainability and fallbacks over hype
-- treating deployment and maintainability as part of the work
-- cleaning up code paths and reducing dead weight instead of leaving "demo leftovers" everywhere
-
-## Tech stack
-
-### Frontend
-
-- React 18
-- Vite
-- Material UI
-- Framer Motion
-- html2canvas
-- jsPDF
-
-### Backend
-
-- Java 17
-- Spring Boot
-- Spring Security
-- Spring Data JPA / Hibernate
-- PostgreSQL
-- Apache POI
-- PDFBox
-
-### AI service
-
-- Python
-- FastAPI
-- scikit-learn
-- sentence-transformers
-- pypdf
-- python-docx
-- rapidfuzz
-- dateparser
-
-### Tooling and deployment
-
-- Docker Compose for the full local stack
-- Dockerfiles for provider-neutral container deployment
-- Optional Hugging Face Space packaging for the AI service demo
-- H2 test profile for backend tests
-
-## Repository structure
-
-```text
-.
-|-- backend/
-|   |-- src/main/java/com/cvbuilder/
-|   |   |-- controller/
-|   |   |-- dto/
-|   |   |-- model/
-|   |   |-- repository/
-|   |   |-- security/
-|   |   |-- service/
-|   |-- src/main/resources/
-|   |-- src/test/
-|
-|-- frontend/
-|   |-- src/
-|   |   |-- components/
-|   |   |-- data/
-|   |   |-- pages/
-|   |   |-- services/
-|   |   |-- utils/
-|
-|-- python-ai-service/
-|   |-- app/
-|   |-- evals/
-|   |-- traces/
-|   |-- requirements.txt
-|
-|-- docker-compose.yml
-```
-
-## Local development
-
-Use Docker Compose when you want the whole system running together:
+Create a local environment file:
 
 ```bash
-docker compose up --build
+cp .env.example .env
 ```
 
-Services:
+Edit `.env` before running. At minimum, set strong local values for:
 
-- frontend: `http://localhost:5173`
-- backend: `http://localhost:8081`
-- AI service: `http://localhost:8000`
-- PostgreSQL: `localhost:5432`
+```bash
+POSTGRES_PASSWORD=replace-me
+JWT_SECRET=replace-me-with-a-long-random-secret
+```
 
-This is the easiest local way to run the full product as intended.
+Start the full stack:
 
-## Manual local setup
+```bash
+docker compose up -d --build
+```
 
-### 1. Prerequisites
+Local URLs:
 
-- Node.js 18+
-- Java 17+
-- Maven 3.9+
-- Python 3.10+
-- PostgreSQL
+| Service | URL |
+| --- | --- |
+| Frontend | `http://localhost:5173` |
+| Backend API | `http://localhost:8081` |
+| AI service from host | `http://localhost:8001` |
+| AI service inside Docker | `http://ai-service:8000` |
+| PostgreSQL | `localhost:5432` |
 
-### 2. Database
+The AI service uses host port `8001` by default so it does not collide with other local ML demos that often bind `8000`.
 
-Create a PostgreSQL database named `CVBuilder`.
+Stop the stack:
 
-Defaults are already provided in [`backend/src/main/resources/application.properties`](backend/src/main/resources/application.properties), but you can override them with environment variables such as:
+```bash
+docker compose down
+```
 
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-- `AI_SERVICE_URL`
-- `JWT_SECRET`
+Reset local Docker data:
 
-### 3. Start the backend
+```bash
+docker compose down -v
+```
+
+## Environment Variables
+
+Required:
+
+| Variable | Purpose |
+| --- | --- |
+| `POSTGRES_USER` | PostgreSQL application user |
+| `POSTGRES_PASSWORD` | PostgreSQL password |
+| `JWT_SECRET` | JWT signing secret, required at startup |
+
+Common optional values:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Frontend origin whitelist |
+| `AUTH_COOKIE_SECURE` | `false` | Set `true` behind HTTPS |
+| `AUTH_COOKIE_SAME_SITE` | `Strict` | Auth cookie SameSite policy |
+| `AI_SERVICE_HOST_PORT` | `8001` | Host port for FastAPI |
+| `AI_SERVICE_TIMEOUT_MS` | `60000` | Semantic analysis timeout, tolerant of cold model startup |
+| `AI_SERVICE_IMPORT_TIMEOUT_MS` | `60000` | CV import timeout |
+
+The backend intentionally has no safe-looking production fallback for `JWT_SECRET` or database password. Missing secrets should fail fast.
+
+## Manual Development
+
+Backend:
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-### 4. Start the AI service
-
-```bash
-cd python-ai-service
-python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### 5. Start the frontend
+Frontend:
 
 ```bash
 cd frontend
@@ -298,11 +195,24 @@ npm install
 npm run dev
 ```
 
+AI service:
+
+```bash
+cd python-ai-service
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+For manual backend runs, provide the same environment variables used by Docker.
+
 ## Verification
 
-These are the checks I use to keep the project honest:
+Commands I use before considering the project healthy:
 
-### Frontend
+```bash
+cd backend
+mvn test
+```
 
 ```bash
 cd frontend
@@ -310,52 +220,143 @@ npm run lint
 npm run build
 ```
 
-### Backend
-
-```bash
-cd backend
-mvn test
-```
-
-The backend test profile uses H2, so tests do not depend on a local Postgres instance.
-
-### AI service
-
 ```bash
 cd python-ai-service
-python -m compileall app
 python evals/run_eval.py
+python -m compileall app evals
 ```
 
-The eval harness is intentionally lightweight, but it still helps prevent regressions in ATS and matching behavior.
+Docker smoke test:
 
-## Deployment notes
+```bash
+docker compose up -d --build
+curl http://127.0.0.1:5173/api/health
+curl http://127.0.0.1:8001/health
+```
 
-- The Docker Compose setup is the reference environment for the full stack.
-- The backend reads database settings from `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`.
-- The backend talks to the AI service through `AI_SERVICE_URL`.
-- The frontend Docker image uses Nginx to proxy `/api` requests to the backend.
-- The AI service can also be packaged as a Hugging Face Docker Space using [`python-ai-service/DEPLOY_TO_HF.md`](python-ai-service/DEPLOY_TO_HF.md).
+Latest real test pass covered:
 
-## Honest limitations
+- registration through the real UI
+- CV import using a real DOCX file
+- My Resumes rendering an imported CV card
+- direct editor load via `/editor/:id`
+- preview modal rendering the imported resume
+- semantic JD matching with `sentence-transformers::all-MiniLM-L6-v2`
+- ATS readiness mode
+- PDF and DOCX export endpoints
+- create, update-template, and delete CV API flow
+- logout redirect and stale-session rejection
+- CORS whitelist behavior
+- PostgreSQL schema using `TEXT` for long resume fields
 
-I think it is better to be clear about tradeoffs than to oversell them.
+## Security Notes
 
-- CV import is text-based and works best when the PDF or DOCX contains extractable text. It is not a full OCR pipeline for scanned resumes.
-- The frontend PDF export is template-faithful because it renders from the visual preview, while backend document exports focus more on reliable structured output than perfect visual parity.
-- The semantic layer is intentionally lightweight enough to run locally or on modest infrastructure. That makes it practical, but it is not pretending to be a large proprietary hiring model.
-- The current AI evaluation harness is useful for regression checks, but it is still small and should grow over time.
+The app is still a portfolio project, but the security baseline is deliberately not toy-level:
 
-## Final note
+- JWT is stored in an HttpOnly cookie, not in `localStorage`.
+- Auth responses do not serialize the raw token back to JavaScript.
+- Logout increments a per-user `tokenVersion`, invalidating older tokens.
+- Password change also rotates the session version.
+- Protected APIs require authenticated ownership checks.
+- CORS is configured from an allowed-origin whitelist, not `*`.
+- `spring.jpa.hibernate.ddl-auto` defaults to `validate`.
+- Database schema and seed templates are handled by Flyway.
+- `.env` is ignored; `.env.example` documents required variables without secrets.
 
-This project matters to me because it sits at the intersection I care about most:
+## AI Resume Intelligence
 
-- software engineering that has to survive real product flows
-- AI features that are grounded and explainable
-- developer discipline that includes cleanup, testing, deployment, and documentation
+The AI feature is designed around one simple user interaction: paste the entire job description as-is.
 
-It started as a CV builder. It became a much better representation of how I want to build applied AI systems.
+The service then extracts and compares:
 
-## License
+- role language
+- responsibilities
+- tools and frameworks
+- skills
+- seniority signals
+- evidence from summary, skills, projects, experience, and education
 
-Released under the [MIT License](LICENSE).
+The response includes:
+
+- overall score
+- semantic similarity
+- keyword coverage
+- section coverage
+- matched signals
+- missing signals
+- ATS warnings
+- suggestions
+- grounded evidence snippets
+- trace ID
+
+If the Python AI service is unavailable, the Java backend can still return a fallback analysis rather than crashing the product flow.
+
+## CV Import
+
+Import is intentionally structured, not just "dump all text into summary."
+
+The import service attempts to recover:
+
+- personal information
+- detected role
+- summary
+- education
+- experience
+- projects
+- certificates
+- skills
+- suggested template direction
+- confidence and import insights
+
+This works best with text-based PDFs and DOCX files. Scanned-image resumes need OCR, which is not currently included.
+
+## Project Structure
+
+```text
+.
+|-- backend/
+|   |-- src/main/java/com/cvbuilder/
+|   |-- src/main/resources/db/migration/
+|   |-- src/test/
+|   `-- pom.xml
+|
+|-- frontend/
+|   |-- src/components/
+|   |-- src/pages/
+|   |-- src/services/
+|   |-- src/utils/
+|   `-- package.json
+|
+|-- python-ai-service/
+|   |-- app/
+|   |-- evals/
+|   |-- traces/
+|   `-- requirements.txt
+|
+|-- docs/screenshots/
+|-- docker-compose.yml
+|-- .env.example
+`-- README.md
+```
+
+## Known Limitations
+
+- The import pipeline does not perform OCR for scanned resumes.
+- The semantic matcher is lightweight enough to run locally; it is not a proprietary hiring model and should support, not replace, human judgment.
+- First sentence-transformers analysis can be slower because the model may need to load cold.
+- The frontend bundle is currently large because the editor, animation, PDF, and template code ship together; code-splitting would be a good next hardening step.
+- Browser PDF export is visually faithful to the rendered template. Backend DOCX export is structured and reliable, but not meant to perfectly mirror every visual template.
+
+## What I Would Improve Next
+
+- Add code splitting around editor, template gallery, and AI lab.
+- Add OCR as an optional import path.
+- Add Playwright E2E tests for the browser flows now covered manually.
+- Add refresh-token rotation if this moves beyond portfolio/demo usage.
+- Add a production object store for uploaded/imported file history if file retention becomes a requirement.
+
+## Closing Note
+
+This project is built around a simple idea: a resume builder becomes much more useful when it can understand the resume it is editing.
+
+The work here is not only the UI, not only the API, and not only the AI service. The value is in making all three cooperate in one workflow that a real user can run end to end.
