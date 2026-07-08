@@ -7,7 +7,6 @@ import {
   TextField,
   CircularProgress,
   Chip,
-  MenuItem,
   ToggleButton,
   ToggleButtonGroup,
   Alert,
@@ -21,64 +20,6 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import { apiService } from "../services/apiService";
-
-const emptyJdFields = {
-  jobTitle: "",
-  company: "",
-  responsibilities: "",
-  requiredSkills: "",
-  niceToHave: "",
-  qualifications: "",
-};
-
-const fieldConfig = [
-  {
-    key: "jobTitle",
-    label: "Target Job Title",
-    placeholder: "Frontend Developer, Business Analyst, Product Manager...",
-    minRows: 1,
-  },
-  {
-    key: "company",
-    label: "Company / Industry",
-    placeholder: "Fintech, SaaS, ecommerce, consulting...",
-    minRows: 1,
-  },
-  {
-    key: "responsibilities",
-    label: "Main Responsibilities",
-    placeholder:
-      "Paste 4-8 responsibilities. Keep verbs and domain keywords from the JD.",
-    minRows: 4,
-  },
-  {
-    key: "requiredSkills",
-    label: "Required Skills",
-    placeholder:
-      "React, Spring Boot, SQL, stakeholder management, Figma, Agile...",
-    minRows: 3,
-  },
-  {
-    key: "qualifications",
-    label: "Qualifications / Experience",
-    placeholder:
-      "Bachelor degree, 3+ years experience, English communication, certifications...",
-    minRows: 3,
-  },
-  {
-    key: "niceToHave",
-    label: "Nice-to-have Keywords",
-    placeholder:
-      "Cloud, Docker, microservices, analytics, leadership, domain tools...",
-    minRows: 3,
-  },
-];
-
-const engineOptions = [
-  { value: "auto", label: "Auto" },
-  { value: "tfidf", label: "TF-IDF" },
-  { value: "sentence-transformers", label: "Sentence Transformers" },
-];
 
 function normalizeMatchingResult(payload, mode) {
   return {
@@ -126,32 +67,18 @@ function parseApiErrorMessage(error) {
   return error.message;
 }
 
-function buildStructuredJd(fields) {
-  return [
-    `Job Title: ${fields.jobTitle}`,
-    `Company / Industry: ${fields.company}`,
-    `Responsibilities: ${fields.responsibilities}`,
-    `Required Skills: ${fields.requiredSkills}`,
-    `Qualifications: ${fields.qualifications}`,
-    `Nice-to-have: ${fields.niceToHave}`,
-  ]
-    .filter((line) => line.split(":").slice(1).join(":").trim())
-    .join("\n\n");
-}
-
 export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
   const [mode, setMode] = useState("match");
-  const [jdFields, setJdFields] = useState(emptyJdFields);
-  const [selectedEngine, setSelectedEngine] = useState("auto");
+  const [jdText, setJdText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
 
-  const structuredJd = useMemo(() => buildStructuredJd(jdFields), [jdFields]);
-  const hasStructuredInput = structuredJd.trim().length > 0;
+  const normalizedJdText = useMemo(() => jdText.trim(), [jdText]);
+  const hasJdInput = normalizedJdText.length > 0;
 
   const handleClearJD = () => {
-    setJdFields(emptyJdFields);
+    setJdText("");
     setError("");
     setResult(null);
     if (onAnalyzeResult) {
@@ -159,8 +86,8 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
     }
   };
 
-  const handleFieldChange = (field, value) => {
-    setJdFields((prev) => ({ ...prev, [field]: value }));
+  const handleJdTextChange = (value) => {
+    setJdText(value);
     if (error) setError("");
   };
 
@@ -170,8 +97,8 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
       return;
     }
 
-    if (mode === "match" && !hasStructuredInput) {
-      setError("Fill in at least one Job Description field before matching.");
+    if (mode === "match" && !hasJdInput) {
+      setError("Paste the full job description before matching.");
       return;
     }
 
@@ -181,8 +108,8 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
     try {
       const response =
         mode === "ats"
-          ? await apiService.analyzeJD(selectedCvId, "", { atsOnly: true, engine: selectedEngine })
-          : await apiService.analyzeJD(selectedCvId, structuredJd, { engine: selectedEngine });
+          ? await apiService.analyzeJD(selectedCvId, "", { atsOnly: true, engine: "auto" })
+          : await apiService.analyzeJD(selectedCvId, normalizedJdText, { engine: "auto" });
       const normalizedResult = normalizeMatchingResult(response, mode);
 
       setResult(normalizedResult);
@@ -293,106 +220,49 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
         </Alert>
 
         {!isAtsOnly && (
-          <Box sx={{ mb: 2, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
-            <TextField
-              select
-              size="small"
-              label="Analysis Engine"
-              value={selectedEngine}
-              onChange={(event) => setSelectedEngine(event.target.value)}
-              disabled={loading}
-              sx={{
-                minWidth: { xs: "100%", sm: 250 },
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 3,
-                  color: "white",
-                  bgcolor: "rgba(0,0,0,0.2)",
-                  "& fieldset": {
-                    borderColor: "rgba(255,255,255,0.2)",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "rgba(255,255,255,0.5)",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#52b0c3",
-                  },
-                },
-                "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.68)" },
-                "& .MuiInputLabel-root.Mui-focused": { color: "#52b0c3" },
-                "& .MuiSvgIcon-root": { color: "white" },
-              }}
-            >
-              {engineOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.62)" }}>
-              `Auto` prefers sentence-transformers when available and falls back to TF-IDF.
-            </Typography>
-          </Box>
-        )}
-
-        {!isAtsOnly && (
-          <Box
+          <TextField
+            fullWidth
+            multiline
+            minRows={12}
+            label="Paste Full Job Description"
+            placeholder={`Paste the complete JD here. Include the original title, responsibilities, requirements, skills, qualifications, and nice-to-have notes if they exist.\n\nThe AI will detect sections and important language automatically.`}
+            variant="outlined"
+            value={jdText}
+            onChange={(event) => handleJdTextChange(event.target.value)}
+            disabled={loading}
             sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-              gap: 2,
               mb: 2,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 3,
+                color: "white",
+                bgcolor: "rgba(0,0,0,0.2)",
+                "& fieldset": {
+                  borderColor: "rgba(255,255,255,0.2)",
+                },
+                "&:hover fieldset": {
+                  borderColor: "rgba(255,255,255,0.5)",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#52b0c3",
+                },
+              },
+              "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.68)" },
+              "& .MuiInputLabel-root.Mui-focused": { color: "#52b0c3" },
+              "& .MuiInputBase-input::placeholder": {
+                color: "rgba(255,255,255,0.45)",
+                opacity: 1,
+              },
             }}
-          >
-            {fieldConfig.map((field) => (
-              <TextField
-                key={field.key}
-                fullWidth
-                multiline={field.minRows > 1}
-                minRows={field.minRows}
-                label={field.label}
-                placeholder={field.placeholder}
-                variant="outlined"
-                value={jdFields[field.key]}
-                onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                disabled={loading}
-                sx={{
-                  gridColumn:
-                    field.key === "responsibilities" || field.key === "requiredSkills"
-                      ? { md: "span 2" }
-                      : "auto",
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 3,
-                    color: "white",
-                    bgcolor: "rgba(0,0,0,0.2)",
-                    "& fieldset": {
-                      borderColor: "rgba(255,255,255,0.2)",
-                    },
-                    "&:hover fieldset": {
-                      borderColor: "rgba(255,255,255,0.5)",
-                    },
-                    "&.Mui-focused fieldset": {
-                      borderColor: "#52b0c3",
-                    },
-                  },
-                  "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.68)" },
-                  "& .MuiInputLabel-root.Mui-focused": { color: "#52b0c3" },
-                  "& .MuiInputBase-input::placeholder": {
-                    color: "rgba(255,255,255,0.45)",
-                    opacity: 1,
-                  },
-                }}
-              />
-            ))}
-          </Box>
+          />
         )}
 
         {!isAtsOnly && (
           <Box sx={{ mb: 2, color: "rgba(255,255,255,0.72)" }}>
             <Typography variant="subtitle2" sx={{ color: "#def4c6", mb: 1 }}>
-              How to feed the matcher
+              How it works
             </Typography>
             <Typography variant="body2">
-              Keep the original JD wording, separate must-have skills from nice-to-have skills, include tools and seniority, and avoid rewriting the role into generic text.
+              Paste the JD as-is. The AI language pipeline will identify responsibilities, requirements, tools, seniority, and keyword signals automatically.
             </Typography>
           </Box>
         )}
@@ -419,7 +289,7 @@ export default function JDInput({ selectedCvId, onAnalyzeResult, onAnalyze }) {
             {loading ? "Analyzing..." : isAtsOnly ? "Check ATS Readiness" : "Run Semantic Match"}
           </Button>
 
-          {(hasStructuredInput || result) && !isAtsOnly && (
+          {(hasJdInput || result) && !isAtsOnly && (
             <Button
               variant="outlined"
               onClick={handleClearJD}

@@ -14,6 +14,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class MatchingService {
+
+    private static final Logger logger = LoggerFactory.getLogger(MatchingService.class);
 
     @Autowired
     private NLPService nlpService;
@@ -77,6 +81,7 @@ public class MatchingService {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(aiServiceUrl + "/analyze"))
+                    .version(HttpClient.Version.HTTP_1_1)
                     .timeout(Duration.ofMillis(aiServiceTimeoutMs))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
@@ -84,12 +89,15 @@ public class MatchingService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                logger.warn("AI service returned HTTP {} for {} analysis: {}", response.statusCode(), mode,
+                        response.body());
                 return Optional.empty();
             }
 
             MatchingResult result = objectMapper.readValue(response.body(), MatchingResult.class);
             return Optional.of(normalizeResult(result, "python-semantic-service"));
-        } catch (Exception ignored) {
+        } catch (Exception exception) {
+            logger.warn("AI service call failed for {} analysis: {}", mode, exception.getMessage());
             return Optional.empty();
         }
     }

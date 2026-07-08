@@ -1984,6 +1984,24 @@ def merge_terms(primary: list[str], secondary: list[str], max_items: int = 12) -
     return merged
 
 
+def make_json_safe(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): make_json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [make_json_safe(item) for item in value]
+    if hasattr(value, "item"):
+        try:
+            return make_json_safe(value.item())
+        except (TypeError, ValueError):
+            pass
+    if hasattr(value, "tolist"):
+        try:
+            return make_json_safe(value.tolist())
+        except (TypeError, ValueError):
+            pass
+    return value
+
+
 def write_trace(
     trace_id: str,
     mode: str,
@@ -2014,6 +2032,7 @@ def write_trace(
         "evidenceHighlights": trace_meta.get("evidenceHighlights", []),
         "response": response.model_dump(),
     }
+    trace_payload = make_json_safe(trace_payload)
 
     trace_path = TRACE_DIR / f"{trace_id}.json"
     trace_path.write_text(json.dumps(trace_payload, ensure_ascii=False, indent=2), encoding="utf-8")

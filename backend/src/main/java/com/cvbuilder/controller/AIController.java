@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +15,6 @@ import com.cvbuilder.service.MatchingService;
 
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = "*")
 public class AIController {
 
     @Autowired
@@ -29,10 +27,13 @@ public class AIController {
             return ResponseEntity.status(401).body(Map.of("message", "Session expired. Please log in again."));
         }
         
-        Long cvId = request.containsKey("cvId") ? Long.valueOf(request.get("cvId").toString()) : null;
-        String jdText = request.containsKey("jdText") ? request.get("jdText").toString() : null;
-        boolean atsOnly = request.containsKey("atsOnly") && Boolean.parseBoolean(request.get("atsOnly").toString());
-        String engine = request.containsKey("engine") ? request.get("engine").toString() : "auto";
+        Long cvId = parseCvId(request.get("cvId"));
+        String jdText = parseString(request.get("jdText"));
+        boolean atsOnly = Boolean.parseBoolean(parseString(request.get("atsOnly")));
+        String engine = parseString(request.get("engine"));
+        if (engine == null || engine.isBlank()) {
+            engine = "auto";
+        }
 
         if (cvId == null || (!atsOnly && (jdText == null || jdText.trim().isEmpty()))) {
             return ResponseEntity.badRequest().body(Map.of("message", "Please choose a resume and paste a job description."));
@@ -49,5 +50,21 @@ public class AIController {
             }
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
+    }
+
+    private Long parseCvId(Object rawCvId) {
+        if (rawCvId == null || rawCvId.toString().isBlank()) {
+            return null;
+        }
+
+        try {
+            return Long.valueOf(rawCvId.toString());
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private String parseString(Object value) {
+        return value == null ? null : value.toString();
     }
 }
